@@ -1,0 +1,9 @@
+/Packages/
+/ServerPackages/
+/*.lock
+/roblox.toml
+/sourcemap.json
+/bin/
+sourcemap.json
+/node_modules/
+package-lock.json

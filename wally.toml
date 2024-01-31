@@ -1,0 +1,29 @@
+[package]
+name = "nbala/sheriff-showdown"
+version = "0.1.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+
+[dependencies]
+Signal = "sleitnick/signal@2.0.1"
+Component = "sleitnick/component@2.4.8"
+Promise = "evaera/promise@4.0.0"
+React = "jsdotlua/react@17.1.0"
+ReactRoblox = "jsdotlua/react-roblox@17.1.0"
+Rodux = "roblox/rodux@4.0.0-rc.0"
+RoduxUtils = "solarhorizon/rodux-utils@0.3.3"
+ReactRodux = "solarhorizon/react-rodux@0.2.2"
+ReactSpring = "chriscerie/react-spring@2.0.0"
+Janitor = "howmanysmall/janitor@1.15.7"
+Input = "sleitnick/input@2.3.0"
+Sift = "csqrl/sift@0.0.8"
+Timer = "sleitnick/timer@1.1.2"
+Symbol = "core-packages/symbol@1.1.0"
+t = "osyrisrblx/t@3.0.0"
+Net = "vorlias/net@3.0.7"
+Comm = "sleitnick/comm@1.0.1"
+FastCast = "encodedvenom/fastcastredux@0.1.3"
+
+[server-dependencies]
+Cmdr = "evaera/cmdr@1.12.0"
+ProfileService = "grilme99/profileservice@1.0.0"
