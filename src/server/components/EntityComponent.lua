@@ -49,11 +49,11 @@ function EntityComponent:Construct()
 
 	if self._Player then -- Player entities automatically get the Ragdollable binder through PlayerHumanoidBinder
 		EntityService.PlayerEntityReady:Fire(self._Player, self.Entity)
-		--[[else -- If not a player, we manually add the Ragdollable binder so we can ragdoll our non-player entities.
+	else -- If not a player, we manually add the Ragdollable binder so we can ragdoll our non-player entities.
 		ragdollBinders.Ragdollable:Bind(Entity.Humanoid)
 		self._Janitor:Add(function()
 			ragdollBinders.Ragdollable:Unbind(Entity.Humanoid)
-		end)--]]
+		end)
 	end
 end
 

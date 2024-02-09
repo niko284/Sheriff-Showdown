@@ -124,7 +124,6 @@ end
 function ActionController:Start()
 	ActionController.Store = require(Rodux.Store)
 	ClientReady:Connect(function()
-		print("Client ready")
 		ActionController:BindHandlers()
 	end)
 	ActionController.Store.changed:connect(function(newState, oldState)
@@ -140,8 +139,6 @@ function ActionController:PlayAction(Handler: Types.ActionHandler, InputObject: 
 	local Entity, EntityState = EntityModule.GetEntityAndState(Character)
 	-- assert(Entity and EntityState, "Couldn't play action, Entity or EntityState not valid.")
 
-	print("Trying")
-
 	if not Entity or not EntityState then
 		return false
 	end
@@ -149,11 +146,10 @@ function ActionController:PlayAction(Handler: Types.ActionHandler, InputObject: 
 	if CONTROLS_ENABLED == false and (Handler.Data.AlwaysOn and not Handler.Data.AlwaysOn() or not Handler.Data.AlwaysOn) then -- although this probably won't run when controls are disabled, it is possible if a player clicks an action on the hotbar.
 		return false
 	end
+
 	--[[if game.PlaceId == PlaceIds.Lobby and Handler.Data.IsBaseAction ~= true then
 		return false -- No abilities in the lobby, except for base actions.
 	end--]]
-
-	print("Playing")
 
 	local actionUUID = HttpService:GenerateGUID(false) -- server uses this to identify the action.
 	local processArgs, stateInfo = Action.Init(Handler, Entity, actionUUID, InputObject)
@@ -222,9 +218,7 @@ function ActionController:BindHandlers()
 	-- Bind abilities.
 	local inventory = (ActionController.Store):getState().Inventory
 
-	print("binding handlers")
 	if not inventory then
-		print("r")
 		return
 	end
 
@@ -264,7 +258,6 @@ function ActionController:UnbindAllHandlers()
 		end
 		ActionController:UnbindHandler(Handler)
 	end
-	print("unbinding")
 end
 
 function ActionController:UnbindHandler(Handler: Types.ActionHandler)

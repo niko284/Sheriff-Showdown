@@ -32,6 +32,11 @@ local Definitions = Net.CreateDefinitions({
 		}),
 	}),
 
+	Notifications = Net.Definitions.Namespace({
+		AddNotification = Net.Definitions.ServerToClientEvent(),
+		RemoveNotification = Net.Definitions.ServerToClientEvent(),
+	}),
+
 	Entity = Net.Definitions.Namespace({
 		ClientReady = Net.Definitions.ServerToClientEvent(),
 		StateChanged = Net.Definitions.ServerToClientEvent(),
@@ -45,12 +50,15 @@ local Definitions = Net.CreateDefinitions({
 			Deserializer({ nil, UUIDSerde }),
 		}),
 		ProcessHit = (Net.Definitions :: any).BidirectionalEvent({
-			Net.Middleware.TypeChecking(t.strictInterface({
-				HitPart = t.optional(t.instanceIsA("BasePart")),
-				RaycastResult = t.optional(t.RaycastResult),
-				Entity = t.instanceIsA("Model"),
-				DetectionType = detectionTypeChecker,
-			})),
+			Net.Middleware.TypeChecking(
+				t.strictInterface({
+					HitPart = t.optional(t.instanceIsA("BasePart")),
+					RaycastResult = t.optional(t.RaycastResult),
+					Entity = t.instanceIsA("Model"),
+					DetectionType = detectionTypeChecker,
+				}),
+				t.optional(t.string)
+			),
 		}),
 		ProcessServerEffect = Net.Definitions.ClientToServerEvent({
 			Net.Middleware.TypeChecking(t.string),

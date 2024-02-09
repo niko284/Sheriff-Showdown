@@ -22,7 +22,6 @@ local NevermoreService = {
 function NevermoreService:Init()
 	NevermoreService:LoadNevermore()
 		:andThen(function(_clientPackages, serverPackages, _sharedPackages)
-			-- Create our serviceBag
 			NevermoreService.ServiceBag = require(serverPackages.ServiceBag).new()
 		end)
 		:catch(function(error: any)

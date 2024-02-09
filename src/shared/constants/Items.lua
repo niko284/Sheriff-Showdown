@@ -7,5 +7,6 @@ return {
 		Id = 1,
 		Name = "Luger",
 		Type = "Gun",
+		Style = "OneHandedDefault",
 	},
 }

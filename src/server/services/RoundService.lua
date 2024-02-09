@@ -8,6 +8,7 @@
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 local ServerStorage = game:GetService("ServerStorage")
 
 local Assets = ServerStorage.assets
@@ -17,13 +18,17 @@ local Packages = ReplicatedStorage.packages
 local Maps = require(Constants.Maps)
 local Promise = require(Packages.Promise)
 local RoundModes = require(Constants.RoundModes)
+local ServerComm = require(ServerScriptService.ServerComm)
 local Sift = require(Packages.Sift)
 local Signal = require(Packages.Signal)
 local Types = require(Constants.Types)
 
 local MAPS_FOLDER = Assets:WaitForChild("maps", 3)
 
+local VOTING_DURATION = 16
 local MINIMUM_PLAYERS = 2
+local MAP_VOTING_COUNT = 3
+local ROUND_MODE_VOTING_COUNT = 3
 
 -- // Service \\
 
@@ -31,6 +36,8 @@ local RoundService = {
 	Name = "RoundService",
 	MatchFinished = Signal.new(),
 	CurrentRound = nil :: Types.Round?,
+	RoundStatus = ServerComm:CreateProperty("RoundStatus", nil),
+	VotingPoolClient = ServerComm:CreateProperty("VotingPoolClient", nil),
 }
 
 -- // Functions \\
@@ -39,15 +46,62 @@ function RoundService:Init()
 	-- loop our rounds. we do this in a thread b/c we don't want to infinitely yield our server loader.
 	task.spawn(function()
 		while true do
+			RoundService:SetStatus("Waiting for players")
 			RoundService:WaitForPlayers(MINIMUM_PLAYERS)
 				:andThen(function()
-					local roundInstance = RoundService:CreateRound("Singles")
-					RoundService.CurrentRound = roundInstance
+					return RoundService:DoVoting()
+				end)
+				:andThen(function()
 					return RoundService:DoRound(roundInstance)
 				end)
 				:expect()
 		end
 	end)
+end
+
+function RoundService:SetStatus(Status: string)
+	RoundService.RoundStatus:Set(Status)
+end
+
+function RoundService:ResetVotingPool() end
+
+function RoundService:DoVoting()
+	-- shuffle maps and round modes
+	local shuffledMaps = Sift.Array.shuffle(Maps)
+	local shuffledRoundModes = Sift.Array.shuffle(RoundModes)
+
+	-- pick MAP_VOTING_COUNT maps and ROUND_MODE_VOTING_COUNT round modes
+
+	local votingPool = {
+		Maps = {
+			Choices = {},
+			Votes = {},
+		},
+		RoundModes = {
+			Choices = {},
+			Votes = {},
+		},
+	}
+
+	local maxIndexMaps = math.min(#shuffledMaps, MAP_VOTING_COUNT)
+	for i = 1, maxIndexMaps do
+		table.insert(votingPool.Maps.Choices, shuffledMaps[i].Name)
+	end
+
+	local maxIndexRoundModes = math.min(#shuffledRoundModes, ROUND_MODE_VOTING_COUNT)
+	for i = 1, maxIndexRoundModes do
+		if #shuffledRoundModes < i then -- prevent overflows
+			break
+		end
+		table.insert(votingPool.RoundModes.Choices, shuffledRoundModes[i].Name)
+	end
+
+	-- to reduce bandwidth we can also just pass the non-shuffled indices of the maps and round modes to the client but not necessary, very negligible
+	RoundService.VotingPoolClient:Set({
+		Maps = votingPool.Maps.Choices,
+		RoundModes = votingPool.RoundModes.Choices,
+		VotingEndTime = os.time() + VOTING_DURATION,
+	})
 end
 
 function RoundService:WaitForPlayers(PlayerCount: number)

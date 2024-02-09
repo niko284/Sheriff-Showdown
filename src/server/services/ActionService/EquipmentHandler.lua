@@ -7,14 +7,72 @@
 
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerStorage = game:GetService("ServerStorage")
 
+local Assets = ServerStorage.assets
 local Constants = ReplicatedStorage.constants
+
+local GUNS_FOLDER = Assets.guns
+local HIDE_FACE_ATTRIBUTE = "HideFace"
 
 local Types = require(Constants.Types)
 
 local EquipmentHandler = {}
 
 -- // Functions \\
+
+function EquipmentHandler.EquipGun(Entity: Types.Entity, ItemData: Types.ItemInfo)
+	local GunSpecificFolder: Instance = GUNS_FOLDER:WaitForChild(ItemData.Name, 3)
+	if not GunSpecificFolder then
+		warn(("Gun folder not found: %s"):format(ItemData.Name))
+		return
+	end
+
+	local limbsToHide = GunSpecificFolder:GetAttribute("LimbsToHide")
+	local hideFace = GunSpecificFolder:GetAttribute(HIDE_FACE_ATTRIBUTE)
+
+	-- When equipping the item, we also set entity style if applicable.
+	if ItemData.Style then
+		Entity:SetAttribute("Style", ItemData.Style) -- Set style attribute.
+	end
+
+	if limbsToHide then
+		local limbs = string.split(limbsToHide, ",")
+
+		for _, limbName in limbs do
+			-- Remove any spaces
+			local limb = Entity:FindFirstChild(select(1, limbName:gsub("%s+", "")) :: any) :: BasePart?
+			if limb and limb.Name ~= "HumanoidRootPart" then
+				limb.Transparency = 1
+			end
+		end
+	end
+	if hideFace == true then
+		-- If the entity has a face in their head and we are unequipping a piece that hides the face, show the face.
+		local head = Entity:FindFirstChild("Head")
+		if head then
+			local face = head:FindFirstChild("face") :: Decal?
+			if face then
+				face.Transparency = 1
+			end
+		end
+	end
+
+	for _, Accessory in GunSpecificFolder:GetChildren() do
+		if Accessory:IsA("Accessory") then
+			EquipmentHandler.AddAccessory(Entity, Accessory:Clone(), ItemData)
+		elseif Accessory:IsA("Clothing") then
+			local oldShirt = Entity:FindFirstChildOfClass("Shirt")
+			local oldPants = Entity:FindFirstChildOfClass("Pants")
+			if Accessory:IsA("Shirt") and oldShirt then
+				oldShirt:Destroy()
+			elseif Accessory:IsA("Pants") and oldPants then
+				oldPants:Destroy()
+			end
+			Accessory:Clone().Parent = Entity
+		end
+	end
+end
 
 function EquipmentHandler.AddAccessory(Entity: Types.Entity, accessory: Accessory, ItemData: Types.ItemInfo)
 	accessory = accessory:Clone()

@@ -61,7 +61,6 @@ function EntityService:Init()
 			end
 			Character.Parent = CHARACTERS_FOLDER
 			CollectionService:AddTag(Character, "Entity")
-			print("yup")
 			CollectionService:AddTag(Character, "PlayerEntity")
 		end
 
@@ -116,7 +115,6 @@ function EntityService:Init()
 
 		if Player then
 			if not changedState.Statuses then
-				print(changedState)
 				StateChanged:SendToAllPlayersExcept(Player, Player, EntityService.SerdeLayer.Serialize(changedState))
 			else
 				StateChanged:SendToAllPlayers(Player, EntityService.SerdeLayer.Serialize(changedState))

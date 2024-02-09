@@ -32,6 +32,12 @@ local Styles: Types.StylesTable = {
 			climb = nil,
 			sprint = CreateAnimation(10606641167),
 		},
+		Shoot = CreateAnimation(16206869874),
+	},
+	OneHandedDefault = {
+		PassiveAnimations = {
+			idle = CreateAnimation(16206667718),
+		},
 	},
 }
 

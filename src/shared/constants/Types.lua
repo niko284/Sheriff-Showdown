@@ -24,6 +24,10 @@ export type Audio = {
 -- >> Item Types
 
 export type ItemType = "Boost" | "Weapon"
+export type WeaponStyle = "OneHandedDefault"
+type ItemWeaponInfo = {
+	Style: WeaponStyle,
+}
 export type ItemInfo = {
 	Name: string,
 	Image: number,
@@ -31,7 +35,7 @@ export type ItemInfo = {
 	Type: ItemType,
 	Default: (boolean | (Player) -> boolean)?,
 	EquipOnDefault: boolean?, -- do we equip the item as soon as it is granted?
-}
+} & ItemWeaponInfo
 export type Item = {
 	Id: number,
 	UUID: string,
@@ -160,6 +164,7 @@ export type Round = {
 
 export type Map = {
 	Name: string,
+	CompatibleRoundModes: true | { RoundMode }, -- if true, all round modes are compatible with this map. If a table, only the round modes in the table are compatible with this map.
 }
 
 -- >> Action System Types
@@ -175,19 +180,7 @@ export type ActionStateMetaData = { [string]: any }
 -- >> Entity Types
 
 export type Entity = Model & { HumanoidRootPart: BasePart, Humanoid: Humanoid }
-export type EntityStatus =
-	"Dazed"
-	| "Gripped"
-	| "Knocked"
-	| "Parried"
-	| "Stunned"
-	| "Block Broken"
-	| "Downed"
-	| "Poisoned"
-	| "Slowed"
-	| "Healed"
-	| "Speed"
-	| nil
+export type EntityStatus = "Killed"
 export type EntityStatusState = {
 	Status: EntityStatus,
 	EndMillis: number?,
@@ -444,5 +437,36 @@ export type Serializer = {
 	Deserialize: (string) -> any,
 }
 export type NextMiddleware = (Player: Player, ...any) -> any
+
+-- >> Notification Types
+
+export type NotificationType = "Toast" | "Text"
+export type Notification = {
+	Title: string?,
+	Description: string,
+	UUID: string,
+	Duration: number,
+	ClickToDismiss: boolean?,
+	Options: { any }?,
+	OnFade: (() -> ())?,
+	OnDismiss: (() -> ())?,
+}
+
+-- >> Voting Types
+
+export type VotingPoolField = {
+	Choices: { string },
+	Votes: { [Player]: string },
+}
+export type VotingPool = {
+	Maps: VotingPoolField,
+	RoundModes: VotingPoolField,
+}
+
+-- just the choices for each voting pool field
+export type VotingPoolClient = {
+	Maps: { string },
+	RoundModes: { string },
+}
 
 return {}

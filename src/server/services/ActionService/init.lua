@@ -22,10 +22,13 @@ local Action = require(ActionShared.Action)
 local AudioService = require(Services.AudioService)
 local EntityModule = require(ActionShared.Entity)
 local EntityService = require(Services.EntityService)
+local EquipmentHandler = require(script.EquipmentHandler)
 local Handlers = require(ActionShared.Handlers)
 local HitFXSerde = require(Serde.HitFXSerde)
+local Interfaces = require(ActionShared.Action.Interfaces)
 local InventoryService = require(Services.InventoryService)
 local ItemService = require(Services.ItemService)
+local Items = require(Constants.Items)
 local Remotes = require(ReplicatedStorage.Remotes)
 local RoundService = require(Services.RoundService)
 local ServerComm = require(ServerScriptService.ServerComm)
@@ -59,7 +62,19 @@ local ActionService = {
 -- // Functions \\
 function ActionService:Init()
 	EntityService.PlayerEntityReady:Connect(function(Player: Player, Entity: Types.Entity)
+		ActionService:CharacterAdded(Entity)
 		ClientReady:SendToPlayer(Player, Entity)
+	end)
+
+	Interfaces.Server.ProcessHit:Connect(function(...)
+		local hitSuccess = ActionService:ProcessHitClient(...)
+		if hitSuccess == false then
+			-- Notify the client that the hit failed for any necessary rollback.
+			local args = { ... }
+			local _Player = args[1]
+			local _ActionUUID = args[2]
+			--ProcessHit:SendToPlayer(Player, ActionUUID, false)
+		end
 	end)
 
 	ProcessAction:SetCallback(
@@ -209,6 +224,10 @@ function ActionService:ToggleCombatSystem(Toggle: boolean, Player: Player?)
 	end
 end
 
+function ActionService:CharacterAdded(Entity: Types.Entity)
+	EquipmentHandler.EquipGun(Entity, Items[1])
+end
+
 function ActionService:PlayAction(
 	Entity: Types.Entity,
 	Handler: Types.ActionHandler,
@@ -251,16 +270,19 @@ function ActionService:ProcessHitClient(
 	-- First, we check if this processhit is for our entity since we have multiple connections to the same callback.
 	local entityPlayer = Players:GetPlayerFromCharacter(ArgPack.Entity)
 	if (entityPlayer and Player ~= entityPlayer) or not Entry.Entity or not entityPlayer then
+		print("H")
 		return false
 	end
 
 	-- Then, we want to make sure that this action is the same action the entity wants to register a hit for by the UUID given to us.
 	if StateInfo.UUID ~= ActionUUID then
+		print("C")
 		return false
 	end
 
 	local toEntity, toState = EntityModule.GetEntityAndState(Entry.Entity :: any)
 	if not toState or not toEntity then
+		print("D")
 		return false
 	end
 
@@ -269,9 +291,12 @@ function ActionService:ProcessHitClient(
 	if runHandlerChecks then
 		local checksPassed = runHandlerChecks(ArgPack, Entry.DetectionType, Entry)
 		if not checksPassed then
+			print("F")
 			return false
 		end
 	end
+
+	print("A")
 
 	local didRun, processed =
 		pcall(ActionService.ProcessHit, ActionService, FromEntity, FromState, toEntity, toState, Entry, StateInfo, ArgPack)
@@ -397,11 +422,6 @@ function ActionService:GetHitProps(
 
 	-- if blocking
 	if ToState and FromState and Handler.Callbacks.ProcessHit then
-		-- If the player is gripped, then we can't hit them for any handler.
-		if StatusModule.HasStatus(TargetEntity, "Gripped") then
-			return false, nil
-		end
-
 		local handlerSpecificProcess = Handler.Callbacks.ProcessHit
 
 		local canHit, hitProps =
@@ -449,8 +469,10 @@ function ActionService:DamageEntityFromHandler(
 		)
 		or Handler.Data.BaseDamage :: number
 
-	if baseDamage > humanoidTarget.Health then
+	if baseDamage >= humanoidTarget.Health then
 		baseDamage = math.floor(humanoidTarget.Health - 1) -- we just want to take their damage away, not completely kill them due to humanoid behavior.
+		-- apply the killed status effect.
+		StatusModule.ApplyStatus(TargetEntity, "Killed", nil, nil, Actor)
 	end
 
 	humanoidTarget:TakeDamage(baseDamage)

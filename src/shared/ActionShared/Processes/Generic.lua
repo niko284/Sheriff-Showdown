@@ -77,6 +77,7 @@ function GenericProcesses.ProcessHitGeneric(ProcessTime: number?, MultiHit: bool
 			-- How long can the client send hits to the server for this action? Passed argument is how long the client can send hits for from the time the signal is fired.
 			ArgPack.Store.StartProcessHitTimer = Signal.new() :: Signal.Signal<()>
 
+			print("processing hit listening")
 			local processHitListener = ProcessHit:Connect(
 				withEntityAndState(
 					function(
@@ -103,6 +104,7 @@ function GenericProcesses.ProcessHitGeneric(ProcessTime: number?, MultiHit: bool
 						if ActionUUID ~= StateInfo.UUID then -- If the action UUID doesn't match, return.
 							return
 						end
+						print("Firing srvr")
 						ProcessHitServer:Fire(Player, ActionUUID, ArgPack, StateInfo, FromEntity, FromState, Entry)
 					end
 				)
@@ -244,6 +246,7 @@ function GenericProcesses.ListenHitGeneric(_CleanupAfter: number?, MultiHit: boo
 				if IS_CLIENT and HitEntry.Entity then
 					if HitEntry.Entity and IS_CLIENT then
 						-- If we hit an entity, we want to process the hit event.
+						print("sending hit to server")
 						ArgPack.Interfaces.Comm.ProcessHit:SendToServer(HitEntry, StateInfo.UUID)
 					end
 				end

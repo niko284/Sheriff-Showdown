@@ -45,7 +45,6 @@ export type PlayerProfile = ProfileService.Profile<Types.PlayerData, any, any>
 -- // Functions \\
 
 function DataService:Init()
-	print("Initializing " .. self.Name)
 	DataService.ProfileStore = PROFILE_STORE
 	if RunService:IsStudio() then
 		DataService.ProfileStore = DataService.ProfileStore.Mock -- Mock the profile store if we are in studio.
@@ -57,7 +56,6 @@ function DataService:GetProfileStore()
 end
 
 function DataService:OnPlayerAdded(Player: Player)
-	print("Added")
 	-- Award the player the welcome badge if they don't have it.
 	--[[BadgeUtils.PromiseHasBadgeAsync(Player.UserId, Badges.Welcome)
 		:andThen(function(HasBadge: boolean)
@@ -107,7 +105,6 @@ function DataService:LoadProfile(PlayerDataKey: string, ReleaseHandler: ((number
 end
 
 function DataService:LoadData(Player: Player)
-	print("Loading")
 	local PlayerDataKey = "PlayerData_" .. Player.UserId
 	return Promise.retryWithDelay(DataService.LoadProfile, MAX_LOAD_RETRIES, 3, DataService, PlayerDataKey, function()
 		-- We return repeat since we want to retry if the profile is not found, but not steal it since it might have a trade session lock.
@@ -148,7 +145,6 @@ function DataService:LoadData(Player: Player)
 
 			if Player:IsDescendantOf(Players) then
 				DataService.Profiles[Player.UserId] = PlayerProfile
-				print("Firing")
 				DataService.PlayerDataLoaded:Fire(Player, PlayerProfile)
 			else
 				PlayerProfile:Release()

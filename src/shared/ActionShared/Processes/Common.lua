@@ -36,6 +36,8 @@ local MAXIMUM_LATENCY = 0.8 -- 800 ms
 local MAX_LENIENCY_PROJECTILE_ORIGIN = 15
 local INTERPOLATION_VALUE = 0.048
 
+FastCast.VisualizeCasts = true
+
 local Common = {
 	Generic = require(Processes.Generic),
 	Callbacks = require(Processes.Callbacks),
@@ -542,10 +544,14 @@ function Common.ProjectileCast(Projectiles: { ProjectileInternal })
 						newParams.FilterDescendantsInstances = { ArgPack.Entity }
 						newParams.FilterType = Enum.RaycastFilterType.Exclude
 						behavior.RaycastParams = newParams
-						local activeCast =
-							caster:Fire(projectileData.Origin, projectileData.Direction, projectileData.Velocity, behavior)
-						return Promise.fromEvent(caster.RayHit, function(cast, result)
-							return cast == activeCast and result
+						local activeCast = caster:Fire(
+							projectileData.Origin.Position,
+							projectileData.Direction.Unit,
+							projectileData.Velocity * projectileData.Direction.Unit,
+							behavior
+						)
+						initialPromise = Promise.fromEvent(caster.RayHit, function(cast, result)
+							return cast == activeCast and result and true
 						end):andThen(function(_cast, result)
 							return result
 						end)
@@ -578,7 +584,7 @@ function Common.ProjectileCast(Projectiles: { ProjectileInternal })
 
 				local wasRegistered = false
 				for _, Projectile in Projectiles do
-					local initPromise = Promise.new(function() end)
+					local initPromise = Promise.resolve()
 					if Projectile.MarkerName then
 						initPromise = Promise.fromEvent(
 							ArgPack.Store["Track"]:GetMarkerReachedSignal(Projectile.MarkerName),
@@ -607,12 +613,14 @@ function Common.ProjectileCast(Projectiles: { ProjectileInternal })
 							and (Player.Character :: any == ArgPack.Entity)
 							and typeof(ProjectileOrigin) == "CFrame"
 						then
+							print("Creating")
 							local Time = os.clock()
 							local Latency = (workspace:GetServerTimeNow() - Timestamp)
 							local Interpolation = (Player:GetNetworkPing() + INTERPOLATION_VALUE)
 
 							--> Validate the latency and avoid players with very slow connections
 							if (Latency < 0) or (Latency > MAXIMUM_LATENCY) then
+								print("Returning ", Latency)
 								return
 							end
 
@@ -649,6 +657,7 @@ function Common.ProjectileCast(Projectiles: { ProjectileInternal })
 							table.insert(ArgPack.Store.ActiveDetectionTypes, DetectionTypes.Projectile) -- note that we're accepting projectile hits.
 
 							-- Start the process timer for projectile listeners.
+							print("Processing")
 							ArgPack.Store.StartProcessHitTimer:Fire(DetectionTypes.Projectile)
 
 							ArgPack.HitVerifiers.ProjectileCheckGeneric = function(Entry: Types.CasterEntry)

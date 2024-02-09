@@ -24,8 +24,10 @@ local RagdollService = {
 function RagdollService:Init() end
 
 function RagdollService:Start()
-	NevermoreService:GetPackage("RagdollBindersServer")
-	NevermoreService:GetPackage("RagdollService")
+	NevermoreService:GetPackage("HumanoidTrackerService"):Init(NevermoreService.ServiceBag)
+	NevermoreService:GetPackage("RagdollBindersServer"):Init(NevermoreService.ServiceBag)
+	NevermoreService:GetPackage("RagdollService"):Init(NevermoreService.ServiceBag)
+	NevermoreService:GetPackage("RagdollBindersServer"):Start()
 end
 
 function RagdollService:Ragdoll(Entity: Types.Entity)

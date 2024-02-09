@@ -22,7 +22,7 @@ local AnimationShared = require(Utils.AnimationShared)
 local Signal = require(Packages.Signal)
 local Types = require(Constants.Types)
 
-local BUSY_STATUSES = {}
+local BUSY_STATUSES = { "Killed" }
 local States: { [Types.Entity]: Types.EntityState } = {}
 local PlayerStates: { [Player]: Types.EntityState } = {}
 

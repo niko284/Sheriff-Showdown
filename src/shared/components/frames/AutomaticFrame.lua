@@ -78,7 +78,7 @@ local function AutomaticFrame(props: AutomaticFrameProps)
 	local frameRef = useRef(React.createRef())
 	local janitor = useRef(Janitor.new() :: Janitor.Janitor)
 
-	local containerSize, setContainerSize = useBinding(props.instanceProps.Size)
+	local containerSize, setContainerSize = useBinding(props.instanceProps and props.instanceProps.Size or nil)
 
 	local scaleRatio = useScaleRatio()
 

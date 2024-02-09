@@ -29,11 +29,9 @@ local function LoadServerComponents()
 			require(ComponentModule)
 		end
 	end
-	print("Loaded srvr components")
 end
 
 local function serviceInit()
-	print("initing srrvr")
 	local serviceInitPromises = {}
 	for _, service in ServerScriptService.services:GetChildren() do
 		if service:IsA("ModuleScript") then
@@ -53,12 +51,10 @@ local function serviceInit()
 			end
 		end
 	end
-	print("Done")
 	return Promise.all(serviceInitPromises)
 end
 
 local function serviceStart()
-	print("Starting")
 	for _, service in Services do
 		if service.Start and type(service.Start) == "function" then
 			task.spawn(function()
@@ -68,7 +64,6 @@ local function serviceStart()
 			end)
 		end
 	end
-	print("Started")
 	return Promise.resolve()
 end
 
@@ -117,7 +112,6 @@ LoadServer()
 		Cmdr.Registry:RegisterHooksIn(ServerScriptService.cmdr.hooks)
 	end)
 	:andThen(function()
-		print("initing")
 		initializePlayerAdded()
 		initializePlayerRemoving()
 	end)

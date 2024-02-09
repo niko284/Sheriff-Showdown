@@ -13,23 +13,35 @@ local Components = ReplicatedStorage.components
 local PlayerScripts = LocalPlayer.PlayerScripts
 local Controllers = PlayerScripts.controllers
 local ActionComponents = Components.action
+local ButtonComponents = Components.buttons
+local NotificationComponents = Components.notification
 
 local ActionPopup = require(ActionComponents.ActionPopup)
 local ActionPopupManager = require(ActionComponents.ActionPopupManager)
 local AutoUIScale = require(Components.common.AutoUIScale)
+local NotificationController = require(Controllers.NotificationController)
+local NotificationManager = require(NotificationComponents.NotificationManager)
 local PopupController = require(Controllers.PopupController)
 local React = require(Packages.React)
+local SideButtons = require(ButtonComponents.SideButtons)
+local TextNotificationElement = require(NotificationComponents.TextNotificationElement)
 
 local e = React.createElement
+local useEffect = React.useEffect
 
 local function changeScaleRatio(scaleRatio: number)
-	local InterfaceController = require(Controllers.InterfaceController) :: any -- no circular dependency :(
+	local InterfaceController = require(Controllers.InterfaceController)
 	InterfaceController.ScaleRatioChanged:Fire(scaleRatio)
 end
 
 -- // App \\
 
 local function App()
+	useEffect(function()
+		local InterfaceController = require(Controllers.InterfaceController)
+		InterfaceController.AppLoaded:Fire() -- Fires when the app is loaded/mounted.
+	end, {}) -- only runs on initial mount
+
 	return e("ScreenGui", {
 		IgnoreGuiInset = false,
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
@@ -43,6 +55,12 @@ local function App()
 			scale = 1,
 			onScaleRatioChanged = changeScaleRatio,
 		}),
+		hud = e("Frame", {
+			Size = UDim2.fromScale(1, 1),
+			BackgroundTransparency = 1,
+		}, {
+			sideButtons = e(SideButtons),
+		}),
 		actions = e(ActionPopupManager, {
 			size = UDim2.fromScale(1, 1),
 			anchorPoint = Vector2.new(0.5, 0.5),
@@ -51,6 +69,16 @@ local function App()
 			maxPopups = 1,
 			popupAdded = PopupController.ActionPopupAdded,
 			popupRemoved = PopupController.ActionPopupRemoved,
+		}),
+		textNotifications = e(NotificationManager, {
+			component = TextNotificationElement :: any,
+			componentSize = UDim2.fromOffset(700, 55),
+			position = UDim2.fromScale(0.5, 0.06),
+			notificationAdded = NotificationController.TextNotificationAdded,
+			notificationRemoved = NotificationController.TextNotificationRemoved,
+			padding = UDim.new(0, 7),
+			anchorPoint = Vector2.new(0.5, 0.5),
+			maxNotifications = 1,
 		}),
 	})
 end

@@ -4,7 +4,6 @@
 -- January 27th, 2024
 -- Ron
 
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Constants = ReplicatedStorage.constants
@@ -27,12 +26,12 @@ local t = require(Packages.t)
 local HandlerData: Types.ActionHandlerData = {
 	Name = "Shoot",
 	GlobalCooldownMillis = 300,
-	CooldownMillis = 700,
+	CooldownMillis = 100,
 	IsBaseAction = true,
 	AttackLevel = 1,
 	DefenseLevel = 0,
 	Sustained = false,
-	BaseDamage = 5,
+	BaseDamage = 100,
 	SettingsData = {
 		Name = "Shoot",
 		InputData = {
@@ -49,16 +48,17 @@ local HandlerData: Types.ActionHandlerData = {
 local Handler: Types.ActionHandler = {
 	Data = HandlerData,
 	Callbacks = {
-		VerifyActionPayload = function(ActionPayload: { Direction: Vector3 }): boolean
+		VerifyActionPayload = function(ActionPayload: { Direction: Vector3, Origin: Vector3 }): boolean
 			return t.strictInterface({
 				Direction = t.Vector3,
+				Origin = t.Vector3,
 			})(ActionPayload)
 		end,
 		ProcessHit = function()
 			return true, {}
 		end,
 		VerifyHits = Common.Callbacks.VerifyHits({
-			Caster = { "CasterCheckGeneric" },
+			Projectile = { "ProjectileCheckGeneric" },
 		}),
 		OnHit = function(_VFXArgs: Types.VFXArguments) end,
 		HitNoise = function()
@@ -77,12 +77,11 @@ local Handler: Types.ActionHandler = {
 					local currentCamera = workspace.CurrentCamera
 					local inputObject = ArgPack.InputObject
 
-					print("Wp")
-
 					if inputObject then
 						local unitRay = currentCamera:ScreenPointToRay(inputObject.Position.X, inputObject.Position.Y)
 
 						ArgPack.Store.Direction = unitRay.Direction
+						ArgPack.Store.Origin = unitRay.Origin
 
 						return true
 					end
@@ -91,9 +90,9 @@ local Handler: Types.ActionHandler = {
 				end,
 			},
 			Common.BuildActionPayload(function(ArgPack: Types.ProcessArgs, _StateInternal: Types.ActionStateInfo)
-				print("Payload")
 				local ActionPayload = {
 					Direction = ArgPack.Store.Direction,
+					Origin = ArgPack.Store.Origin,
 				}
 				return ActionPayload
 			end),
@@ -101,17 +100,20 @@ local Handler: Types.ActionHandler = {
 			Common.ChangeState,
 		},
 		ActionStack = {
-			Common.Generic.ProcessHitGeneric(6, true, false),
+			Common.Generic.ProcessHitGeneric(1, true, false),
+			Common.Generic.AttackAnimateGeneric(),
 			Common.Generic.ListenHitGeneric(nil, true) :: Types.Process,
 			Common.ProjectileCast({
 				{
-					GetProjectile = function(Entity: Types.Entity, ArgPack: Types.ProcessArgs)
+					MarkerName = "shoot",
+					GetProjectile = function(_Entity: Types.Entity, ArgPack: Types.ProcessArgs)
 						local actionPayload = ArgPack.ActionPayload :: any
 						local projectileDirection = actionPayload.Direction
+						local origin = actionPayload.Origin
 						return {
-							Origin = Entity.HumanoidRootPart.CFrame,
+							Origin = CFrame.new(origin),
 							Direction = projectileDirection,
-							Velocity = 500,
+							Velocity = 5000,
 							Lifetime = 5,
 						}
 					end,

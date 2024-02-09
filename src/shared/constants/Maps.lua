@@ -5,5 +5,6 @@
 return {
 	{
 		Name = "Desert",
+		CompatibleRoundModes = true,
 	},
 }
