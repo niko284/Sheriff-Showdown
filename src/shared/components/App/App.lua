@@ -15,6 +15,7 @@ local Controllers = PlayerScripts.controllers
 local ActionComponents = Components.action
 local ButtonComponents = Components.buttons
 local NotificationComponents = Components.notification
+local VotingComponents = Components.voting
 
 local ActionPopup = require(ActionComponents.ActionPopup)
 local ActionPopupManager = require(ActionComponents.ActionPopupManager)
@@ -25,6 +26,7 @@ local PopupController = require(Controllers.PopupController)
 local React = require(Packages.React)
 local SideButtons = require(ButtonComponents.SideButtons)
 local TextNotificationElement = require(NotificationComponents.TextNotificationElement)
+local VotingManager = require(VotingComponents.VotingManager)
 
 local e = React.createElement
 local useEffect = React.useEffect
@@ -70,6 +72,7 @@ local function App()
 			popupAdded = PopupController.ActionPopupAdded,
 			popupRemoved = PopupController.ActionPopupRemoved,
 		}),
+		voting = e(VotingManager),
 		textNotifications = e(NotificationManager, {
 			component = TextNotificationElement :: any,
 			componentSize = UDim2.fromOffset(700, 55),

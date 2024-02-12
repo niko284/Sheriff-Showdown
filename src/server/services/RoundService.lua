@@ -17,16 +17,19 @@ local Packages = ReplicatedStorage.packages
 
 local Maps = require(Constants.Maps)
 local Promise = require(Packages.Promise)
+local Remotes = require(ReplicatedStorage.Remotes)
 local RoundModes = require(Constants.RoundModes)
 local ServerComm = require(ServerScriptService.ServerComm)
 local Sift = require(Packages.Sift)
 local Signal = require(Packages.Signal)
 local Types = require(Constants.Types)
 
-local MAPS_FOLDER = Assets:WaitForChild("maps", 3)
+local VotingNamespace = Remotes.Server:GetNamespace("Voting")
+local ProcessVote = VotingNamespace:Get("ProcessVote")
 
+local MAPS_FOLDER = Assets:WaitForChild("maps", 3)
 local VOTING_DURATION = 16
-local MINIMUM_PLAYERS = 2
+local MINIMUM_PLAYERS = 1
 local MAP_VOTING_COUNT = 3
 local ROUND_MODE_VOTING_COUNT = 3
 
@@ -38,12 +41,19 @@ local RoundService = {
 	CurrentRound = nil :: Types.Round?,
 	RoundStatus = ServerComm:CreateProperty("RoundStatus", nil),
 	VotingPoolClient = ServerComm:CreateProperty("VotingPoolClient", nil),
+	VotingPool = nil :: Types.VotingPool?,
 }
 
 -- // Functions \\
 
 function RoundService:Init()
 	-- loop our rounds. we do this in a thread b/c we don't want to infinitely yield our server loader.
+
+	ProcessVote:Connect(function(Player: Player, VotingField: string, VotingChoice: string)
+		-- process the vote in the voting pool.
+		RoundService:ProcessVote(Player, VotingField, VotingChoice)
+	end)
+
 	task.spawn(function()
 		while true do
 			RoundService:SetStatus("Waiting for players")
@@ -51,7 +61,8 @@ function RoundService:Init()
 				:andThen(function()
 					return RoundService:DoVoting()
 				end)
-				:andThen(function()
+				:andThen(function(FieldWinners)
+					local roundInstance = RoundService:CreateRound(FieldWinners.RoundModes, FieldWinners.Maps)
 					return RoundService:DoRound(roundInstance)
 				end)
 				:expect()
@@ -63,7 +74,24 @@ function RoundService:SetStatus(Status: string)
 	RoundService.RoundStatus:Set(Status)
 end
 
-function RoundService:ResetVotingPool() end
+function RoundService:ProcessVote(Player: Player, VotingField: string, VotingChoice: string)
+	local votingPool = RoundService.VotingPool
+	if not votingPool then
+		return
+	end
+
+	local votingFieldData = votingPool[VotingField] :: Types.VotingPoolField
+	if not votingFieldData then
+		return
+	end
+
+	local isValidChoice = table.find(votingFieldData.Choices, VotingChoice) ~= nil
+	if not isValidChoice then
+		return
+	end
+
+	votingFieldData.Votes[Player.UserId] = VotingChoice -- overwrite the player's vote for the given field.
+end
 
 function RoundService:DoVoting()
 	-- shuffle maps and round modes
@@ -82,6 +110,7 @@ function RoundService:DoVoting()
 			Votes = {},
 		},
 	}
+	RoundService.VotingPool = votingPool
 
 	local maxIndexMaps = math.min(#shuffledMaps, MAP_VOTING_COUNT)
 	for i = 1, maxIndexMaps do
@@ -98,10 +127,52 @@ function RoundService:DoVoting()
 
 	-- to reduce bandwidth we can also just pass the non-shuffled indices of the maps and round modes to the client but not necessary, very negligible
 	RoundService.VotingPoolClient:Set({
-		Maps = votingPool.Maps.Choices,
-		RoundModes = votingPool.RoundModes.Choices,
-		VotingEndTime = os.time() + VOTING_DURATION,
+		VotingFields = {
+			{
+				Field = "Maps",
+				Choices = votingPool.Maps.Choices,
+			},
+			{
+				Field = "RoundModes",
+				Choices = votingPool.RoundModes.Choices,
+			},
+		},
 	})
+
+	return Promise.delay(VOTING_DURATION):andThen(function()
+		-- tally the votes in each field and pick the winning choice
+		local fieldsWithWinningChoices = {}
+
+		for field, fieldData in votingPool do
+			local votes = fieldData.Votes
+			local choices = fieldData.Choices
+
+			local tally = {}
+			for _, choice in choices do
+				tally[choice] = 0
+			end
+
+			for _, vote in votes do
+				tally[vote] += 1
+			end
+
+			local winningChoice = choices[1] -- by default, the first choice is the winning choice
+			local highestVoteCount = tally[winningChoice] -- by default, the first choice has the highest vote count
+
+			for choice, voteCount in tally do
+				if voteCount > highestVoteCount then
+					winningChoice = choice
+					highestVoteCount = voteCount
+				end
+			end
+
+			fieldsWithWinningChoices[field] = winningChoice
+		end
+
+		RoundService.VotingPoolClient:Set(nil) -- close the voting interface
+
+		return fieldsWithWinningChoices
+	end)
 end
 
 function RoundService:WaitForPlayers(PlayerCount: number)
@@ -115,23 +186,31 @@ function RoundService:WaitForPlayers(PlayerCount: number)
 	end
 end
 
-function RoundService:DoRound(RoundInstance: Types.Round)
-	-- after allocating matches, start them one by one. once one match finishes, start the next one.
-
-	-- pick a map at random (for now)
-	local map = Maps[math.random(1, #Maps)]
-
-	-- load the map
+function RoundService:LoadMap(MapName: string)
+	local map = nil
+	for _, mapData in Maps do
+		if mapData.Name == MapName then
+			map = mapData
+			break
+		end
+	end
+	if map == nil then
+		error("Map " .. MapName .. " does not exist!")
+		return
+	end
 	local mapModel = MAPS_FOLDER:FindFirstChild(map.Name)
 	if mapModel == nil then
 		error("Map " .. map .. " does not exist!")
+		return
 	end
 
 	local mapClone = mapModel:Clone()
 	mapClone.Parent = workspace -- add the map to the workspace (load it in)
 
-	RoundInstance.Map = mapClone
+	return mapClone
+end
 
+function RoundService:DoRound(RoundInstance: Types.Round)
 	return RoundService:RunMatches(RoundInstance)
 end
 
@@ -167,7 +246,7 @@ function RoundService:StartMatch(RoundInstance: Types.Round, Match: Types.Match)
 	end
 end
 
-function RoundService:GetRound(): Types.Round
+function RoundService:GetRound(): Types.Round?
 	-- get the current round
 	return RoundService.CurrentRound
 end
@@ -232,13 +311,13 @@ function RoundService:TeamsStillInMatch(match: Types.Match)
 	end)
 end
 
-function RoundService:CreateRound(RoundMode: Types.RoundMode): Types.Round
+function RoundService:CreateRound(RoundMode: Types.RoundMode, MapName: string): Types.Round
 	local playerPool = RoundService:GetAllPlayers()
 	local Round = {
 		Players = playerPool,
 		Matches = RoundService:AllocateMatches(playerPool, RoundMode),
 		RoundMode = RoundMode,
-		Map = nil :: any,
+		Map = RoundService:LoadMap(MapName),
 	}
 	return Round
 end

@@ -28,6 +28,7 @@ local VotingPoolClient = ClientComm:GetProperty("VotingPoolClient")
 local RoundController = {
 	Name = "RoundController",
 	StartVoting = Signal.new(),
+	EndVoting = Signal.new(),
 }
 
 function RoundController:Start()
@@ -43,7 +44,12 @@ function RoundController:Start()
 		end)
 	end)
 	VotingPoolClient:Observe(function(VotingPool: Types.VotingPoolClient)
-		RoundController.StartVoting:Fire(VotingPool)
+		InterfaceController:WaitForAppLoaded():expect()
+		if VotingPool then
+			RoundController.StartVoting:Fire(VotingPool)
+		else
+			RoundController.EndVoting:Fire()
+		end
 	end)
 end
 

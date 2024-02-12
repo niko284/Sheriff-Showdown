@@ -465,8 +465,13 @@ export type VotingPool = {
 
 -- just the choices for each voting pool field
 export type VotingPoolClient = {
-	Maps: { string },
-	RoundModes: { string },
+	VotingEndTime: number,
+	VotingFields: { -- we keep this as an array because it's easier for the client to route through each field and display it.
+		{
+			Field: string,
+			Choices: { string },
+		}
+	},
 }
 
 return {}

@@ -32,6 +32,12 @@ local Definitions = Net.CreateDefinitions({
 		}),
 	}),
 
+	Voting = Net.Definitions.Namespace({
+		ProcessVote = Net.Definitions.ClientToServerEvent({
+			Net.Middleware.TypeChecking(t.string, t.string), -- voting field name and voting choice
+		}),
+	}),
+
 	Notifications = Net.Definitions.Namespace({
 		AddNotification = Net.Definitions.ServerToClientEvent(),
 		RemoveNotification = Net.Definitions.ServerToClientEvent(),

@@ -18,6 +18,8 @@ local e = React.createElement
 
 type VotingTemplateProps = Types.FrameProps & {
 	choice: string,
+	field: string,
+	onActivated: (string, string) -> (),
 	backgroundImage: string,
 }
 
@@ -27,13 +29,16 @@ local function VotingTemplate(props: VotingTemplateProps)
 		BackgroundTransparency = 0.5,
 		BorderColor3 = Color3.fromRGB(0, 0, 0),
 		BorderSizePixel = 0,
-		Position = UDim2.fromScale(3.14e-08, 4.77e-08),
-		Size = UDim2.fromOffset(164, 191),
+		Size = props.size,
+		LayoutOrder = props.layoutOrder,
 	}, {
 		votingButton = e("ImageButton", {
 			Image = props.backgroundImage,
 			BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 			BorderColor3 = Color3.fromRGB(0, 0, 0),
+			[React.Event.Activated] = function()
+				props.onActivated(props.choice, props.field)
+			end,
 			BorderSizePixel = 0,
 			Position = UDim2.fromScale(0.0367, 0.0412),
 			Size = UDim2.fromOffset(152, 152),
