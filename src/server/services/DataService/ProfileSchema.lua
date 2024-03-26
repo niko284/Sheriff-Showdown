@@ -13,7 +13,10 @@ local Constants = ReplicatedStorage.constants
 local Types = require(Constants.Types)
 
 return {
-	Resources = {},
+	Resources = {
+		Gems = 0,
+		Coins = 100,
+	},
 	Settings = {},
 	Inventory = {
 		Items = {},

@@ -137,10 +137,13 @@ function Util.NPCAttackHitbox(CFrame: CFrame, Size: Vector3, TimeTillAttack: num
 			Transparency = 0.8,
 		})
 		table.insert(hitboxes, hitbox)
-		local hitboxSizeTween =
-			TweenService:Create(hitbox, TweenInfo.new(TimeTillAttack / i, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		local hitboxSizeTween = TweenService:Create(
+			hitbox,
+			TweenInfo.new(TimeTillAttack / i, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+			{
 				Size = Size,
-			})
+			}
+		)
 		hitboxSizeTween:Play()
 		table.insert(
 			allComplete,
@@ -207,17 +210,22 @@ function Util.SuddenDarkness()
 	local colorCorrection = Instance.new("ColorCorrectionEffect")
 	colorCorrection.Parent = Lighting
 	Debris:AddItem(colorCorrection, 0.25)
-	local lightingTween =
-		TweenService:Create(colorCorrection, TweenInfo.new(0.075, Enum.EasingStyle.Exponential, Enum.EasingDirection.In), {
+	local lightingTween = TweenService:Create(
+		colorCorrection,
+		TweenInfo.new(0.075, Enum.EasingStyle.Exponential, Enum.EasingDirection.In),
+		{
 			Brightness = -1,
-		})
+		}
+	)
 	lightingTween:Play()
 	lightingTween.Completed:Connect(function()
 		task.wait(0.1)
 
-		TweenService:Create(colorCorrection, TweenInfo.new(0.075, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
-			Brightness = 0,
-		}):Play()
+		TweenService
+			:Create(colorCorrection, TweenInfo.new(0.075, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {
+				Brightness = 0,
+			})
+			:Play()
 	end)
 end
 
@@ -314,6 +322,7 @@ function Util.preFab(ogMesh: BasePart, properties: { [string]: any }, debrisTime
 end
 
 -- Disable all ParticleEmitters in an instance. Include PointLights in this.
+
 function Util.DisableParticles(Instance: Instance)
 	for _, particle in Instance:GetDescendants() do
 		if not particle:IsA("ParticleEmitter") then
@@ -327,6 +336,28 @@ function Util.DisableParticles(Instance: Instance)
 			continue
 		else
 			TweenService:Create(light, TweenInfo.new(0.08), { Brightness = 0 }):Play()
+		end
+	end
+end
+
+-- Disable all beams
+function Util.DisableBeams(Instance: Instance)
+	for _, beam in Instance:GetDescendants() do
+		if not beam:IsA("Beam") then
+			continue
+		else
+			beam.Transparency = NumberSequence.new(1)
+		end
+	end
+end
+
+-- Enable all beams
+function Util.EnableBeams(Instance: Instance)
+	for _, beam in Instance:GetDescendants() do
+		if not beam:IsA("Beam") then
+			continue
+		else
+			beam.Transparency = NumberSequence.new(0)
 		end
 	end
 end
@@ -359,7 +390,8 @@ function Util.EmitAllParticlesByAmount(instance: Instance, Amount: number)
 		if not light:IsA("PointLight") then
 			continue
 		else
-			TweenService:Create(light, TweenInfo.new(0.08), { Brightness = light:GetAttribute("Brightness") or 1 }):Play()
+			TweenService:Create(light, TweenInfo.new(0.08), { Brightness = light:GetAttribute("Brightness") or 1 })
+				:Play()
 		end
 	end
 	return instance

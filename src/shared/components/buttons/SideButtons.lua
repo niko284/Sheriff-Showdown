@@ -4,13 +4,20 @@
 
 -- // Variables \\
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local LocalPlayer = Players.LocalPlayer
 local Components = ReplicatedStorage.components
 local Packages = ReplicatedStorage.packages
+local PlayerScripts = LocalPlayer.PlayerScripts
+local Rodux = PlayerScripts.rodux
+local Slices = Rodux.slices
 
 local AutomaticFrame = require(Components.frames.AutomaticFrame)
+local CurrentInterfaceSlice = require(Slices.CurrentInterfaceSlice)
 local React = require(Packages.React)
+local ReactRodux = require(Packages.ReactRodux)
 local SideButton = require(Components.buttons.SideButton)
 
 local e = React.createElement
@@ -37,6 +44,8 @@ local SIDE_BUTTON_DATA = {
 -- // Side Buttons \\
 
 local function SideButtons()
+	local dispatch = ReactRodux.useDispatch()
+
 	local sideButtonElements = {}
 
 	for index, sideButtonData in SIDE_BUTTON_DATA do
@@ -45,6 +54,10 @@ local function SideButtons()
 			image = sideButtonData.image,
 			layoutOrder = index,
 			size = UDim2.fromOffset(64, 64),
+			onActivated = function()
+				print("Dispatching ", sideButtonData.name)
+				dispatch(CurrentInterfaceSlice.actions.SetCurrentInterface({ interface = sideButtonData.name }))
+			end,
 		})
 	end
 

@@ -21,9 +21,31 @@ local detectionTypeChecker = t.union(t.literal("Zone"), t.literal("Caster"), t.l
 
 local Definitions = Net.CreateDefinitions({
 
+	Transactions = Net.Definitions.Namespace({
+		PurchaseCrates = Net.Definitions.ServerAsyncFunction({
+			Net.Middleware.TypeChecking(t.string, t.string, t.numberPositive),
+		}),
+	}),
+
+	Round = Net.Definitions.Namespace({
+		StartMatchCountdown = Net.Definitions.ServerToClientEvent(),
+	}),
+
 	Inventory = Net.Definitions.Namespace({
 		ItemAdded = Net.Definitions.ServerToClientEvent(),
 		ItemRemoved = Net.Definitions.ServerToClientEvent(),
+		FavoriteItem = Net.Definitions.ServerAsyncFunction({
+			Net.Middleware.TypeChecking(t.string, t.boolean),
+			Deserializer({ UUIDSerde }),
+		}),
+		EquipItem = Net.Definitions.ServerAsyncFunction({
+			Net.Middleware.TypeChecking(t.string),
+			Deserializer({ UUIDSerde }),
+		}),
+		UnequipItem = Net.Definitions.ServerAsyncFunction({
+			Net.Middleware.TypeChecking(t.string),
+			Deserializer({ UUIDSerde }),
+		}),
 	}),
 
 	Settings = Net.Definitions.Namespace({

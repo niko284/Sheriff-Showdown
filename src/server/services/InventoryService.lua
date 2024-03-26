@@ -24,12 +24,16 @@ local Remotes = require(ReplicatedStorage.Remotes)
 local ServerComm = require(ServerScriptService.ServerComm)
 local Sift = require(Packages.Sift)
 local Signal = require(Packages.Signal)
+local StringUtils = require(Utils.StringUtils)
 local Types = require(Constants.Types)
 local UUIDSerde = require(Serde.UUIDSerde)
 
 local InventoryRemotes = Remotes.Server:GetNamespace("Inventory")
 local ItemAdded = InventoryRemotes:Get("ItemAdded")
 local ItemRemoved = InventoryRemotes:Get("ItemRemoved")
+local FavoriteItem = InventoryRemotes:Get("FavoriteItem")
+local EquipItem = InventoryRemotes:Get("EquipItem")
+local UnequipItem = InventoryRemotes:Get("UnequipItem")
 
 local DEFAULT_ITEMS_GRANTED_MAP = {} :: { [Player]: boolean }
 
@@ -50,6 +54,18 @@ local InventoryService = {
 
 -- // Functions \\
 
+function InventoryService:Init()
+	EquipItem:SetCallback(function(Player: Player, ItemUUID: string)
+		return InventoryService:EquipItemRequest(Player, ItemUUID)
+	end)
+	UnequipItem:SetCallback(function(Player: Player, ItemUUID: string)
+		return InventoryService:UnequipItemRequest(Player, ItemUUID)
+	end)
+	FavoriteItem:SetCallback(function(Player: Player, ItemUUID: string, IsFavorited: boolean)
+		return InventoryService:FavoriteItemRequest(Player, ItemUUID, IsFavorited)
+	end)
+end
+
 function InventoryService:Start()
 	DataService.PlayerDataLoaded:Connect(function(Player: Player, PlayerProfile: DataService.PlayerProfile)
 		local grantedDefaultItems = PlayerProfile.Data.Inventory.GrantedDefaults
@@ -58,21 +74,23 @@ function InventoryService:Start()
 			local itemsOfType = InventoryService:GetItemsOfId(Player, ItemInfo, false)
 
 			if not table.find(grantedDefaultItems, ItemInfo.Id) and #itemsOfType == 0 then
-				local isDefault = if typeof(ItemInfo.Default) == "function"
+				local isDefault = true --[[if typeof(ItemInfo.Default) == "function"
 					then ItemInfo.Default(Player)
-					else ItemInfo.Default
+					else ItemInfo.Default--]]
 				if not isDefault then
 					continue
 				end
 				ItemService:GenerateItem(ItemInfo.Id)
 					:andThen(function(Item: Types.Item)
 						table.insert(grantedDefaultItems, ItemInfo.Id)
-						InventoryService:AddItem(Player, Item)
+						InventoryService:AddItem(Player, Item, false)
 						if ItemInfo.EquipOnDefault == true then
 							InventoryService:EquipItem(Player, Item, false)
 						end
 					end)
-					:catch(function() end)
+					:catch(function(err)
+						warn(tostring(err))
+					end)
 					:awaitStatus()
 			end
 		end
@@ -103,13 +121,15 @@ function InventoryService:GetInventory(Player: Player): Types.Inventory?
 	end
 end
 
-function InventoryService:AddItem(Player: Player, Item: Types.Item)
+function InventoryService:AddItem(Player: Player, Item: Types.Item, SendNetworkEvent: boolean?)
 	local Inventory = InventoryService:GetInventory(Player) :: Types.Inventory
 	if not Inventory then
 		return
 	end
 	Inventory.Items = Sift.Array.append(Inventory.Items, Item)
-	ItemAdded:SendToPlayer(Player, ItemSerde.Serialize(Item))
+	if SendNetworkEvent ~= false then
+		ItemAdded:SendToPlayer(Player, ItemSerde.Serialize(Item))
+	end
 end
 
 function InventoryService:AddItems(Player: Player, Items: { Types.Item })
@@ -163,7 +183,11 @@ function InventoryService:EquipItem(Player: Player, Item: Types.Item, shouldSend
 	return false
 end
 
-function InventoryService:GetItemsOfType(Player: Player, ItemType: Types.ItemType, areEquipped: boolean?): { Types.Item }
+function InventoryService:GetItemsOfType(
+	Player: Player,
+	ItemType: Types.ItemType,
+	areEquipped: boolean?
+): { Types.Item }
 	local Inventory = InventoryService:GetInventory(Player) :: Types.Inventory
 	local Items = {}
 	for _i, InventoryItem in Inventory.Items do
@@ -257,7 +281,12 @@ function InventoryService:IsInventoryFull(Player: Player): boolean
 	return InventoryUtils.GetTakenInventorySpace(Inventory) >= Inventory.Capacity
 end
 
-function InventoryService:GetItemsInIdRange(Player: Player, MinId: number, MaxId: number, OneOfEach: boolean?): { Types.Item }
+function InventoryService:GetItemsInIdRange(
+	Player: Player,
+	MinId: number,
+	MaxId: number,
+	OneOfEach: boolean?
+): { Types.Item }
 	local Inventory = InventoryService:GetInventory(Player) :: Types.Inventory
 	local Items = {}
 	for _i, item in Inventory.Items do
@@ -298,6 +327,98 @@ function InventoryService:GetEquippedItems(Player: Player): { Types.Item }
 		end
 	end
 	return equippedItems
+end
+
+function InventoryService:FavoriteItemRequest(
+	Player: Player,
+	ItemUUID: string,
+	IsFavorited: boolean
+): Types.NetworkResponse
+	local inventoryItem = InventoryService:GetItemFromUUID(Player, ItemUUID)
+	if not inventoryItem then
+		return {
+			Success = false,
+			Response = "Item not found in inventory.",
+		}
+	end
+
+	inventoryItem.Favorited = IsFavorited
+
+	return {
+		Success = true,
+		Response = "Item favorited.",
+	}
+end
+
+function InventoryService:EquipItemRequest(Player: Player, UUID: string): Types.NetworkResponse
+	local inventoryItem = InventoryService:GetItemFromUUID(Player, UUID)
+	if not inventoryItem then
+		return {
+			Success = false,
+			Response = "Item not found.",
+		}
+	end
+	local itemInfo = ItemService:GetItemFromId(inventoryItem.Id)
+	local itemTypeInfo = ItemTypes[itemInfo.Type]
+	if itemTypeInfo.CanEquip == false then
+		return {
+			Success = false,
+			Response = "Item cannot be equipped.",
+		}
+	end
+
+	--[[local isInTrade = TradingService:GetActiveTrade(Player)
+	if isInTrade ~= nil then
+		return {
+			Success = false,
+			Response = "Player is in a trade.",
+		}
+	end--]]
+
+	local stackAmount = if typeof(itemTypeInfo.StackAmount) == "function"
+		then itemTypeInfo.StackAmount(itemInfo)
+		else itemTypeInfo.StackAmount
+	if stackAmount then
+		local Items = InventoryService:GetItemsOfType(Player, itemInfo.Type, true)
+		if #Items >= stackAmount then
+			-- Let's remove the item with the UUID that comes first in the alphabet. We do this since the client predicts the order of the items in the inventory due to client-side prediction.
+			local _uuid, index = StringUtils.GetFirstStringInAlphabet(Sift.Array.map(Items, function(itemOfType)
+				return itemOfType.UUID
+			end))
+			local itemToRemove = Items[index]
+			InventoryService:UnequipItem(Player, itemToRemove)
+			-- Then we can equip the new item.
+			-- InventoryService.Inventory:SetFor(Player, InventoryService.Server:GetInventory(Player))
+		end
+	end
+	-- No stack amount, so let's just equip the item.
+	InventoryService:EquipItem(Player, inventoryItem)
+	return {
+		Success = true,
+		Response = "Item equipped.",
+	}
+end
+
+function InventoryService:UnequipItemRequest(Player: Player, UUID: string): Types.NetworkResponse
+	local inventoryItem = InventoryService:GetItemFromUUID(Player, UUID)
+	if not inventoryItem then
+		return {
+			Success = false,
+			Response = "Item not found.",
+		}
+	end
+	--[[local isInTrade = TradingService:GetActiveTrade(Player)
+	if isInTrade ~= nil then
+		return {
+			Success = false,
+			Response = "Player is in a trade.",
+		}
+	end--]]
+	InventoryService:UnequipItem(Player, inventoryItem)
+	return {
+		Success = true,
+		Response = "Item unequipped.",
+	}
 end
 
 return InventoryService

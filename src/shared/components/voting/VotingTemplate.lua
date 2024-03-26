@@ -20,7 +20,7 @@ type VotingTemplateProps = Types.FrameProps & {
 	choice: string,
 	field: string,
 	onActivated: (string, string) -> (),
-	backgroundImage: string,
+	backgroundImage: number,
 }
 
 local function VotingTemplate(props: VotingTemplateProps)
@@ -33,7 +33,7 @@ local function VotingTemplate(props: VotingTemplateProps)
 		LayoutOrder = props.layoutOrder,
 	}, {
 		votingButton = e("ImageButton", {
-			Image = props.backgroundImage,
+			Image = props.backgroundImage and string.format("rbxassetid://%d", props.backgroundImage),
 			BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 			BorderColor3 = Color3.fromRGB(0, 0, 0),
 			[React.Event.Activated] = function()

@@ -7,12 +7,11 @@
 
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerStorage = game:GetService("ServerStorage")
 
-local Assets = ServerStorage.assets
+local SharedAssets = ReplicatedStorage.assets
 local Constants = ReplicatedStorage.constants
 
-local GUNS_FOLDER = Assets.guns
+local GUNS_FOLDER = SharedAssets.guns
 local HIDE_FACE_ATTRIBUTE = "HideFace"
 
 local Types = require(Constants.Types)
@@ -21,10 +20,16 @@ local EquipmentHandler = {}
 
 -- // Functions \\
 
-function EquipmentHandler.EquipGun(Entity: Types.Entity, ItemData: Types.ItemInfo)
-	local GunSpecificFolder: Instance = GUNS_FOLDER:WaitForChild(ItemData.Name, 3)
+function EquipmentHandler.EquipGun(Entity: Types.Entity, ItemData: Types.ItemInfo, EquipType: "Hands" | "Waist")
+	local GunSpecificFolder: Instance? = GUNS_FOLDER:WaitForChild(ItemData.Name, 3)
 	if not GunSpecificFolder then
 		warn(("Gun folder not found: %s"):format(ItemData.Name))
+		return
+	end
+
+	GunSpecificFolder = GunSpecificFolder:FindFirstChild(EquipType) :: Instance?
+	if not GunSpecificFolder then
+		warn(("Gun folder equip type not found: %s"):format(EquipType))
 		return
 	end
 
@@ -32,7 +37,7 @@ function EquipmentHandler.EquipGun(Entity: Types.Entity, ItemData: Types.ItemInf
 	local hideFace = GunSpecificFolder:GetAttribute(HIDE_FACE_ATTRIBUTE)
 
 	-- When equipping the item, we also set entity style if applicable.
-	if ItemData.Style then
+	if ItemData.Style and EquipType == "Hands" then
 		Entity:SetAttribute("Style", ItemData.Style) -- Set style attribute.
 	end
 
@@ -60,7 +65,7 @@ function EquipmentHandler.EquipGun(Entity: Types.Entity, ItemData: Types.ItemInf
 
 	for _, Accessory in GunSpecificFolder:GetChildren() do
 		if Accessory:IsA("Accessory") then
-			EquipmentHandler.AddAccessory(Entity, Accessory:Clone(), ItemData)
+			EquipmentHandler.AddAccessory(Entity, Accessory, ItemData)
 		elseif Accessory:IsA("Clothing") then
 			local oldShirt = Entity:FindFirstChildOfClass("Shirt")
 			local oldPants = Entity:FindFirstChildOfClass("Pants")
@@ -70,6 +75,14 @@ function EquipmentHandler.EquipGun(Entity: Types.Entity, ItemData: Types.ItemInf
 				oldPants:Destroy()
 			end
 			Accessory:Clone().Parent = Entity
+		end
+	end
+end
+
+function EquipmentHandler.UnequipAllGuns(Entity: Types.Entity)
+	for _, Descendant in Entity:GetDescendants() do
+		if CollectionService:HasTag(Descendant, "Gun") then
+			Descendant:Destroy()
 		end
 	end
 end
@@ -132,6 +145,8 @@ function EquipmentHandler.AddAccessory(Entity: Types.Entity, accessory: Accessor
 	end
 	CollectionService:AddTag(accessory, ItemData.Id)
 	CollectionService:AddTag(accessory, ItemData.Type)
+
+	return accessory
 end
 
 return EquipmentHandler

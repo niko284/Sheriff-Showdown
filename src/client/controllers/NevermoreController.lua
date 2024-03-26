@@ -21,6 +21,10 @@ end
 
 function NevermoreController:Start() end
 
+function NevermoreController:GetServiceBag()
+	return self.ServiceBag
+end
+
 function NevermoreController:GetPackage(PackageName: string)
 	return self.ServiceBag:GetService(self.ClientPackages[PackageName])
 end

@@ -31,7 +31,7 @@ end
 type StatusInternal = { Data: Types.StatusData, EndMillis: number, Cleaner: Types.Janitor? }
 
 local StatusModule = {
-	StatusApplied = Signal.new() :: Signal.Signal<Types.Entity, StatusInternal>,
+	StatusApplied = Signal.new() :: Signal.Signal<Types.Entity, Types.EntityStatus>,
 }
 local StatusHandlers: { [Types.EntityStatus]: Types.StatusHandler } = {}
 local Statuses: { [Types.Entity]: { [Types.EntityStatus]: StatusInternal } } = {}
@@ -47,7 +47,13 @@ for _, StatusHandlerModule: Instance in StatusModules do
 		end)
 
 		if not Success then
-			warn(string.format("Could not load handler module '%s' \nError:[%s]", StatusHandlerModule.Name, tostring(err)))
+			warn(
+				string.format(
+					"Could not load handler module '%s' \nError:[%s]",
+					StatusHandlerModule.Name,
+					tostring(err)
+				)
+			)
 		end
 	end
 end
@@ -86,6 +92,8 @@ function StatusModule.ApplyStatus(
 	DurationMillis: number?,
 	...: any
 ): (boolean, Janitor.Janitor?)
+	print("Applying status", Status, "to", Entity.Name)
+
 	if not IS_SERVER then
 		warn("Tried applying status from client. Only apply statuses on server.")
 		return false
@@ -207,7 +215,7 @@ function StatusModule.ApplyStatus(
 			} :: Types.EntityStatusState
 		)
 
-		StatusModule.StatusApplied:Fire(Entity, CurrentStatuses[Status])
+		StatusModule.StatusApplied:Fire(Entity, Status)
 
 		return true, Cleaner
 	end
@@ -220,12 +228,12 @@ function StatusModule.ClearStatus(Entity: Types.Entity, Status: Types.EntityStat
 
 	if CurrentStatuses and CurrentStatuses[Status] then
 		local CurrentStatus = CurrentStatuses[Status]
-		local didClear = StatusHandlers[CurrentStatus.Data.Name].Clear(Entity, CurrentStatus.Cleaner)
-		if didClear then
-			Statuses[Entity][Status] = nil
-			EntityModule.ClearStatus(Entity, Status)
-			return true
-		end
+		Statuses[Entity][Status] = nil
+		task.spawn(function()
+			StatusHandlers[CurrentStatus.Data.Name].Clear(Entity, CurrentStatus.Cleaner)
+		end)
+		EntityModule.ClearStatus(Entity, Status)
+		return true
 	end
 
 	return false
@@ -263,7 +271,7 @@ if IS_SERVER then
 		Statuses[Entity] = {}
 	end)
 	CollectionService:GetInstanceRemovedSignal("Entity"):Connect(function(Entity: Types.Entity)
-		StatusModule.ClearAllStatuses(Entity) -- clear all statuses on the entity when it's removed.
+		--StatusModule.ClearAllStatuses(Entity) -- clear all statuses on the entity when it's removed.
 		Statuses[Entity] = nil
 	end)
 	for _, Entity in CollectionService:GetTagged("Entity") do

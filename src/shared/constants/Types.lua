@@ -11,6 +11,13 @@ local Net = require(Packages.Net)
 local Promise = require(Packages.Promise)
 local Signal = require(Packages.Signal)
 
+-- >> Network Types
+
+export type NetworkResponse = {
+	Success: boolean,
+	Response: any,
+} & { [string]: any } -- other key/value pairs
+
 -- >> Audio Types
 
 export type Audio = {
@@ -21,15 +28,88 @@ export type Audio = {
 	Materials: { string }?,
 }
 
+-- >> Transaction Types
+
+export type ProductReceipt = {
+	PurchaseId: string,
+	PlayerId: number,
+	ProductId: number,
+	CurrencySpent: number,
+	CurrencyType: Enum.CurrencyType,
+	PlaceIdWherePurchased: number,
+}
+export type PurchaseType = "Gems" | "Coins" | "Robux"
+export type ProductInfo = {
+	Name: string,
+	Description: string,
+	PriceInRobux: number,
+	Created: string,
+	Updated: string,
+	ContentRatingTypeId: number,
+	MinimumMembershipLevel: number,
+	IsPublicDomain: boolean,
+	Creator: {
+		CreatorType: "User" | "Group",
+		CreatorTargetId: number,
+		HasVerifiedBadge: boolean,
+		Name: string,
+		Id: number,
+	},
+	AssetId: number,
+	AssetTypeId: number,
+	IsForSale: boolean,
+	IsLimited: boolean,
+	IsLimitedUnique: boolean,
+	IsNew: boolean,
+	Remaining: number,
+	Sales: number,
+	SaleAvailabilityLocations: { Enum.ProductLocationRestriction },
+	CanBeSoldInThisGame: boolean,
+	ProductId: number,
+	IconImageAssetId: number,
+}
+export type GamepassInfo = {
+	GamepassId: number,
+	Name: string,
+}
+
+-- >> Crate Types
+
+export type CratePurchaseInfo = {
+	ProductId: number?, -- for robux
+	Price: number?, -- for gems and coins
+	PurchaseType: PurchaseType,
+}
+export type CrateInfo = {
+	OpenAnimation: number,
+	ShopImage: number,
+	ShopLayoutOrder: number,
+	ItemContents: { string },
+	PurchaseInfo: { CratePurchaseInfo },
+}
+export type CrateType = "Standard" | "Standard"
+
+-- >> Rarity Types
+
+export type Rarity = "Basic" | "Rare" | "Epic" | "Legendary" | "Exotic"
+export type RarityInfo = {
+	Color: Color3,
+	Weight: number,
+	TagWithSerial: boolean,
+}
+
 -- >> Item Types
 
-export type ItemType = "Boost" | "Weapon"
+export type ItemType = "Gun"
 export type WeaponStyle = "OneHandedDefault"
 type ItemWeaponInfo = {
 	Style: WeaponStyle,
+	ShootAudio: number?,
 }
 export type ItemInfo = {
 	Name: string,
+	Featured: boolean,
+	Rarity: Rarity,
 	Image: number,
 	Id: number,
 	Type: ItemType,
@@ -39,7 +119,8 @@ export type ItemInfo = {
 export type Item = {
 	Id: number,
 	UUID: string,
-	Locked: boolean?,
+	Favorited: boolean,
+	Locked: boolean,
 	Serial: number?,
 	Level: number?,
 } & {
@@ -146,7 +227,8 @@ export type RoundModeData = {
 	TeamNames: { string },
 }
 export type Team = {
-	Players: { Player },
+	Players: { Player }, -- list of players in this team.
+	Killed: { Player }, -- list of players eliminated from the round in this team.
 	Name: string,
 }
 export type Match = {
@@ -164,7 +246,7 @@ export type Round = {
 
 export type Map = {
 	Name: string,
-	CompatibleRoundModes: true | { RoundMode }, -- if true, all round modes are compatible with this map. If a table, only the round modes in the table are compatible with this map.
+	Image: number,
 }
 
 -- >> Action System Types
@@ -383,7 +465,7 @@ export type ActionHandlerData = {
 	CooldownMillis: number,
 	Interruptable: boolean?, -- can this action be stopped by status effects?
 	OverlappableActions: { string }?, -- can any action keep playing while this one is playing?
-	BaseDamage: number? | ((Entity, ActionStateInfo, ActionHandler, Entity?, boolean?, { Item: Item? }?, number?) -> number)?,
+	BaseDamage: number? | ((CasterEntry) -> number)?,
 	AttackLevel: number?,
 	DefenseLevel: number?,
 	Cancellable: boolean?,
@@ -400,6 +482,22 @@ export type ActionHandler = {
 	ProcessStack: { VerifyStack: { Process }, ActionStack: { Process } },
 }
 export type Interface = { [string]: { [any]: any } }
+
+-- >> Shop Interface Types
+
+export type ShopViewInfo = {
+	Name: string,
+	Image: number,
+	Type: "Crate" | "Item",
+}
+
+-- >> Currency Types
+
+export type Currency = "Gems" | "Coins"
+export type CurrencyInfo = {
+	Image: number,
+	GradientColor: ColorSequence,
+}
 
 -- >> Net Types
 
@@ -450,6 +548,7 @@ export type Notification = {
 	Options: { any }?,
 	OnFade: (() -> ())?,
 	OnDismiss: (() -> ())?,
+	OnHeartbeat: (() -> string)?,
 }
 
 -- >> Voting Types
@@ -469,7 +568,12 @@ export type VotingPoolClient = {
 	VotingFields: { -- we keep this as an array because it's easier for the client to route through each field and display it.
 		{
 			Field: string,
-			Choices: { string },
+			Choices: {
+				{
+					Name: string,
+					Image: number,
+				}
+			},
 		}
 	},
 }

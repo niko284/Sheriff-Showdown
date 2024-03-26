@@ -38,13 +38,22 @@ function ItemUtils.GetRandomItemOfType(ItemType: Types.ItemType)
 	return validItems[math.random(1, #validItems)]
 end
 
-function ItemUtils.GetItemInfoFromId(Id: number): Types.ItemInfo?
+function ItemUtils.GetItemInfoFromId(Id: number): Types.ItemInfo
 	for _, Item in pairs(Items) do
 		if Item.Id == Id then
 			return Item
 		end
 	end
-	return nil
+	return nil :: any
+end
+
+function ItemUtils.GetItemInfoFromName(Name: string): Types.ItemInfo
+	for _, Item in Items do
+		if Item.Name == Name then
+			return Item
+		end
+	end
+	return nil :: any
 end
 
 return ItemUtils

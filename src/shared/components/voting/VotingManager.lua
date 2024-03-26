@@ -77,12 +77,13 @@ local function VotingManager(_props: VotingManagerProps)
 			table.insert(
 				votingComponents,
 				e(VotingTemplate, {
-					choice = choice,
+					choice = choice.Name,
 					size = UDim2.fromOffset(164, 191),
 					layoutOrder = index,
 					key = choice,
 					field = votingChoices.Field,
 					onActivated = onVotingFieldChoiceSelected,
+					backgroundImage = choice.Image,
 				})
 			)
 		end

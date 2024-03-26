@@ -22,15 +22,12 @@ local Action = require(ActionShared.Action)
 local AudioService = require(Services.AudioService)
 local EntityModule = require(ActionShared.Entity)
 local EntityService = require(Services.EntityService)
-local EquipmentHandler = require(script.EquipmentHandler)
 local Handlers = require(ActionShared.Handlers)
 local HitFXSerde = require(Serde.HitFXSerde)
 local Interfaces = require(ActionShared.Action.Interfaces)
 local InventoryService = require(Services.InventoryService)
 local ItemService = require(Services.ItemService)
-local Items = require(Constants.Items)
 local Remotes = require(ReplicatedStorage.Remotes)
-local RoundService = require(Services.RoundService)
 local ServerComm = require(ServerScriptService.ServerComm)
 local Sift = require(Packages.Sift)
 local Signal = require(Packages.Signal)
@@ -56,13 +53,16 @@ local ActionService = {
 	OnAction = Signal.new(),
 	OnHit = Signal.new(),
 	OnDamage = Signal.new(),
-	CombatToggle = ServerComm:CreateProperty("CombatToggle", true),
+	CombatToggle = ServerComm:CreateProperty("CombatToggle", false),
 }
 
 -- // Functions \\
 function ActionService:Init()
+	self.RoundService = require(Services.RoundService) :: any
+
 	EntityService.PlayerEntityReady:Connect(function(Player: Player, Entity: Types.Entity)
-		ActionService:CharacterAdded(Entity)
+		ActionService:ToggleCombatSystem(false, Player) -- Disable combat for all players by default, and when they die.
+
 		ClientReady:SendToPlayer(Player, Entity)
 	end)
 
@@ -224,10 +224,6 @@ function ActionService:ToggleCombatSystem(Toggle: boolean, Player: Player?)
 	end
 end
 
-function ActionService:CharacterAdded(Entity: Types.Entity)
-	EquipmentHandler.EquipGun(Entity, Items[1])
-end
-
 function ActionService:PlayAction(
 	Entity: Types.Entity,
 	Handler: Types.ActionHandler,
@@ -298,8 +294,17 @@ function ActionService:ProcessHitClient(
 
 	print("A")
 
-	local didRun, processed =
-		pcall(ActionService.ProcessHit, ActionService, FromEntity, FromState, toEntity, toState, Entry, StateInfo, ArgPack)
+	local didRun, processed = pcall(
+		ActionService.ProcessHit,
+		ActionService :: any,
+		FromEntity,
+		FromState,
+		toEntity,
+		toState,
+		Entry,
+		StateInfo,
+		ArgPack
+	)
 
 	local wasHit = didRun and processed or didRun
 
@@ -345,14 +350,13 @@ function ActionService:ProcessHit(
 	end
 
 	-- We can't hit entities on our team.
-	if RoundService:OnSameTeam(Players:GetPlayerFromCharacter(Actor), Players:GetPlayerFromCharacter(Target)) then
+	if self.RoundService:OnSameTeam(Players:GetPlayerFromCharacter(Actor), Players:GetPlayerFromCharacter(Target)) then
 		return false
 	end
 
 	local playerActor = Players:GetPlayerFromCharacter(Actor)
 
-	local baseDamage = typeof(Handler.Data.BaseDamage) == "function"
-			and Handler.Data.BaseDamage(Actor, StateInfo, Handler, Target)
+	local baseDamage = typeof(Handler.Data.BaseDamage) == "function" and Handler.Data.BaseDamage(Entry)
 		or Handler.Data.BaseDamage
 
 	local _canHit, props = ActionService:GetHitProps(Actor, Target, Handler, baseDamage :: number, nil, false)
@@ -442,9 +446,13 @@ function ActionService:DamageEntityFromHandler(
 	TargetEntity: Types.Entity,
 	Handler: Types.ActionHandler,
 	Entry: Types.CasterEntry,
-	StateInfo: Types.ActionStateInfo,
+	_StateInfo: Types.ActionStateInfo,
 	DelayedDamageProps: Types.DelayedDamageProps?
 ): ()
+	if StatusModule.HasStatus(TargetEntity, "Killed") then -- if the target is already killed, don't do anything.
+		return
+	end
+
 	local humanoidTarget = TargetEntity:FindFirstChildOfClass("Humanoid") :: Humanoid
 
 	local hitCFrame = Entry.RaycastResult and CFrame.new(Entry.RaycastResult.Position)
@@ -459,14 +467,7 @@ function ActionService:DamageEntityFromHandler(
 	-- @NOTE: Our canHit function will handle status effect logic as a side effect.
 
 	local baseDamage = DelayedDamageProps and DelayedDamageProps.BaseDamage
-		or typeof(Handler.Data.BaseDamage) == "function" and Handler.Data.BaseDamage(
-			Actor,
-			StateInfo,
-			Handler,
-			TargetEntity,
-			nil,
-			nil
-		)
+		or typeof(Handler.Data.BaseDamage) == "function" and Handler.Data.BaseDamage(Entry)
 		or Handler.Data.BaseDamage :: number
 
 	if baseDamage >= humanoidTarget.Health then

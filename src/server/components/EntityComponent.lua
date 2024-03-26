@@ -52,7 +52,9 @@ function EntityComponent:Construct()
 	else -- If not a player, we manually add the Ragdollable binder so we can ragdoll our non-player entities.
 		ragdollBinders.Ragdollable:Bind(Entity.Humanoid)
 		self._Janitor:Add(function()
-			ragdollBinders.Ragdollable:Unbind(Entity.Humanoid)
+			if Entity:FindFirstChildOfClass("Humanoid") then
+				ragdollBinders.Ragdollable:Unbind(Entity.Humanoid)
+			end
 		end)
 	end
 end

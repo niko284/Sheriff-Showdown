@@ -1,0 +1,151 @@
+--[[
+
+
+MIT License
+
+Copyright (c) 2014-2023 James Onnen (Quenty)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+--]]
+
+-- Weighted Random Chooser
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Packages = ReplicatedStorage.packages
+
+local Sift = require(Packages.Sift)
+
+local WeightedRandomChooser = {}
+WeightedRandomChooser.ClassName = "WeightedRandomChooser"
+WeightedRandomChooser.__index = WeightedRandomChooser
+
+--[=[
+	Creates a new weighted random chooser
+
+	@return WeightedRandomChooser<T>
+]=]
+function WeightedRandomChooser.new()
+	local self = setmetatable({}, WeightedRandomChooser)
+
+	self._optionToWeight = {}
+
+	return self
+end
+
+--[=[
+	Sets the weight for a given option. Setting the weight to nil
+	removes the option.
+
+	@param option T
+	@param weight number | nil
+]=]
+function WeightedRandomChooser:SetWeight(option, weight)
+	assert(option ~= nil, "Bad option")
+	assert(type(weight) == "number" or weight == nil, "Bad weight")
+
+	if self._optionToWeight[option] == weight then
+		return
+	end
+
+	self._cache = nil
+	self._optionToWeight[option] = weight
+end
+
+--[=[
+	Removes the option from the chooser. Equivalent of setting the weight to nil
+
+	@param option T
+]=]
+function WeightedRandomChooser:Remove(option)
+	self:SetWeight(option, nil)
+end
+
+--[=[
+	Gets the weight for the option
+
+	@param option T
+	@return number | nil
+]=]
+function WeightedRandomChooser:GetWeight(option)
+	return self._optionToWeight[option]
+end
+
+--[=[
+	Gets the percent probability from 0 to 1
+
+	@param option T
+	@return number | nil
+]=]
+function WeightedRandomChooser:GetProbability(option)
+	local weight = self._optionToWeight[option]
+	--[[if weight then
+		return nil
+	end--]]
+
+	local cache = self:_getOrCreateDataCache()
+	return weight / cache.total
+end
+
+--[=[
+	Picks a weighted choise
+
+	@param random Random
+	@return T
+]=]
+function WeightedRandomChooser:Choose(random)
+	local data = self:_getOrCreateDataCache()
+
+	local randomNum
+	if random then
+		randomNum = random:NextNumber()
+	else
+		randomNum = math.random()
+	end
+
+	local totalSum = 0
+
+	-- TODO: Binary search
+	for i = 1, #data.options do
+		totalSum = totalSum + data.weights[i]
+
+		-- TODO: cache threshold?
+		local threshold = totalSum / data.total
+		if randomNum <= threshold then
+			return data.options[i]
+		end
+	end
+
+	warn("[WeightedRandomChooser.Choose] - Failed to reach threshold! Algorithm is wrong!")
+	return data.options[#data.options]
+end
+
+function WeightedRandomChooser:_getOrCreateDataCache()
+	if self._cache then
+		return self._cache
+	end
+
+	local options = Sift.Dictionary.keys(self._optionToWeight)
+	local weights = {}
+
+	local total = 0
+	for index, key in pairs(options) do
+		local weight = self._optionToWeight[key]
+		total = total + weight
+		weights[index] = weight
+	end
+
+	self._cache = {
+		options = options,
+		weights = weights,
+		total = total,
+	}
+	return self._cache
+end
+
+return WeightedRandomChooser

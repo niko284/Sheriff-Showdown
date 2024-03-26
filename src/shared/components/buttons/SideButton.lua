@@ -21,6 +21,7 @@ local useState = React.useState
 type SideButtonProps = Types.FrameProps & {
 	name: string,
 	image: string,
+	onActivated: (rbx: ImageButton) -> (),
 }
 
 -- // Side Button \\
@@ -41,6 +42,7 @@ local function SideButton(props: SideButtonProps)
 		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 		BorderColor3 = Color3.fromRGB(0, 0, 0),
 		BorderSizePixel = 0,
+		Active = true,
 		ZIndex = props.layoutOrder or 1,
 		LayoutOrder = props.layoutOrder or 1,
 		Image = "",
@@ -73,8 +75,9 @@ local function SideButton(props: SideButtonProps)
 				setIsPressed(false)
 			end
 		end :: any,
+		[React.Event.Activated] = props.onActivated,
 	}, {
-		imageButton = e("ImageButton", {
+		label = e("ImageLabel", {
 			Image = props.image,
 			BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 			BackgroundTransparency = 1,

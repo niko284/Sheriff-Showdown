@@ -23,9 +23,6 @@ local RagdollController = { Name = "RagdollController" }
 
 function RagdollController:Start()
 	NevermoreController:GetPackage("RagdollServiceClient")
-	NevermoreController:GetPackage("RagdollBindersClient")
-	NevermoreController:GetPackage("CameraStackService")
-	NevermoreController:GetPackage("DefaultCamera")
 end
 
 function RagdollController:Ragdoll(Entity: Types.Entity)

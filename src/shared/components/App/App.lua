@@ -16,14 +16,18 @@ local ActionComponents = Components.action
 local ButtonComponents = Components.buttons
 local NotificationComponents = Components.notification
 local VotingComponents = Components.voting
+local InventoryComponents = Components.inventory
+local ShopComponents = Components.shop
 
 local ActionPopup = require(ActionComponents.ActionPopup)
 local ActionPopupManager = require(ActionComponents.ActionPopupManager)
 local AutoUIScale = require(Components.common.AutoUIScale)
+local Inventory = require(InventoryComponents.Inventory)
 local NotificationController = require(Controllers.NotificationController)
 local NotificationManager = require(NotificationComponents.NotificationManager)
 local PopupController = require(Controllers.PopupController)
 local React = require(Packages.React)
+local Shop = require(ShopComponents.Shop)
 local SideButtons = require(ButtonComponents.SideButtons)
 local TextNotificationElement = require(NotificationComponents.TextNotificationElement)
 local VotingManager = require(VotingComponents.VotingManager)
@@ -53,7 +57,7 @@ local function App()
 		Name = "App",
 	}, {
 		scale = e(AutoUIScale, {
-			size = Vector2.new(1920, 1080),
+			size = Vector2.new(1408, 792),
 			scale = 1,
 			onScaleRatioChanged = changeScaleRatio,
 		}),
@@ -63,6 +67,8 @@ local function App()
 		}, {
 			sideButtons = e(SideButtons),
 		}),
+		inventory = e(Inventory),
+		shop = e(Shop),
 		actions = e(ActionPopupManager, {
 			size = UDim2.fromScale(1, 1),
 			anchorPoint = Vector2.new(0.5, 0.5),

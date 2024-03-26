@@ -22,6 +22,7 @@ local EntityModule = require(ActionShared.Entity)
 local Janitor = require(Packages.Janitor)
 local Net = require(Packages.Net)
 local Signal = require(Packages.Signal)
+local StatusModule = require(ActionShared.StatusModule)
 local Types = require(Constants.Types)
 local withEntityAndState = require(Wrappers.withEntityAndState)
 
@@ -60,7 +61,8 @@ function GenericProcesses.ProcessHitGeneric(ProcessTime: number?, MultiHit: bool
 			local ProcessHit = ArgPack.Interfaces.Comm.ProcessHit :: Net.ServerListenerEvent
 			local StopHits = ArgPack.Interfaces.Comm.StopHits :: Net.ServerListenerEvent
 			local ProcessHitServer = ArgPack.Interfaces.Server.ProcessHit :: Signal.Signal<...any>
-			local HitRegisteredSignal = ArgPack.Interfaces.Server.HitProcessed :: Signal.Signal<string, Types.CasterEntry>
+			local HitRegisteredSignal =
+				ArgPack.Interfaces.Server.HitProcessed :: Signal.Signal<string, Types.CasterEntry>
 
 			local Cleaner = Janitor.new()
 
@@ -77,7 +79,6 @@ function GenericProcesses.ProcessHitGeneric(ProcessTime: number?, MultiHit: bool
 			-- How long can the client send hits to the server for this action? Passed argument is how long the client can send hits for from the time the signal is fired.
 			ArgPack.Store.StartProcessHitTimer = Signal.new() :: Signal.Signal<()>
 
-			print("processing hit listening")
 			local processHitListener = ProcessHit:Connect(
 				withEntityAndState(
 					function(
@@ -227,6 +228,9 @@ function GenericProcesses.ListenHitGeneric(_CleanupAfter: number?, MultiHit: boo
 				if ArgPack.Entity:IsDescendantOf(workspace) == false then
 					return
 				end
+				if HitEntry.Entity and StatusModule.HasStatus(HitEntry.Entity, "Killed") then -- If the entity is dead, we don't want to hit it.
+					return
+				end
 
 				-- If we have an entity and it's on the same team as us, we don't want to hit it.
 				local entityTeam = ArgPack.Entity:GetAttribute("Team")
@@ -246,7 +250,6 @@ function GenericProcesses.ListenHitGeneric(_CleanupAfter: number?, MultiHit: boo
 				if IS_CLIENT and HitEntry.Entity then
 					if HitEntry.Entity and IS_CLIENT then
 						-- If we hit an entity, we want to process the hit event.
-						print("sending hit to server")
 						ArgPack.Interfaces.Comm.ProcessHit:SendToServer(HitEntry, StateInfo.UUID)
 					end
 				end

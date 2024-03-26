@@ -6,6 +6,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local ServerScriptService = game:GetService("ServerScriptService")
 
 local Constants = ReplicatedStorage.constants
 local Packages = ReplicatedStorage.packages
@@ -34,6 +35,8 @@ if IS_SERVER then
 		ProcessServerEffect = EntityRemotes:Get("ProcessServerEffect"),
 		StopHits = EntityRemotes:Get("StopHits"),
 	}
+	Interfaces.Server.InventoryService = require(ServerScriptService.services.InventoryService)
+	Interfaces.Server.AudioService = require(ServerScriptService.services.AudioService)
 	Interfaces.Server.ProcessHit = Signal.new() -- ask the server to process a hit
 	Interfaces.Server.HitProcessed = Signal.new() -- notify that a hit has been processed
 else

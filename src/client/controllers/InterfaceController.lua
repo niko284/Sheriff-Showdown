@@ -19,7 +19,6 @@ local React = require(Packages.React)
 local ReactRoblox = require(Packages.ReactRoblox)
 local ReactRodux = require(Packages.ReactRodux)
 local Signal = require(Packages.Signal)
-local Store = require(Rodux.Store)
 
 local e = React.createElement
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
@@ -31,12 +30,14 @@ local InterfaceController = {
 	ScaleRatioChanged = Signal.new(),
 	ScaleRatio = 1,
 	AppLoaded = Signal.new(),
+	InterfaceChanged = Signal.new(),
 	IsAppLoaded = false,
 }
 
 -- // Functions \\
 
 function InterfaceController:Init()
+	self.Store = require(Rodux.Store)
 	-- Disable appropriate core guis.
 	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
 	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.EmotesMenu, false)
@@ -59,11 +60,15 @@ function InterfaceController:Start()
 	self.Root = ReactRoblox.createRoot(Instance.new("Folder"))
 	self.App = require(Components.App.App) :: any
 	self.GameApp = e(ReactRodux.Provider, {
-		store = Store,
+		store = self.Store,
 	}, {
 		game = e(self.App),
 	})
 	self.Root:render(ReactRoblox.createPortal({ self.GameApp }, PlayerGui))
+end
+
+function InterfaceController:GetCurrentInterface(): string?
+	return self.Store:getState().CurrentInterface
 end
 
 function InterfaceController:GetScaleRatio()

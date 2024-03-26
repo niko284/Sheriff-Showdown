@@ -5,9 +5,10 @@
 
     "ReplicatedStorage": {
       "$path": "src/shared",
+      "$ignoreUnknownInstances": true,
       "packages": {
         "$path": "Packages",
-        "$ignoreUnknownInstances": false
+        "$ignoreUnknownInstances": true
       },
       "vendor": {
         "$path": "vendor", 
@@ -32,6 +33,10 @@
     "StarterPlayer": {
       "StarterPlayerScripts": {
         "$path": "src/client"
+      },
+      "StarterCharacterScripts": {
+        "$className": "StarterCharacterScripts",
+        "$path": "src/starterCharacter"
       }
     }
   }

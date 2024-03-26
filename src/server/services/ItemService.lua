@@ -12,11 +12,15 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Packages = ReplicatedStorage.packages
 local Constants = ReplicatedStorage.constants
+local Utils = ReplicatedStorage.utils
 
+local Crates = require(Constants.Crates)
 local ItemList = require(Constants.Items)
 local ItemTypes = require(Constants.ItemTypes)
 local Promise = require(Packages.Promise)
+local Rarities = require(Constants.Rarities)
 local Types = require(Constants.Types)
+local WeightedRandomChooser = require(Utils.WeightedRandomChooser)
 
 local ItemDataStore = DataStoreService:GetDataStore("AnimeDungeonSerialsOfficial1")
 local ITEM_KEY = "Serial_%d"
@@ -34,6 +38,42 @@ function ItemService:Init()
 	ItemService.Items = ItemList
 end
 
+function ItemService:RollItemsFromCrate(CrateType: Types.CrateType, AmountOfCrates: number): { Types.Item }
+	local ItemsRolled = {}
+	for _ = 1, AmountOfCrates do
+		local Crate = Crates[CrateType]
+		local RolledItem = ItemService:RollItemFromCrate(Crate)
+		table.insert(ItemsRolled, RolledItem)
+	end
+
+	return ItemsRolled
+end
+
+function ItemService:RollItemFromCrate(Crate: Types.CrateInfo): Types.Item
+	local randomChooser = WeightedRandomChooser.new()
+
+	local itemsByRarity = {}
+	for _, itemName in Crate.ItemContents do
+		local itemInfo = ItemService:GetItemFromName(itemName)
+		if itemInfo then
+			itemsByRarity[itemInfo.Rarity] = itemsByRarity[itemInfo.Rarity] or {}
+			table.insert(itemsByRarity[itemInfo.Rarity], itemInfo)
+
+			local rarityInfo = Rarities[itemInfo.Rarity]
+			randomChooser:SetWeight(itemInfo.Rarity, rarityInfo.Weight)
+		end
+	end
+
+	local RandomObject = Random.new(os.time())
+	local chosenRarity = randomChooser:Choose(RandomObject)
+
+	local chosenItemInfo = itemsByRarity[chosenRarity][RandomObject:NextInteger(1, #itemsByRarity[chosenRarity])]
+
+	local generatedItem = ItemService:GenerateItem(chosenItemInfo.Id, true):expect()
+
+	return generatedItem
+end
+
 function ItemService:GenerateItem(Id: number, TagWithSerial: boolean?)
 	return Promise.new(function(resolve, _reject)
 		local ItemInformation = ItemService:GetItemFromId(Id)
@@ -42,6 +82,8 @@ function ItemService:GenerateItem(Id: number, TagWithSerial: boolean?)
 		local NewItem = {
 			Id = ItemInformation.Id,
 			UUID = HttpService:GenerateGUID(false),
+			Locked = false,
+			Favorited = false,
 		}
 
 		-- Let's get the unique properties of the item based on its type and add them to the item

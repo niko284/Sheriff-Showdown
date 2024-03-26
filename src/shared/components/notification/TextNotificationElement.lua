@@ -21,6 +21,7 @@ local useEffect = React.useEffect
 local useCallback = React.useCallback
 local useRef = React.useRef
 local e = React.createElement
+local useState = React.useState
 
 -- // Text Notification Element \\
 
@@ -28,6 +29,7 @@ type NotificationElementProps = Types.FrameProps & {
 	duration: number?,
 	id: string,
 	removeNotification: (string) -> (),
+	onHeartbeat: (() -> string)?,
 	creationTime: number,
 	padding: UDim,
 	onFade: () -> (),
@@ -41,6 +43,7 @@ type NotificationElementProps = Types.FrameProps & {
 }
 
 local function TextNotificationElement(props: NotificationElementProps)
+	local text, setText = useState(props.description)
 	local clickClosed = useRef(false)
 
 	local styles, api = ReactSpring.useSpring(function()
@@ -70,10 +73,14 @@ local function TextNotificationElement(props: NotificationElementProps)
 					size = props.size,
 					config = { duration = 0.25 },
 				})
-				print("A")
 				if props.duration then
 					timerDuration = RunService.RenderStepped:Connect(function()
 						local timeRemaining = (props.creationTime + props.duration) - os.clock()
+
+						if props.onHeartbeat then
+							setText(props.onHeartbeat())
+						end
+
 						if timeRemaining <= 0 and clickClosed.current == false then
 							closeNotification()
 							if props.onFade then
@@ -99,13 +106,15 @@ local function TextNotificationElement(props: NotificationElementProps)
 			props.creationTime,
 			props.duration,
 			props.size,
-			clickClosed
+			clickClosed,
+			setText,
+			props.onHeartbeat
 		) :: { any }
 	)
 
 	return e("TextLabel", {
 		RichText = true,
-		Text = props.description,
+		Text = text,
 		TextColor3 = Color3.fromRGB(255, 255, 255),
 		BackgroundTransparency = 1,
 		AnchorPoint = Vector2.new(0.5, 0.5),

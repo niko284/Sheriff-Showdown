@@ -57,6 +57,10 @@ function Killed.Apply(Entity: Types.Entity, Actor: Types.Entity)
 		ragdollService:Ragdoll(Entity)
 	end
 
+	cleaner:Add(function()
+		ragdollService:Unragdoll(Entity)
+	end)
+
 	return true, cleaner
 end
 
@@ -73,15 +77,15 @@ function Killed.Process(Entity: Types.Entity, EntityState: Types.EntityState)
 end
 
 function Killed.Clear(Entity: Types.Entity, Cleaner: Types.Janitor)
-	if Cleaner then
+	if Janitor.Is(Cleaner) then
 		Cleaner:Destroy()
-		local plr = Players:GetPlayerFromCharacter(Entity)
-		if plr then
-			plr:LoadCharacter()
-		end
 	end
-	local ragdollService = require(ServerScriptService.services.RagdollService)
-	ragdollService:Unragdoll(Entity)
+	local plr = Players:GetPlayerFromCharacter(Entity)
+	if plr then
+		plr:LoadCharacter()
+	else
+		Entity:Destroy()
+	end
 	return true
 end
 

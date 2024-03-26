@@ -23,7 +23,7 @@ local Signal = require(Packages.Signal)
 local Types = require(Constants.Types)
 
 local MAX_LOAD_RETRIES = 10
-local PROFILE_STORE = ProfileService.GetProfileStore("SheriffShowdownPlayerData", ProfileSchema) :: any
+local PROFILE_STORE = ProfileService.GetProfileStore("SheriffShowdownPlayerData1", ProfileSchema) :: any
 
 -- // Service Variables \\
 

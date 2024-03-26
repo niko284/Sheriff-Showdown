@@ -103,8 +103,10 @@ Common.Verify = {
 		local overlappableActions = ArgPack.HandlerData.OverlappableActions
 
 		local function VerifyActionState(ActionState: Types.ActionStateInfo?)
-			local doesOverlap = table.find(overlappableActions or {}, ActionState and ActionState.ActionHandlerName or "")
-				~= nil
+			local doesOverlap = table.find(
+				overlappableActions or {},
+				ActionState and ActionState.ActionHandlerName or ""
+			) ~= nil
 			-- if our action can overlap, we don't care about the last action state.
 			if ActionState and doesOverlap == false then
 				if ActionState.Finished == false then
@@ -177,8 +179,10 @@ Common.Verify = {
 		-- verify all action states since we may want to interrupt overlapping actions that were previously running.
 		for _, actionState in pairs(EntityState.ActionHistory) do
 			-- Now that we've passed the cooldown and priority checks, we can interrupt the last action if it's not finished, and we're not overlapping with it.
-			local doesOverlap = table.find(overlappableActions or {}, actionState and actionState.ActionHandlerName or "")
-				~= nil
+			local doesOverlap = table.find(
+				overlappableActions or {},
+				actionState and actionState.ActionHandlerName or ""
+			) ~= nil
 			if actionState and doesOverlap == false then
 				if actionState.Sustaining then
 					actionState.Sustaining = false
@@ -311,7 +315,7 @@ function Common.BuildWalkSpeed(Walkspeed: number | (Types.ProcessArgs) -> number
 		OnClient = false,
 		Delegate = function(ArgPack: Types.ProcessArgs, _StateInfo: Types.ActionStateInfo): boolean
 			local speed = typeof(Walkspeed) == "function" and Walkspeed(ArgPack) or Walkspeed
-			local success, cleaner = StatusModule.ApplyStatus(ArgPack.Entity, "Speed", nil, nil, speed)
+			--local success, cleaner = StatusModule.ApplyStatus(ArgPack.Entity, "Speed", nil, nil, speed)
 
 			ArgPack.Finished:Once(function()
 				--[[local entityState = EntityModule.GetState(ArgPack.Entity) :: Types.EntityState
@@ -321,9 +325,9 @@ function Common.BuildWalkSpeed(Walkspeed: number | (Types.ProcessArgs) -> number
 					return
 				end--]]
 
-				if success and cleaner and Janitor.Is(cleaner) then
-					cleaner:Cleanup()
-				end
+				--if success and cleaner and Janitor.Is(cleaner) then
+				--	cleaner:Cleanup()
+				--end
 			end)
 
 			return true
@@ -491,7 +495,7 @@ type ProjectileData = {
 	MarkerName: string?,
 }
 type ProjectileInternal = {
-	GetProjectile: (Types.Entity, Types.ProcessArgs) -> ProjectileData,
+	GetProjectile: (Types.Entity, Types.ProcessArgs) -> ProjectileData?,
 	CasterShape: "Sphere" | "Block" | "Conform"?,
 	MarkerName: string?,
 	OnShoot: ((Projectile: BasePart, ArgPack: Types.ProcessArgs, StateInfo: Types.ActionStateInfo) -> BasePart)?,
@@ -525,6 +529,9 @@ function Common.ProjectileCast(Projectiles: { ProjectileInternal })
 					local index = table.find(Projectiles, Projectile)
 
 					local projectileData = Projectile.GetProjectile(ArgPack.Entity, ArgPack)
+					if not projectileData then
+						return
+					end
 					local projectile = projectileData.Projectile
 					if Projectile.OnShoot and projectile then
 						Projectile.OnShoot(projectile, ArgPack, StateInfo)
@@ -613,14 +620,12 @@ function Common.ProjectileCast(Projectiles: { ProjectileInternal })
 							and (Player.Character :: any == ArgPack.Entity)
 							and typeof(ProjectileOrigin) == "CFrame"
 						then
-							print("Creating")
 							local Time = os.clock()
 							local Latency = (workspace:GetServerTimeNow() - Timestamp)
 							local Interpolation = (Player:GetNetworkPing() + INTERPOLATION_VALUE)
 
 							--> Validate the latency and avoid players with very slow connections
 							if (Latency < 0) or (Latency > MAXIMUM_LATENCY) then
-								print("Returning ", Latency)
 								return
 							end
 
@@ -629,6 +634,10 @@ function Common.ProjectileCast(Projectiles: { ProjectileInternal })
 							for _, Projectile in Projectiles do
 								-- Create our verifier function for hit detection.
 								local serverProjectileData = Projectile.GetProjectile(ArgPack.Entity, ArgPack)
+
+								if not serverProjectileData then
+									continue
+								end
 
 								-- check the player origin against the projectile origin to make sure the player isn't cheating.
 								local distance = (ProjectileOrigin.Position - serverProjectileData.Origin.Position).Magnitude
@@ -657,7 +666,6 @@ function Common.ProjectileCast(Projectiles: { ProjectileInternal })
 							table.insert(ArgPack.Store.ActiveDetectionTypes, DetectionTypes.Projectile) -- note that we're accepting projectile hits.
 
 							-- Start the process timer for projectile listeners.
-							print("Processing")
 							ArgPack.Store.StartProcessHitTimer:Fire(DetectionTypes.Projectile)
 
 							ArgPack.HitVerifiers.ProjectileCheckGeneric = function(Entry: Types.CasterEntry)
@@ -761,7 +769,10 @@ function Common.AnimatePassive(PassiveName: string)
 		Delegate = function(ArgPack: Types.ProcessArgs, _StateInfo: Types.ActionStateInfo): boolean
 			local Style = AnimationShared.GetEntityStyle(ArgPack.Entity)
 
-			assert(Style.PassiveAnimations, string.format("Could not get passive animations for [%s]", ArgPack.Entity.Name))
+			assert(
+				Style.PassiveAnimations,
+				string.format("Could not get passive animations for [%s]", ArgPack.Entity.Name)
+			)
 
 			local Animation = Style.PassiveAnimations[PassiveName]
 
@@ -779,9 +790,10 @@ function Common.AnimatePassive(PassiveName: string)
 	}
 end
 
-function Common.BuildActionPayload(
-	constructLoad: (ArgPack: Types.ProcessArgs, StateInfo: Types.ActionStateInfo) -> { [string]: any }
-)
+function Common.BuildActionPayload(constructLoad: (
+	ArgPack: Types.ProcessArgs,
+	StateInfo: Types.ActionStateInfo
+) -> { [string]: any })
 	return {
 		ProcessName = "BuildActionPayload",
 		Async = false,
