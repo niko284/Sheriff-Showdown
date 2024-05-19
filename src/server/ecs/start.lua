@@ -1,3 +1,4 @@
+local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -45,6 +46,19 @@ local function start(systemsContainers: { Instance }, services)
 			})
 		)
 	end)
+	for _, target in CollectionService:GetTagged("Target") do
+		world:spawn(
+			Components.Target(),
+			Components.Renderable({
+				instance = target,
+			}),
+			Components.Health({
+				health = 100,
+				maxHealth = 100,
+				regenRate = 0,
+			})
+		)
+	end
 end
 
 return start

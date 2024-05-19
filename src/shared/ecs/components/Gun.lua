@@ -6,7 +6,7 @@ local Gun = Matter.component("Gun", {
 	LocalCooldownMillis = 2000, -- How long does the gun have to wait before it can shoot again?
 
 	-- Store other information about the gun here like:
-	Damage = 10,
+	Damage = 25,
 	BulletLifeTime = 2, -- How long does the bullet last before it despawns?
 
 	MaxCapacity = 10, -- How many bullets can the gun hold before automatically reloading?

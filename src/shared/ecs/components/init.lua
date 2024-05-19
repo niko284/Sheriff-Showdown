@@ -33,6 +33,8 @@ export type Lifetime = {
 export type Bullet = {
 	gunId: number?,
 	filter: { Instance }?,
+	currentCFrame: CFrame,
+	origin: CFrame,
 }
 export type Target = {}
 export type Collided = {
@@ -40,6 +42,21 @@ export type Collided = {
 }
 export type Cooldown = {
 	expiry: number,
+}
+export type Identifier = {
+	uuid: string,
+}
+export type Slowed = {
+	walkspeedMultiplier: number,
+}
+export type WalkSpeed = {
+	speed: number,
+	modifier: number,
+}
+export type Health = {
+	health: number,
+	maxHealth: number,
+	regenRate: number, -- amount of health regenerated per second
 }
 
 return Components

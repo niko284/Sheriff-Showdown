@@ -13,6 +13,5 @@ return Net.CreateDefinitions({
 				action = t.keyOf(Actions),
 			})),
 		}),
-		ProcessHit = Net.Definitions.ClientToServerEvent(),
 	}),
 })

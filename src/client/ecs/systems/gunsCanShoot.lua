@@ -6,11 +6,13 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
 local Packages = ReplicatedStorage.packages
+local Utils = ReplicatedStorage.utils
 
 local Components = require(ReplicatedStorage.ecs.components)
 local Matter = require(Packages.Matter)
 local MatterReplication = require(Packages.MatterReplication)
 local Remotes = require(ReplicatedStorage.Remotes)
+local UUIDSerde = require(Utils.UUIDSerde)
 
 local CombatNamespace = Remotes.Client:GetNamespace("Combat")
 local ProcessAction = CombatNamespace:Get("ProcessAction")
@@ -68,11 +70,13 @@ local function gunsCanShoot(world: Matter.World, state)
 						})
 					)
 
+					local actionUUID = HttpService:GenerateGUID(false)
 					world:spawn( -- bullets in our case are not actual projectiles but raycasts.
 						Components.Bullet({
 							gunId = serverEntity.id,
 							filter = bulletFilter,
 							currentCFrame = bulletCFrame,
+							origin = bulletCFrame,
 						}),
 						Components.Renderable({
 							instance = bulletInstance,
@@ -85,15 +89,22 @@ local function gunsCanShoot(world: Matter.World, state)
 						}),
 						Components.Lifetime({
 							expiry = os.time() + gun.BulletLifeTime,
+						}),
+						Components.Owner({
+							OwnedBy = owner.OwnedBy,
+						}),
+						Components.Identifier({
+							uuid = actionUUID,
 						})
 					)
 
 					ProcessAction:SendToServer({
 						action = "Shoot",
-						actionId = HttpService:GenerateGUID(false),
+						actionId = UUIDSerde.Serialize(actionUUID),
 						velocity = velocity,
 						origin = bulletCFrame,
 						fromGun = serverEntity.id,
+						timestamp = workspace:GetServerTimeNow(),
 					})
 				end
 			end
