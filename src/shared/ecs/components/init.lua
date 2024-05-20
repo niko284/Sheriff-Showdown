@@ -9,13 +9,14 @@ export type Renderable = {
 	instance: Instance,
 }
 export type Gun = {
-	FireRate: number,
 	Damage: number,
 	MaxCapacity: number,
 	ReloadTime: number,
 	CurrentCapacity: number,
 	LocalCooldownMillis: number,
+	BulletSpeed: number,
 	BulletLifeTime: number,
+	CriticalDamage: { [string]: number },
 }
 export type Owner = {
 	OwnedBy: Player?,
@@ -33,7 +34,6 @@ export type Lifetime = {
 export type Bullet = {
 	gunId: number?,
 	filter: { Instance }?,
-	currentCFrame: CFrame,
 	origin: CFrame,
 }
 export type Target = {}

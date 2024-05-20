@@ -7,7 +7,10 @@ local REPLICATED_COMPONENTS = {
 	Components.Gun,
 	Components.Renderable,
 	Components.Owner,
+	Components.Bullet,
+	Components.Velocity,
 	Components.Target,
+	Components.Item,
 }
 
 return MatterReplication.createReplicationSystem(REPLICATED_COMPONENTS)

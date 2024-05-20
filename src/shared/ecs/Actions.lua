@@ -95,17 +95,16 @@ return {
 		-- the actual bullet is spawned on the client side.
 
 		local latency = workspace:GetServerTimeNow() - actionPayload.timestamp -- the time it took for the server to receive the action from the client
-		local interpolationTime = player:GetNetworkPing() + 0.048
-
-		print(latency, interpolationTime)
+		local interpolationTime = (player:GetNetworkPing() / 2) + 0.048
 
 		-- Validate the latency and avoid players with very slow connections
 		if (latency < 0) or (latency > 0.8) then -- 800ms is the maximum latency we allow
 			warn(`Invalid latency: ${latency}`)
 			return false
 		end
-		local timeToJump = latency + interpolationTime
-		print(timeToJump)
+		local timeLaunched = workspace:GetServerTimeNow() - latency - interpolationTime
+		local timeToJump = timeLaunched - actionPayload.timestamp
+		print(`Time to jump: ${timeToJump}`)
 
 		-- Calculate the new starting position of the bullet
 		local bulletStart = actionPayload.origin.Position + actionPayload.velocity * timeToJump
@@ -114,14 +113,14 @@ return {
 
 		world:spawn(
 			Components.Bullet({
-				currentCFrame = adjustedBulletCFrame,
 				gunId = actionPayload.fromGun,
 				origin = actionPayload.origin,
 			}),
 			Components.Velocity({ velocity = actionPayload.velocity }),
 			Components.Lifetime({ expiry = os.time() + gunComponent.BulletLifeTime }),
 			Components.Owner({ OwnedBy = player }),
-			Components.Identifier({ uuid = actionPayload.actionId })
+			Components.Identifier({ uuid = actionPayload.actionId }),
+			Components.Transform({ cframe = adjustedBulletCFrame })
 		)
 
 		return true
@@ -175,11 +174,13 @@ return {
 					continue -- the bullet hit something else, not the target
 				end
 
+				local transform = world:get(eid, Components.Transform)
+
 				-- check if the position between the server-projected bullet and the target hit is close enough.
-				local diff = (hitCFrame.Position - bullet.currentCFrame.Position).Magnitude
+				local diff = (hitCFrame.Position - transform.cframe.Position).Magnitude
 				print(`Diff between bullet and target: ${diff}`)
 				if diff > 5 then
-					continue
+					--continue
 				end
 
 				local slowed = world:get(actionPayload.targetEntityId, Components.Slowed)
@@ -195,7 +196,9 @@ return {
 				-- deal damage to the target
 				local health = world:get(actionPayload.targetEntityId, Components.Health)
 				if health then
-					local newHealth = health.health - gun.Damage
+					local damage = gun.CriticalDamage[actionPayload.hitPart.Name] or gun.Damage
+
+					local newHealth = health.health - damage
 					world:insert(actionPayload.targetEntityId, health:patch({ health = newHealth }))
 				end
 			end

@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Components = require(ReplicatedStorage.ecs.components)
+local Items = require(ReplicatedStorage.constants.Items)
 local Matter = require(ReplicatedStorage.packages.Matter)
 
 local function start(systemsContainers: { Instance }, services)
@@ -31,19 +32,21 @@ local function start(systemsContainers: { Instance }, services)
 
 	for _, player in ipairs(Players:GetPlayers()) do
 		world:spawn(
-			Components.Gun(),
+			Components.Gun(Items[1].GunStatisticalData),
 			Components.Owner({
 				OwnedBy = player,
-			})
+			}),
+			Components.Item({ Id = 1 })
 		)
 	end
 
 	Players.PlayerAdded:Connect(function(Player)
 		world:spawn(
-			Components.Gun(),
+			Components.Gun(Items[1].GunStatisticalData),
 			Components.Owner({
 				OwnedBy = Player,
-			})
+			}),
+			Components.Item({ Id = 1 })
 		)
 	end)
 	for _, target in CollectionService:GetTagged("Target") do

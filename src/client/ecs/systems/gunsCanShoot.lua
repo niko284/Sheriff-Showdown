@@ -7,8 +7,11 @@ local UserInputService = game:GetService("UserInputService")
 
 local Packages = ReplicatedStorage.packages
 local Utils = ReplicatedStorage.utils
+local Assets = ReplicatedStorage.assets :: Folder
+local Guns = Assets:FindFirstChild("guns") :: Folder
 
 local Components = require(ReplicatedStorage.ecs.components)
+local ItemUtils = require(Utils.ItemUtils)
 local Matter = require(Packages.Matter)
 local MatterReplication = require(Packages.MatterReplication)
 local Remotes = require(ReplicatedStorage.Remotes)
@@ -44,12 +47,6 @@ local function gunsCanShoot(world: Matter.World, state)
 					workspace:Raycast(viewportPointRay.Origin, viewportPointRay.Direction * 1000, raycastParams)
 
 				if hitPart then
-					local bulletInstance = Instance.new("Part")
-					bulletInstance.CanCollide = false
-					bulletInstance.Size = Vector3.new(1, 1, 1)
-					bulletInstance.Shape = Enum.PartType.Ball
-					bulletInstance.Parent = workspace
-
 					local origin = character:WaitForChild("RightHand").Position
 					local dirFromRightHand = (hitPart.Position - character:WaitForChild("RightHand").Position).Unit
 
@@ -75,11 +72,7 @@ local function gunsCanShoot(world: Matter.World, state)
 						Components.Bullet({
 							gunId = serverEntity.id,
 							filter = bulletFilter,
-							currentCFrame = bulletCFrame,
 							origin = bulletCFrame,
-						}),
-						Components.Renderable({
-							instance = bulletInstance,
 						}),
 						Components.Transform({
 							cframe = bulletCFrame,

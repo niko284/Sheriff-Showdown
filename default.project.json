@@ -13,10 +13,6 @@
       "vendor": {
         "$path": "vendor", 
         "$ignoreUnknownInstances": true
-      },
-      "comm": {
-        "$className": "Folder",
-        "$ignoreUnknownInstances": true
       }
     },
 

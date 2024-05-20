@@ -1,3 +1,4 @@
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Packages = ReplicatedStorage.packages
@@ -19,7 +20,15 @@ local function bulletsCollide(world: Matter.World)
 			local target = hit:FindFirstAncestorWhichIsA("Model")
 			local identifier = world:get(eid, Components.Identifier) :: Components.Identifier?
 
-			if target and target:GetAttribute("ServerEntityId") and identifier then
+			local owner = world:get(eid, Components.Owner) :: Components.Owner?
+			-- don't send a BulletHit action if we're not the client who shot the bullet
+			if
+				target
+				and target:GetAttribute("ServerEntityId")
+				and identifier
+				and owner
+				and owner.OwnedBy == Players.LocalPlayer
+			then
 				-- if our bullet hit a target, let's tell the server about it.
 				ProcessAction:SendToServer({
 					action = "BulletHit",
