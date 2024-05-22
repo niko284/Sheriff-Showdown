@@ -28,7 +28,10 @@ local Definitions = Net.CreateDefinitions({
 	}),
 
 	Round = Net.Definitions.Namespace({
-		StartMatchCountdown = Net.Definitions.ServerToClientEvent(),
+		StartMatch = Net.Definitions.ServerToClientEvent(),
+		EndMatch = Net.Definitions.ServerToClientEvent(),
+		ApplyTeamIndicator = Net.Definitions.ServerToClientEvent(),
+		SendDistraction = Net.Definitions.ServerToClientEvent(),
 	}),
 
 	Inventory = Net.Definitions.Namespace({

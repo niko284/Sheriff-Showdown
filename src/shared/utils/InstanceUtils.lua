@@ -5,6 +5,7 @@
 
 -- // Variables \\
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Packages = ReplicatedStorage.packages
@@ -21,6 +22,20 @@ function InstanceUtils.AssignProps(Instance: Instance, Props: { [string]: any })
 			(Instance :: any)[prop] = value -- avoid property setting errors.
 		end)
 	end
+end
+
+function InstanceUtils.GetAllPlayerAccessories()
+	local Accessories = {}
+	for _, player in ipairs(Players:GetPlayers()) do
+		local character = player.Character
+		if character then
+			local humanoid = character:FindFirstChildOfClass("Humanoid")
+			for _, accessory in ipairs(humanoid:GetAccessories()) do
+				table.insert(Accessories, accessory)
+			end
+		end
+	end
+	return Accessories
 end
 
 function InstanceUtils.AssignPropsRecursive(Instance: Instance, Callback: (Instance: Instance) -> ())

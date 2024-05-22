@@ -14,9 +14,16 @@ local ActionShared = ReplicatedStorage.ActionShared
 local Processes = ActionShared.Processes
 local Utils = ReplicatedStorage.utils
 local Packages = ReplicatedStorage.packages
+local Serde = ReplicatedStorage.serde
 
+local Callbacks = require(Processes.Callbacks)
 local Common = require(Processes.Common)
+local EffectUtils = require(Utils.EffectUtils)
+local FastCast = require(Packages.FastCast)
+local HitFXSerde = require(Serde.HitFXSerde)
+local InstanceUtils = require(Utils.InstanceUtils)
 local ItemUtils = require(Utils.ItemUtils)
+local RoundUtils = require(Utils.RoundUtils)
 local TableUtils = require(Utils.TableUtils)
 local Types = require(Constants.Types)
 local t = require(Packages.t)
@@ -29,8 +36,8 @@ local t = require(Packages.t)
 -- Base handler data for action recognition and interaction.
 local HandlerData: Types.ActionHandlerData = {
 	Name = "Shoot",
-	GlobalCooldownMillis = 3000,
-	CooldownMillis = 3000,
+	GlobalCooldownMillis = 1000,
+	CooldownMillis = 1000,
 	IsBaseAction = true,
 	AttackLevel = 1,
 	DefenseLevel = 0,
@@ -67,6 +74,7 @@ local Handler: Types.ActionHandler = {
 		VerifyActionPayload = function(ActionPayload: { Direction: Vector3, Origin: Vector3 }): boolean
 			return t.strictInterface({
 				Direction = t.Vector3,
+				Origin = t.Vector3,
 			})(ActionPayload)
 		end,
 		ProcessHit = function()
@@ -79,6 +87,27 @@ local Handler: Types.ActionHandler = {
 		HitNoise = function()
 			return "LightHit"
 		end,
+		BulletBeam = function(
+			HitFX: { Target: Types.Entity, Origin: Vector3, Direction: Vector3 },
+			EquippedGunName: string?
+		)
+			local filterDescendants = { HitFX.Target, unpack(InstanceUtils.GetAllPlayerAccessories() :: { any }) }
+
+			local caster = FastCast.new()
+			local behavior = FastCast.newBehavior()
+			local newParams = RaycastParams.new()
+			newParams.FilterDescendantsInstances = filterDescendants
+			newParams.FilterType = Enum.RaycastFilterType.Exclude
+			behavior.RaycastParams = newParams
+			local activeCast = caster:Fire(HitFX.Origin, HitFX.Direction, 5000 * HitFX.Direction, behavior)
+
+			caster.RayHit:Once(function(cast, result)
+				if cast == activeCast then
+					EffectUtils.BulletBeam(HitFX.Target, result.Position, EquippedGunName)
+				end
+			end)
+		end,
+		ExplosionDistraction = Callbacks.ExplosionDistraction(),
 	},
 	ProcessStack = {
 		VerifyStack = {
@@ -97,15 +126,18 @@ local Handler: Types.ActionHandler = {
 					if inputObject then
 						local unitRay = currentCamera:ViewportPointToRay(mouseLocation.X, mouseLocation.Y)
 
+						local origin = ArgPack.Entity.HumanoidRootPart.Position
+
 						local raycastParams = RaycastParams.new()
 						raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 						raycastParams.FilterDescendantsInstances =
-							{ ArgPack.Entity, CollectionService:GetTagged("Barrier") }
+							{ ArgPack.Entity, unpack(CollectionService:GetTagged("Barrier")) }
 
 						local rayLanding = workspace:Raycast(unitRay.Origin, unitRay.Direction * 9999, raycastParams)
 						if rayLanding then
-							local shootDirection = (rayLanding.Position - ArgPack.Entity.HumanoidRootPart.Position).Unit
+							local shootDirection = (rayLanding.Position - origin).Unit
 							ArgPack.Store.Direction = shootDirection
+							ArgPack.Store.Origin = origin
 
 							return true
 						else
@@ -119,16 +151,39 @@ local Handler: Types.ActionHandler = {
 			Common.BuildActionPayload(function(ArgPack: Types.ProcessArgs, _StateInternal: Types.ActionStateInfo)
 				local ActionPayload = {
 					Direction = ArgPack.Store.Direction,
+					Origin = ArgPack.Store.Origin,
 				}
 				return ActionPayload
 			end),
 			Common.Verify,
+			{
+				ProcessName = "RoundVerification",
+				Async = false,
+				OnServer = true,
+				OnClient = false,
+				Delegate = function(ArgPack: Types.ProcessArgs, StateInfo: Types.ActionStateInfo)
+					local playerEntity = Players:GetPlayerFromCharacter(ArgPack.Entity)
+					if not playerEntity then
+						return true
+					end
+
+					local currentRound = RoundUtils.GetCurrentRound()
+					if currentRound then
+						local roundModeExtension = RoundUtils.GetRoundModeExtension(currentRound.RoundMode)
+						if roundModeExtension and roundModeExtension.VerifyActionRequest then
+							return roundModeExtension.VerifyActionRequest(playerEntity, StateInfo)
+						end
+					end
+
+					return true
+				end,
+			},
 			Common.ChangeState,
 		},
 		ActionStack = {
 			Common.Generic.ProcessHitGeneric(1, true, false),
 			Common.Generic.AttackAnimateGeneric(),
-			Common.Generic.BuildAudioGeneric(function(ArgPack: Types.ProcessArgs, StateInfo: Types.ActionStateInfo)
+			Common.Generic.BuildAudioGeneric(function(ArgPack: Types.ProcessArgs, _StateInfo: Types.ActionStateInfo)
 				local player = Players:GetPlayerFromCharacter(ArgPack.Entity)
 
 				if player then
@@ -152,13 +207,14 @@ local Handler: Types.ActionHandler = {
 			end) :: Types.Process,
 			Common.Generic.ListenHitGeneric(nil, true) :: Types.Process,
 			{
-				ProcessName = "SlowDown",
+				ProcessName = "ServerEffects",
 				Async = false,
 				OnClient = false,
 				OnServer = true,
 				OnAI = false,
 				Delegate = function(ArgPack: Types.ProcessArgs)
 					-- this will clean up the hit listener when hit processing for this action is done (1 second max, or when the client tells us to stop listening)
+
 					ArgPack.Store.ProcessHitCleaner:Add(
 						ArgPack.Store.OnHit:Connect(function(Entry: Types.CasterEntry)
 							-- if we hit a player, slow them down by 15% every time we hit them
@@ -171,24 +227,65 @@ local Handler: Types.ActionHandler = {
 						end),
 						"Disconnect"
 					)
+
+					local playerEntity = Players:GetPlayerFromCharacter(ArgPack.Entity)
+
+					local inventoryService = ArgPack.Interfaces.Server.InventoryService
+
+					local serverComm = ArgPack.Interfaces.Comm
+					local processEffectReplicator = serverComm.ProcessFX
+
+					local hitFXArgs = {
+						Target = ArgPack.Entity,
+						Direction = ArgPack.ActionPayload and ArgPack.ActionPayload.Direction or Vector3.zero, -- the server doesn't have access to the mouse location, so we need to pass the direction from the client
+						-- then the client can use the direction to calculate the hit position w/ the origin.
+						Origin = ArgPack.ActionPayload and ArgPack.ActionPayload.Origin or Vector3.zero,
+					} :: Types.VFXArguments
+
+					local playerGun = inventoryService:GetItemsOfType(playerEntity, "Gun", true)[1] :: Types.Item
+					local playerGunInfo = ItemUtils.GetItemInfoFromId(playerGun and playerGun.Id or 2) -- use the default gun if we can't find the player's gun
+
+					if playerEntity then
+						processEffectReplicator:SendToAllPlayersExcept(
+							playerEntity,
+							ArgPack.HandlerData.Name,
+							"BulletBeam",
+							HitFXSerde.Serialize(hitFXArgs),
+							playerGunInfo.Name -- gun item name
+						)
+					else
+						processEffectReplicator:SendToAllPlayers(
+							ArgPack.HandlerData.Name,
+							"BulletBeam",
+							HitFXSerde.Serialize(hitFXArgs),
+							playerGunInfo.Name
+						)
+					end
 					return true
 				end,
 			},
 			Common.ProjectileCast({
 				{
 					MarkerName = "shoot",
-					GetProjectile = function(Entity: Types.Entity, ArgPack: Types.ProcessArgs)
+					GetProjectile = function(_Entity: Types.Entity, ArgPack: Types.ProcessArgs)
 						local actionPayload = ArgPack.ActionPayload :: any
 						local projectileDirection = actionPayload.Direction
-
-						local RightHand = Entity:FindFirstChild("RightHand") :: BasePart
+						local projectileOrigin = actionPayload.Origin
 
 						return {
-							Origin = RightHand.CFrame,
+							Origin = projectileOrigin,
 							Direction = projectileDirection,
 							Velocity = 5000,
 							Lifetime = 1,
 						}
+					end,
+					OnImpact = function(ArgPack: Types.ProcessArgs, CasterEntry: Types.CasterEntry) -- this fn is only called on the client side.
+						if CasterEntry.HitPosition then
+							local inventoryController = ArgPack.Interfaces.Client.InventoryController
+							local playerGun = inventoryController:GetItemsOfType("Gun", true)[1]
+							local playerGunInfo = ItemUtils.GetItemInfoFromId(playerGun and playerGun.Id or 2) -- use the default gun if we can't find the player's gun
+							EffectUtils.BulletBeam(ArgPack.Entity, CasterEntry.HitPosition, playerGunInfo.Name)
+						end
 					end,
 				},
 			}),

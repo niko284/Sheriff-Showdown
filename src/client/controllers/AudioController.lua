@@ -37,6 +37,22 @@ function AudioController:LoadAudio(AudioId: string): Sound
 	return Audio
 end
 
+function AudioController:PlayAudio(AudioId: string, onPart: BasePart?): Sound
+	local newSound = AudioController:LoadAudio(AudioId)
+	if onPart then
+		newSound.Parent = onPart
+	else
+		newSound.Parent = SoundService
+	end
+	newSound:Play()
+
+	newSound.Ended:Connect(function()
+		newSound:Destroy()
+	end)
+
+	return newSound
+end
+
 function AudioController:PlayPreset(presetName: string | Types.Audio, onPart: BasePart?): Sound?
 	local presetAudio = (typeof(presetName) == "string" and Audios[presetName] or presetName) :: Types.Audio
 	if not presetAudio then

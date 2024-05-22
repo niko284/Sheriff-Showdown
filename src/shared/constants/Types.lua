@@ -219,27 +219,48 @@ export type PlayerData = {
 
 -- >> Round Types
 
-export type RoundMode = "Singles" | "Duos"
+export type TeamData = {
+	Color: Color3,
+}
+
+export type RoundMode = "Singles" | "Duos" | "Distraction"
 export type RoundModeData = {
 	Name: RoundMode,
+	UseSpawnType: RoundMode?,
 	TeamSize: number,
 	TeamsPerMatch: number,
 	TeamNames: { string },
+}
+export type RoundModeExtension = {
+	IsGameOver: (Round) -> boolean,
+	StartMatch: (Match, Round) -> (),
+	VerifyActionRequest: ((Player, ActionStateInfo) -> boolean)?,
+	Data: RoundModeData,
+	ExtraRoundProperties: { [string]: any },
+	ExtraMatchProperties: { [string]: any },
 }
 export type Team = {
 	Players: { Player }, -- list of players in this team.
 	Killed: { Player }, -- list of players eliminated from the round in this team.
 	Name: string,
+	Color: Color3,
 }
 export type Match = {
 	Teams: { Team },
 	MatchUUID: string,
-}
+} & { [string]: any } -- other key/value pairs (for things like extension's ExtraMatchProperties)
 export type Round = {
 	Matches: { Match },
 	RoundMode: RoundMode,
 	Players: { Player },
 	Map: Folder,
+} & { [string]: any } -- other key/value pairs (for things like extension's ExtraRoundProperties)
+
+-- >> Distraction Round Mode Types
+
+export type Distraction = "Car" | "Eagle" | "Draw"
+export type DistractionData = {
+	AudioId: number,
 }
 
 -- >> Map Types
@@ -364,6 +385,8 @@ export type CasterEntry = {
 }
 export type VFXArguments = {
 	CFrame: CFrame?,
+	Direction: Vector3?,
+	Origin: Vector3?,
 	Actor: Entity?,
 	HitPart: Instance?,
 	State: ActionStateInfo?,
@@ -405,7 +428,7 @@ export type StatusData = {
 
 export type StatusHandler = {
 	Data: StatusData,
-	Apply: (Entity) -> (boolean, Janitor?),
+	Apply: (Entity) -> (boolean, Janitor?, { any }?),
 	ApplyFX: ((Entity) -> boolean)?,
 	Clear: (Entity, Janitor?) -> boolean,
 	Process: ((Entity, EntityState) -> ())?,
@@ -419,7 +442,6 @@ export type Handlers = {
 }
 export type ProcessArgs = {
 	Entity: Entity,
-	EntityIsPlayer: boolean,
 	Store: { [string]: any },
 	HitVerifiers: { [string]: HitVerifier },
 	Callbacks: {
@@ -482,6 +504,11 @@ export type ActionHandler = {
 	ProcessStack: { VerifyStack: { Process }, ActionStack: { Process } },
 }
 export type Interface = { [string]: { [any]: any } }
+
+export type Effect = {
+	Name: string,
+	ApplyKillEffect: (Entity) -> (),
+}
 
 -- >> Shop Interface Types
 

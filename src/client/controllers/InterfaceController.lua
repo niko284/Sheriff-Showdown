@@ -31,6 +31,7 @@ local InterfaceController = {
 	ScaleRatio = 1,
 	AppLoaded = Signal.new(),
 	InterfaceChanged = Signal.new(),
+	DoTransition = Signal.new(), -- does a transition using the transition component
 	IsAppLoaded = false,
 }
 
@@ -39,7 +40,7 @@ local InterfaceController = {
 function InterfaceController:Init()
 	self.Store = require(Rodux.Store)
 	-- Disable appropriate core guis.
-	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
+	--StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
 	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.EmotesMenu, false)
 	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
 	InterfaceController.AppLoaded:Connect(function()

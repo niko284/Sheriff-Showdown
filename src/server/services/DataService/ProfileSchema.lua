@@ -15,6 +15,7 @@ local Types = require(Constants.Types)
 return {
 	Resources = {
 		Gems = 0,
+		Level = 1,
 		Coins = 100,
 	},
 	Settings = {},

@@ -6,6 +6,7 @@
 
 -- // Variables \\
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
@@ -73,12 +74,20 @@ function ResourceService:InsertResource(Player: Player, ResourceName: string, Va
 	end
 end
 
-function ResourceService:IncrementResource(Player: Player, ResourceName: string, Value: number, sendNetworkEvent: boolean?)
+function ResourceService:IncrementResource(
+	Player: Player,
+	ResourceName: string,
+	Value: number,
+	sendNetworkEvent: boolean?
+)
 	local playerProfile = DataService:GetData(Player)
 	if playerProfile then
 		local oldValue = playerProfile.Data.Resources[ResourceName]
-		playerProfile.Data.Resources =
-			Sift.Dictionary.set(playerProfile.Data.Resources, ResourceName, Value + playerProfile.Data.Resources[ResourceName])
+		playerProfile.Data.Resources = Sift.Dictionary.set(
+			playerProfile.Data.Resources,
+			ResourceName,
+			Value + playerProfile.Data.Resources[ResourceName]
+		)
 		self.ResourceSignals[ResourceName]:Fire(Player, playerProfile.Data.Resources[ResourceName], oldValue)
 		if sendNetworkEvent ~= false then
 			self.PlayerResources:SetFor(Player, {
@@ -97,10 +106,13 @@ function ResourceService:GetResource(Player: Player, ResourceName: string): any
 	end
 end
 
-function ResourceService:ObserveResourceChanged(ResourceName: string, Callback: (Player, ...any) -> ()): Signal.Connection
+function ResourceService:ObserveResourceChanged(
+	ResourceName: string,
+	Callback: (Player, ...any) -> ()
+): Signal.Connection
 	-- fire signal for plrs who are already in game.
 	local resourceSignal = ResourceService.ResourceSignals[ResourceName]
-	for _, Player in game.Players:GetPlayers() do
+	for _, Player in Players:GetPlayers() do
 		local playerProfile = DataService:GetData(Player)
 		if playerProfile then
 			Callback(Player, playerProfile.Data.Resources[ResourceName])

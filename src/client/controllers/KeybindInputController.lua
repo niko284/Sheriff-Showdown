@@ -25,6 +25,7 @@ local Signal = require(Packages.Signal)
 local Types = require(Constants.Types)
 
 local PreferredInput = Input.PreferredInput
+local PlayerMouse = LocalPlayer:GetMouse()
 
 local DoubleTapThresholdMillis = 200
 
@@ -34,7 +35,8 @@ type TouchInputButtonData = {
 	Position: UDim2,
 	Order: number,
 }
-local SWIPE_DIRECTIONS = { Enum.SwipeDirection.Left, Enum.SwipeDirection.Right, Enum.SwipeDirection.Up, Enum.SwipeDirection.Down }
+local SWIPE_DIRECTIONS =
+	{ Enum.SwipeDirection.Left, Enum.SwipeDirection.Right, Enum.SwipeDirection.Up, Enum.SwipeDirection.Down }
 local TOUCH_INPUT_BUTTONS = {
 	Run = {
 		Image = "rbxassetid://14933991418",
@@ -118,6 +120,10 @@ function KeybindInputController:Init()
 			touchShiftLockJanitor:Cleanup()
 		end
 	end)
+end
+
+function KeybindInputController:SetMouseIcon(Icon: string)
+	PlayerMouse.Icon = Icon
 end
 
 function KeybindInputController:ApplyBackgroundFrame(Button: ImageButton)

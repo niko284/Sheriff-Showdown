@@ -53,7 +53,7 @@ local ActionService = {
 	OnAction = Signal.new(),
 	OnHit = Signal.new(),
 	OnDamage = Signal.new(),
-	CombatToggle = ServerComm:CreateProperty("CombatToggle", false),
+	CombatToggle = ServerComm:CreateProperty("CombatToggle", true),
 }
 
 -- // Functions \\
@@ -264,21 +264,24 @@ function ActionService:ProcessHitClient(
 )
 	-- We do our general checks here.
 	-- First, we check if this processhit is for our entity since we have multiple connections to the same callback.
+
+	local playerActor = Players:GetPlayerFromCharacter(FromEntity)
+	if playerActor then -- AI entities already fire this event on the server (because they live on the server), re-firing it will cause a "maximum C stack size exceeded" error. (inf fire loop)
+		ArgPack.Store.OnHit:Fire(Entry) -- Fire the server on hit event.
+	end
+
 	local entityPlayer = Players:GetPlayerFromCharacter(ArgPack.Entity)
 	if (entityPlayer and Player ~= entityPlayer) or not Entry.Entity or not entityPlayer then
-		print("H")
 		return false
 	end
 
 	-- Then, we want to make sure that this action is the same action the entity wants to register a hit for by the UUID given to us.
 	if StateInfo.UUID ~= ActionUUID then
-		print("C")
 		return false
 	end
 
 	local toEntity, toState = EntityModule.GetEntityAndState(Entry.Entity :: any)
 	if not toState or not toEntity then
-		print("D")
 		return false
 	end
 
@@ -287,12 +290,9 @@ function ActionService:ProcessHitClient(
 	if runHandlerChecks then
 		local checksPassed = runHandlerChecks(ArgPack, Entry.DetectionType, Entry)
 		if not checksPassed then
-			print("F")
 			return false
 		end
 	end
-
-	print("A")
 
 	local didRun, processed = pcall(
 		ActionService.ProcessHit,
@@ -350,11 +350,16 @@ function ActionService:ProcessHit(
 	end
 
 	-- We can't hit entities on our team.
-	if self.RoundService:OnSameTeam(Players:GetPlayerFromCharacter(Actor), Players:GetPlayerFromCharacter(Target)) then
+
+	local targetPlayer = Players:GetPlayerFromCharacter(Target)
+	if self.RoundService:OnSameTeam(Players:GetPlayerFromCharacter(Actor), targetPlayer) then
 		return false
 	end
 
-	local playerActor = Players:GetPlayerFromCharacter(Actor)
+	-- We can't hit entities that are not in a match.
+	if targetPlayer and targetPlayer:GetAttribute("IsInMatch") == false then
+		return false
+	end
 
 	local baseDamage = typeof(Handler.Data.BaseDamage) == "function" and Handler.Data.BaseDamage(Entry)
 		or Handler.Data.BaseDamage
@@ -362,10 +367,6 @@ function ActionService:ProcessHit(
 	local _canHit, props = ActionService:GetHitProps(Actor, Target, Handler, baseDamage :: number, nil, false)
 
 	local hitProps = props :: Types.HitProps
-
-	if playerActor then -- AI entities already fire this event on the server (because they live on the server), re-firing it will cause a "maximum C stack size exceeded" error. (inf fire loop)
-		ArgPack.Store.OnHit:Fire(Entry) -- Fire the server on hit event.
-	end
 
 	if hitProps.DelayedDamage then
 		for _, delayedDamageInfo in hitProps.DelayedDamage do
@@ -389,6 +390,8 @@ function ActionService:ProcessHit(
 			ActionService:DamageEntityFromHandler(Actor, Target, Handler, Entry, StateInfo) -- Otherwise, damage the entity immediately.
 		end
 	end
+
+	local playerActor = Players:GetPlayerFromCharacter(Actor)
 
 	local hasOnHitFX = Handler.Callbacks["OnHit"] ~= nil
 	if hasOnHitFX then
@@ -439,6 +442,17 @@ function ActionService:GetHitProps(
 	end
 
 	return false, nil -- The player wasn't hit by the attack.
+end
+
+function ActionService:DamageEntity(Entity: Types.Entity, Damage: number)
+	local humanoidTarget = Entity.Humanoid :: Humanoid
+	if Damage >= humanoidTarget.Health then
+		Damage = math.floor(humanoidTarget.Health - 1) -- we just want to take their damage away, not completely kill them due to humanoid behavior.
+		-- apply the killed status effect.
+		StatusModule.ApplyStatus(Entity, "Killed", nil, nil, nil)
+	else
+		humanoidTarget:TakeDamage(Damage)
+	end
 end
 
 function ActionService:DamageEntityFromHandler(

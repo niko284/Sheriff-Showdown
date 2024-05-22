@@ -4,6 +4,7 @@
 -- November 17th, 2022
 -- Ron
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
@@ -41,6 +42,7 @@ if IS_SERVER then
 	Interfaces.Server.HitProcessed = Signal.new() -- notify that a hit has been processed
 else
 	local EntityRemotes = Remotes.Client:GetNamespace("Entity")
+	Interfaces.Client.InventoryController = require(Players.LocalPlayer.PlayerScripts.controllers.InventoryController)
 	Interfaces.Comm = {
 		ProcessAction = EntityRemotes:Get("ProcessAction"),
 		ProcessFX = EntityRemotes:Get("ProcessFX"),

@@ -55,7 +55,6 @@ local function SideButtons()
 			layoutOrder = index,
 			size = UDim2.fromOffset(64, 64),
 			onActivated = function()
-				print("Dispatching ", sideButtonData.name)
 				dispatch(CurrentInterfaceSlice.actions.SetCurrentInterface({ interface = sideButtonData.name }))
 			end,
 		})

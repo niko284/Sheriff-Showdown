@@ -59,13 +59,13 @@ function ActionController:Init()
 		print(Toggle)
 		ActionController:ToggleControls(Toggle)
 	end)
-	ProcessFX:Connect(function(ActionName: string, FXName: string, Args: Types.VFXArguments)
+	ProcessFX:Connect(function(ActionName: string, FXName: string, Args: Types.VFXArguments, ...: any)
 		Args = HitFXSerde.Deserialize(Args)
 		local Handler = Handlers[ActionName]
 		local FXFunc = (Handler :: any).Callbacks[FXName] :: (
-				Types.VFXArguments,
-				(() -> ())?
-			) -> (boolean, ((boolean?) -> ())?, RBXScriptSignal?)
+			Types.VFXArguments,
+			(() -> ())?
+		) -> (boolean, ((boolean?) -> ())?, RBXScriptSignal?)
 
 		if not FXFunc then
 			assert(false, "No FX function found for action " .. ActionName .. " and FX " .. FXName .. ".")
@@ -74,7 +74,7 @@ function ActionController:Init()
 		local Cleaner = Janitor.new()
 		local wasFinished = false
 
-		local _success, ToClean, finishedEvent = FXFunc(Args)
+		local _success, ToClean, finishedEvent = FXFunc(Args, ...)
 
 		if ToClean then
 			Cleaner:Add(function()
@@ -103,20 +103,25 @@ function ActionController:Init()
 
 	FinishedServer:Connect(function()
 		-- Server told us our action finished, so we can now allow the player to do another action.
-		local entity, state = EntityModule.GetEntityAndState(LocalPlayer.Character)
-		if entity and state then
-			local lastAction = state.LastActionState
-			if lastAction then
-				lastAction.Finished = true -- Common.ClientWaitForFinished will now finish and fire the Finished event in the action process.
+		if LocalPlayer.Character then
+			local entity, state = EntityModule.GetEntityAndState(LocalPlayer.Character)
+			if entity and state then
+				local lastAction = state.LastActionState
+				if lastAction then
+					lastAction.Finished = true -- Common.ClientWaitForFinished will now finish and fire the Finished event in the action process.
+				end
 			end
 		end
 	end)
 
 	ProcessStatus:Connect(function(Status: Types.EntityStatus, ...: any)
-		local EntityState = EntityModule.GetState(LocalPlayer.Character)
-		local StatusHandler = StatusModule.GetStatusHandler(Status)
-		if StatusHandler and StatusHandler.ProcessClient and EntityState then
-			StatusHandler.ProcessClient(LocalPlayer.Character, EntityState, ...)
+		local characterEntity = EntityModule.GetEntity(LocalPlayer.Character)
+		if characterEntity then
+			local EntityState = EntityModule.GetState(characterEntity)
+			local StatusHandler = StatusModule.GetStatusHandler(Status)
+			if StatusHandler and StatusHandler.ProcessClient and EntityState then
+				StatusHandler.ProcessClient(characterEntity, EntityState, ...)
+			end
 		end
 	end)
 end
@@ -143,7 +148,10 @@ function ActionController:PlayAction(Handler: Types.ActionHandler, InputObject: 
 		return false
 	end
 
-	if CONTROLS_ENABLED == false and (Handler.Data.AlwaysOn and not Handler.Data.AlwaysOn() or not Handler.Data.AlwaysOn) then -- although this probably won't run when controls are disabled, it is possible if a player clicks an action on the hotbar.
+	if
+		CONTROLS_ENABLED == false
+		and (Handler.Data.AlwaysOn and not Handler.Data.AlwaysOn() or not Handler.Data.AlwaysOn)
+	then -- although this probably won't run when controls are disabled, it is possible if a player clicks an action on the hotbar.
 		return false
 	end
 
@@ -262,69 +270,6 @@ end
 
 function ActionController:UnbindHandler(Handler: Types.ActionHandler)
 	KeybindInputController:UnbindAction(Handler.Data.SettingsData)
-end
-
-function ActionController:GetCooldownFinishTime(Item: Types.Item | string)
-	local entityState = EntityModule.GetState(LocalPlayer.Character)
-	local cooldownFinishTime = nil
-
-	if entityState and entityState.LastActionState then -- If we have an entity state, and we have a last action state, there's likely a cooldown in place.
-		local localCooldown = entityState.LastActionState.CooldownFinishTimeMillis
-		local globalCooldown = entityState.LastActionState.GlobalCooldownFinishTimeMillis
-		local lastActionState = entityState.LastActionState
-		local lastAction = lastActionState.ActionHandlerName
-
-		if typeof(Item) == "table" and Item.Id then -- Identify the cooldown finish time given an item.
-			local itemInformation = ItemUtils.GetItemInfoFromId(Item.Id) :: Types.ItemInfo
-
-			-- If we have an entity state, we can check if the item is on cooldown.
-			if entityState and entityState.LastActionState then
-				if
-					localCooldown and lastAction == itemInformation.Name
-					or ((lastAction == "HeavyAttack" or lastAction == "LightAttack") and itemInformation.Type == "Weapon")
-				then
-					-- this is mostly for abilities. If the cooldown is for this item, we want to display it as the local cooldown. same for weapons
-					cooldownFinishTime = localCooldown
-				else
-					local previousSameAbility = entityState.ActionHistory[itemInformation.Name :: any]
-					if previousSameAbility and globalCooldown < previousSameAbility.CooldownFinishTimeMillis then -- Global cooldown is less than previous local cooldown, set to local cooldown.
-						cooldownFinishTime = previousSameAbility.CooldownFinishTimeMillis
-					else -- Our global cooldown is greater than our previous local cooldown, set to global cooldown.
-						cooldownFinishTime = globalCooldown
-					end
-
-					if itemInformation.Type == "Weapon" :: Types.ItemType then
-						-- If the item is a weapon, let's check if it's on cooldown from our most previous base attack.
-						local prevLightAttack = entityState["LightAttack" :: any]
-						local prevHeavyAttack = entityState["HeavyAttack" :: any]
-						if
-							prevLightAttack
-							and (not cooldownFinishTime or prevLightAttack.CooldownFinishTimeMillis > cooldownFinishTime)
-						then
-							cooldownFinishTime = prevLightAttack.CooldownFinishTimeMillis
-						end
-						if prevHeavyAttack then
-							if not cooldownFinishTime or prevHeavyAttack.CooldownFinishTimeMillis > cooldownFinishTime then
-								cooldownFinishTime = prevHeavyAttack.CooldownFinishTimeMillis
-							end
-						end
-					end
-				end
-			end
-		else
-			if lastAction == Item then
-				cooldownFinishTime = localCooldown
-			else
-				local previousSameAbility = entityState.ActionHistory[Item :: any]
-				if previousSameAbility and globalCooldown < previousSameAbility.CooldownFinishTimeMillis then
-					cooldownFinishTime = previousSameAbility.CooldownFinishTimeMillis
-				else
-					cooldownFinishTime = globalCooldown
-				end
-			end
-		end
-	end
-	return cooldownFinishTime
 end
 
 return ActionController

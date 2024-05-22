@@ -1,0 +1,7 @@
+{
+    "ReplicatedStorage": {
+		"prefix": ["replicatedStorage", "rs"],
+		"body": ["local ReplicatedStorage = game:GetService(\"ReplicatedStorage\")"],
+		"description": "ReplicatedStorage"
+	},
+}

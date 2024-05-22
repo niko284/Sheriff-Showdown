@@ -55,7 +55,6 @@ function Action.Init(
 		Janitor = Janitor.new(),
 		Handler = Handler,
 		InputObject = InputObject,
-		EntityIsPlayer = Players:GetPlayerFromCharacter(Entity),
 	}
 
 	local StateInternal: Types.ActionStateInfo = {
@@ -126,12 +125,14 @@ function Action.Run(
 					continue
 				end
 				if
-					((IS_SERVER and not Verifier.OnServer) or (not IS_SERVER and not Verifier.OnClient)) and not isEntityAI
+					((IS_SERVER and not Verifier.OnServer) or (not IS_SERVER and not Verifier.OnClient))
+					and not isEntityAI
 				then
 					continue
 				end
 
-				local isSuccess, DelegateFinished, DelegateResponse = pcall(Verifier.Delegate, ProcessArgs, StateInternal)
+				local isSuccess, DelegateFinished, DelegateResponse =
+					pcall(Verifier.Delegate, ProcessArgs, StateInternal)
 				if not isSuccess or not DelegateFinished then
 					if not isSuccess then
 						warn(isSuccess, DelegateFinished, Verifier.ProcessName)
@@ -209,7 +210,10 @@ function Action.Run(
 				elseif isEntityAI and not Process.OnAI then
 					continue
 				end
-				if ((IS_SERVER and not Process.OnServer) or (not IS_SERVER and not Process.OnClient)) and not isEntityAI then
+				if
+					((IS_SERVER and not Process.OnServer) or (not IS_SERVER and not Process.OnClient))
+					and not isEntityAI
+				then
 					continue
 				end
 
@@ -225,7 +229,8 @@ function Action.Run(
 						end
 					end)
 				else
-					local Success, DelegateFinished, _DelegateResponse = pcall(Process.Delegate, ProcessArgs, StateInternal)
+					local Success, DelegateFinished, _DelegateResponse =
+						pcall(Process.Delegate, ProcessArgs, StateInternal)
 					if not DelegateFinished or not Success then
 						if not Success then
 							warn(DelegateFinished, debug.traceback())

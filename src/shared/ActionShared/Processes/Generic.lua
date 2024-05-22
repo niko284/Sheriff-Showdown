@@ -105,7 +105,6 @@ function GenericProcesses.ProcessHitGeneric(ProcessTime: number?, MultiHit: bool
 						if ActionUUID ~= StateInfo.UUID then -- If the action UUID doesn't match, return.
 							return
 						end
-						print("Firing srvr")
 						ProcessHitServer:Fire(Player, ActionUUID, ArgPack, StateInfo, FromEntity, FromState, Entry)
 					end
 				)
@@ -220,23 +219,26 @@ function GenericProcesses.ListenHitGeneric(_CleanupAfter: number?, MultiHit: boo
 
 			local function processHit(HitEntry: Types.CasterEntry)
 				-- If we have an entity and it's the entity that is performing the action, we don't want to hit it.
+
+				local hitPlayer = Players:GetPlayerFromCharacter(HitEntry.Entity)
+				if hitPlayer and hitPlayer:GetAttribute("IsInMatch") == false then
+					return -- we don't want to hit players that aren't in the match.
+				end
+
 				if HitEntry.Entity and (HitEntry.Entity :: any) == ArgPack.Entity then
+					print("A")
 					return
 				elseif HitEntry.Entity and HitEntry.Entity:GetAttribute("ImmuneToHits") == true then
+					print("B")
 					return
 				end
 				if ArgPack.Entity:IsDescendantOf(workspace) == false then
+					print("C")
 					return
 				end
 				if HitEntry.Entity and StatusModule.HasStatus(HitEntry.Entity, "Killed") then -- If the entity is dead, we don't want to hit it.
+					print("D")
 					return
-				end
-
-				-- If we have an entity and it's on the same team as us, we don't want to hit it.
-				local entityTeam = ArgPack.Entity:GetAttribute("Team")
-				local hitEntityTeam = HitEntry.Entity and HitEntry.Entity:GetAttribute("Team")
-				if entityTeam and hitEntityTeam and entityTeam == hitEntityTeam then
-					return -- no friendly fire.
 				end
 
 				for _, Tag in NPC_TAGS do
@@ -250,6 +252,7 @@ function GenericProcesses.ListenHitGeneric(_CleanupAfter: number?, MultiHit: boo
 				if IS_CLIENT and HitEntry.Entity then
 					if HitEntry.Entity and IS_CLIENT then
 						-- If we hit an entity, we want to process the hit event.
+						print("Sending to server")
 						ArgPack.Interfaces.Comm.ProcessHit:SendToServer(HitEntry, StateInfo.UUID)
 					end
 				end
@@ -257,7 +260,7 @@ function GenericProcesses.ListenHitGeneric(_CleanupAfter: number?, MultiHit: boo
 				-- If we're on the server, no client-side prediction effects, this is for AI.
 				if HitEntry.Entity and IS_SERVER then
 					-- Typically an AI will process hits on the server immediately.
-					local ActionService = require(ServerScriptService.services.ActionService)
+					local ActionService = require(ServerScriptService.services.ActionService) :: any
 					ActionService:ProcessHit(
 						ArgPack.Entity,
 						EntityModule.GetState(ArgPack.Entity) :: Types.EntityState,

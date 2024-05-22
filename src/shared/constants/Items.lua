@@ -19,6 +19,7 @@ return {
 		Rarity = "Basic",
 		Default = true,
 		Image = 16381222990,
+		ShootAudio = 1905367471,
 	},
 	{
 		Id = 3,
@@ -28,6 +29,7 @@ return {
 		Rarity = "Exotic",
 		Featured = true,
 		Image = 16410415588,
+		ShootAudio = 1905367471,
 	},
 	{
 		Id = 4,
@@ -36,6 +38,7 @@ return {
 		Style = "OneHandedDefault",
 		Rarity = "Legendary",
 		Image = 16410450047,
+		ShootAudio = 1905367471,
 	},
 	{
 		Id = 5,
@@ -45,6 +48,7 @@ return {
 		Rarity = "Legendary",
 		Image = 16413168391,
 		Featured = true,
+		ShootAudio = 1905367471,
 	},
 	{
 		Id = 6,
@@ -53,6 +57,7 @@ return {
 		Style = "OneHandedDefault",
 		Rarity = "Legendary",
 		Image = 16413186281,
+		ShootAudio = 1905367471,
 	},
 	{
 		Id = 7,
@@ -60,6 +65,7 @@ return {
 		Type = "Gun",
 		Style = "OneHandedDefault",
 		Rarity = "Epic",
+		ShootAudio = 1905367471,
 		Image = 16413207175,
 	},
 	{
@@ -70,6 +76,7 @@ return {
 		Rarity = "Epic",
 		Featured = true,
 		Image = 16413225070,
+		ShootAudio = 1905367471,
 	},
 	{
 		Id = 9,
@@ -78,6 +85,7 @@ return {
 		Style = "OneHandedDefault",
 		Rarity = "Epic",
 		Image = 16413236297,
+		ShootAudio = 1905367471,
 	},
 	{
 		Id = 10,
@@ -86,6 +94,7 @@ return {
 		Style = "OneHandedDefault",
 		Rarity = "Epic",
 		Image = 16413247900,
+		ShootAudio = 1905367471,
 	},
 	{
 		Id = 11,
@@ -94,6 +103,7 @@ return {
 		Style = "OneHandedDefault",
 		Rarity = "Rare",
 		Image = 16413271767,
+		ShootAudio = 1905367471,
 	},
 	{
 		Id = 12,
@@ -102,6 +112,7 @@ return {
 		Style = "OneHandedDefault",
 		Rarity = "Rare",
 		Image = 16413297754,
+		ShootAudio = 1905367471,
 	},
 	{
 		Id = 13,
@@ -110,6 +121,7 @@ return {
 		Style = "OneHandedDefault",
 		Rarity = "Rare",
 		Image = 16413312920,
+		ShootAudio = 1905367471,
 	},
 	{
 		Id = 14,
@@ -117,6 +129,7 @@ return {
 		Type = "Gun",
 		Style = "OneHandedDefault",
 		Rarity = "Rare",
+		ShootAudio = 1905367471,
 		Image = 16413323827,
 	},
 	{
@@ -125,6 +138,7 @@ return {
 		Type = "Gun",
 		Style = "OneHandedDefault",
 		Rarity = "Basic",
+		ShootAudio = 1905367471,
 		Image = 16413333022,
 	},
 	{
@@ -134,6 +148,7 @@ return {
 		Style = "OneHandedDefault",
 		Rarity = "Basic",
 		Image = 16413341915,
+		ShootAudio = 1905367471,
 	},
 	{
 		Id = 17,
@@ -142,6 +157,7 @@ return {
 		Style = "OneHandedDefault",
 		Rarity = "Basic",
 		Image = 16413353882,
+		ShootAudio = 1905367471,
 	},
 	{
 		Id = 18,
@@ -150,6 +166,7 @@ return {
 		Style = "OneHandedDefault",
 		Rarity = "Basic",
 		Image = 16413361347,
+		ShootAudio = 1905367471,
 	},
 	{
 		Id = 19,
@@ -285,5 +302,14 @@ return {
 		Rarity = "Basic",
 		Image = 16515284127,
 		ShootAudio = 97848313,
+	},
+	{
+		Id = 34,
+		Name = "Zombie Launcher",
+		Type = "Gun",
+		Style = "OneHandedDefault",
+		Rarity = "Exotic",
+		Image = 17475397607,
+		ShootAudio = 30324676,
 	},
 }

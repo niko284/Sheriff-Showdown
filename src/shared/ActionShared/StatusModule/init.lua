@@ -151,20 +151,22 @@ function StatusModule.ApplyStatus(
 		end
 	end
 
-	local didApply, Cleaner = StatusHandler.Apply(Entity, ...)
+	local didApply, Cleaner, clientStatusArgs = StatusHandler.Apply(Entity, ...)
 
 	if didApply then
 		if StatusHandler.ApplyFX then
 			local processStatusFX = Remotes.Server:GetNamespace("Entity"):Get("ProcessStatusFX")
+
+			local statusArgs = clientStatusArgs or {}
 
 			-- Players to ignore the playing of the status FX for. Used in scenarios like when the actor predicts the status of an entity and plays the FX locally.
 			if IgnoreReplicationFXList then
 				local playersReplicate = Sift.Array.filter(Players:GetPlayers(), function(plr)
 					return not table.find(IgnoreReplicationFXList, plr)
 				end)
-				processStatusFX:SendToPlayers(playersReplicate, Entity, Status)
+				processStatusFX:SendToPlayers(playersReplicate, Entity, Status, unpack(statusArgs))
 			else
-				processStatusFX:SendToAllPlayers(Entity, Status)
+				processStatusFX:SendToAllPlayers(Entity, Status, unpack(statusArgs))
 			end
 		end
 
@@ -267,24 +269,27 @@ if IS_SERVER then
 			end
 		end
 	end)
-	CollectionService:GetInstanceAddedSignal("Entity"):Connect(function(Entity: Types.Entity)
+	CollectionService:GetInstanceAddedSignal("Entity"):Connect(function(CharModel: Instance)
+		local Entity = EntityModule.GetEntity(CharModel :: Model) :: Types.Entity
 		Statuses[Entity] = {}
 	end)
-	CollectionService:GetInstanceRemovedSignal("Entity"):Connect(function(Entity: Types.Entity)
+	CollectionService:GetInstanceRemovedSignal("Entity"):Connect(function(CharModel: Instance)
+		local Entity = EntityModule.GetEntity(CharModel :: Model) :: Types.Entity
 		--StatusModule.ClearAllStatuses(Entity) -- clear all statuses on the entity when it's removed.
 		Statuses[Entity] = nil
 	end)
-	for _, Entity in CollectionService:GetTagged("Entity") do
+	for _, CharModel in CollectionService:GetTagged("Entity") do
+		local Entity = EntityModule.GetEntity(CharModel :: Model) :: Types.Entity
 		Statuses[Entity] = {}
 	end
 else
 	Remotes.Client
 		:GetNamespace("Entity")
 		:Get("ProcessStatusFX")
-		:Connect(function(Entity: Types.Entity, Status: Types.EntityStatus)
+		:Connect(function(Entity: Types.Entity, Status: Types.EntityStatus, ...: any)
 			local applyFX = StatusHandlers[Status].ApplyFX
 			assert(applyFX, "Must have a function for applying FX.")
-			applyFX(Entity)
+			applyFX(Entity, ...)
 		end)
 end
 

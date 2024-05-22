@@ -15,12 +15,12 @@ local Types = require(Constants.Types)
 
 local CombatUtils = {}
 
-function CombatUtils.Knockback(_Actor: Types.Entity, Entity: Types.Entity)
+function CombatUtils.Knockback(_Actor: Types.Entity?, Entity: Types.Entity)
 	EffectUtils.UnlockCharacter(Entity) -- Might've been locked if we're interrupting an ability the entity was doing.
 
 	local bodyVelocity = Instance.new("BodyVelocity")
 	bodyVelocity.MaxForce = Vector3.one * Entity.HumanoidRootPart.AssemblyMass * workspace.Gravity * 100
-	bodyVelocity.Velocity = -Entity.HumanoidRootPart.CFrame.LookVector * 100 + Vector3.new(0, 100, 0)
+	bodyVelocity.Velocity = -Entity.HumanoidRootPart.CFrame.LookVector * 30 + Vector3.new(0, 100, 0)
 	bodyVelocity.Parent = Entity.HumanoidRootPart
 
 	Debris:AddItem(bodyVelocity, 0.3)

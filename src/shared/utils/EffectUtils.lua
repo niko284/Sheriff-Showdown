@@ -13,7 +13,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
 local Packages = ReplicatedStorage.packages
+local Assets = ReplicatedStorage:FindFirstChild("assets") :: Folder
+local Guns = Assets:FindFirstChild("guns") :: Folder
 local Constants = ReplicatedStorage.constants
+local Effects = Assets:FindFirstChild("effects") :: Folder
+local BulletBeam = Effects:FindFirstChild("Shot") :: Beam
 
 local Janitor = require(Packages.Janitor)
 local Promise = require(Packages.Promise)
@@ -55,6 +59,15 @@ function Util.CreatePointingBeam(FromPart: BasePart, ToPart: BasePart): (Beam, A
 	Beam.Parent = FromPart
 
 	return Beam, FromAttachment, ToAttachment
+end
+
+function Util.ApplyTeamIndicator(Entity: Types.Entity, HighlightColor: Color3)
+	local highlight = Instance.new("Highlight")
+	highlight.FillTransparency = 0.4
+	highlight.DepthMode = Enum.HighlightDepthMode.Occluded
+	highlight.OutlineColor = HighlightColor
+	highlight.Parent = Entity
+	CollectionService:AddTag(highlight, "TeamIndicator")
 end
 
 function Util.ToggleWeaponTransparency(Entity: Types.Entity, toggle: boolean)
@@ -262,9 +275,11 @@ function Util.RockRing(
 				)
 			end
 
-			local material = ray.Instance == workspace.Terrain and ray.Material or ray.Instance.Material
-			local color = ray.Instance == workspace.Terrain and workspace.Terrain:GetMaterialColor(ray.Material)
-				or ray.Instance.Color
+			local rayInstance = ray.Instance :: BasePart | Terrain
+
+			local material = rayInstance == workspace.Terrain and ray.Material or rayInstance.Material
+			local color = rayInstance == workspace.Terrain and workspace.Terrain:GetMaterialColor(ray.Material)
+				or rayInstance.Color
 
 			local rock = Util.Part({
 				CFrame = finalCF * orientation,
@@ -289,6 +304,88 @@ function Util.RockRing(
 			})
 		transparencyTween:Play()
 	end
+end
+
+function Util.TweenTransparencySequence(object: Beam, fromValue: number, toValue: number, tweenInfo: TweenInfo)
+	local numberValue = Instance.new("NumberValue")
+	numberValue.Value = fromValue
+
+	numberValue.Changed:Connect(function(value)
+		object.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, value),
+			NumberSequenceKeypoint.new(1, value),
+		})
+	end)
+
+	local tween = TweenService:Create(numberValue, tweenInfo, { Value = toValue })
+	tween.Completed:Once(function()
+		numberValue:Destroy()
+	end)
+
+	tween:Play()
+
+	return Promise.fromEvent(tween.Completed, function()
+		return true
+	end)
+end
+
+function Util.BulletBeam(Entity: Types.Entity, HitPosition: Vector3, EquippedGunName: string?): ()
+	local rightHand = Entity:FindFirstChild("RightHand") :: BasePart
+	if not rightHand then
+		return
+	end
+
+	local beamClone = nil
+
+	-- see if the gun has a custom beam in its gun folder
+	if EquippedGunName then
+		local gunFolder = Guns:FindFirstChild(EquippedGunName)
+		if gunFolder then
+			local shotBeam = gunFolder:FindFirstChild("ShotBeam") :: Beam?
+			if shotBeam then
+				beamClone = shotBeam:Clone()
+			end
+		end
+	end
+	if not beamClone then
+		beamClone = BulletBeam:Clone()
+	end
+
+	assert(beamClone, "No beam found")
+
+	local startPart = Instance.new("Part")
+	local endPart = Instance.new("Part")
+
+	local parts = { startPart, endPart }
+	parts[1].CFrame = rightHand.CFrame
+	parts[2].CFrame = CFrame.new(HitPosition)
+
+	for _, part in parts do
+		part.Size = Vector3.new(0.1, 0.1, 0.1)
+		part.Anchored = true
+		part.CanCollide = false
+		part.CanQuery = false
+		part.Transparency = 1
+		part.Parent = workspace
+	end
+
+	local initialAttachment = Instance.new("Attachment")
+	initialAttachment.Parent = parts[1]
+
+	local endAttachment = Instance.new("Attachment")
+	endAttachment.Parent = parts[2]
+
+	beamClone.Parent = rightHand
+	beamClone.Attachment0 = endAttachment
+	beamClone.Attachment1 = initialAttachment
+
+	local transparencyTweenInfo = TweenInfo.new(0.4, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+	Util.TweenTransparencySequence(beamClone, 0, 1, transparencyTweenInfo):andThen(function()
+		for _, part in parts do
+			part:Destroy()
+		end
+		beamClone:Destroy()
+	end)
 end
 
 function Util.preFab(ogMesh: BasePart, properties: { [string]: any }, debrisTime: number?): BasePart
@@ -465,8 +562,8 @@ function Util.RaycastDownwards(Entity: Types.Entity)
 	local params = RaycastParams.new()
 	params.FilterDescendantsInstances = {
 		Entity,
-		CollectionService:GetTagged("Zone"),
-		CollectionService:GetTagged("Entity"),
+		unpack(CollectionService:GetTagged("Zone")),
+		unpack(CollectionService:GetTagged("Entity")),
 	}
 	params.FilterType = Enum.RaycastFilterType.Exclude
 	return workspace:Raycast(Entity.HumanoidRootPart.Position, Vector3.new(0, -100, 0), params)
@@ -475,8 +572,8 @@ end
 function Util.RaycastDownwardsCFrame(CFrame: CFrame)
 	local params = RaycastParams.new()
 	params.FilterDescendantsInstances = {
-		CollectionService:GetTagged("Zone"),
-		CollectionService:GetTagged("Entity"),
+		unpack(CollectionService:GetTagged("Zone")),
+		unpack(CollectionService:GetTagged("Entity")),
 	}
 	params.FilterType = Enum.RaycastFilterType.Exclude
 	return workspace:Raycast(CFrame.Position, -CFrame.UpVector * 100, params)

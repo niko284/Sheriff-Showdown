@@ -18,10 +18,13 @@ local NotificationComponents = Components.notification
 local VotingComponents = Components.voting
 local InventoryComponents = Components.inventory
 local ShopComponents = Components.shop
+local FrameComponents = Components.frames
+local RoundComponents = Components.round
 
 local ActionPopup = require(ActionComponents.ActionPopup)
 local ActionPopupManager = require(ActionComponents.ActionPopupManager)
 local AutoUIScale = require(Components.common.AutoUIScale)
+local DistractionViewport = require(RoundComponents.DistractionViewport)
 local Inventory = require(InventoryComponents.Inventory)
 local NotificationController = require(Controllers.NotificationController)
 local NotificationManager = require(NotificationComponents.NotificationManager)
@@ -30,10 +33,12 @@ local React = require(Packages.React)
 local Shop = require(ShopComponents.Shop)
 local SideButtons = require(ButtonComponents.SideButtons)
 local TextNotificationElement = require(NotificationComponents.TextNotificationElement)
+local TransitionFrame = require(FrameComponents.TransitionFrame)
 local VotingManager = require(VotingComponents.VotingManager)
 
 local e = React.createElement
 local useEffect = React.useEffect
+local useMemo = React.useMemo
 
 local function changeScaleRatio(scaleRatio: number)
 	local InterfaceController = require(Controllers.InterfaceController)
@@ -43,10 +48,13 @@ end
 -- // App \\
 
 local function App()
+	local InterfaceController = useMemo(function()
+		return require(Controllers.InterfaceController)
+	end, {})
+
 	useEffect(function()
-		local InterfaceController = require(Controllers.InterfaceController)
 		InterfaceController.AppLoaded:Fire() -- Fires when the app is loaded/mounted.
-	end, {}) -- only runs on initial mount
+	end, { InterfaceController }) -- only runs on initial mount
 
 	return e("ScreenGui", {
 		IgnoreGuiInset = false,
@@ -69,6 +77,13 @@ local function App()
 		}),
 		inventory = e(Inventory),
 		shop = e(Shop),
+		distraction = e(DistractionViewport),
+		transition = e(TransitionFrame, {
+			rows = 7,
+			columns = 10,
+			shapeIcon = 16959656091,
+			activateSignal = InterfaceController.DoTransition,
+		}),
 		actions = e(ActionPopupManager, {
 			size = UDim2.fromScale(1, 1),
 			anchorPoint = Vector2.new(0.5, 0.5),

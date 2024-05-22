@@ -37,7 +37,7 @@ local function VotingTemplate(props: VotingTemplateProps)
 			BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 			BorderColor3 = Color3.fromRGB(0, 0, 0),
 			[React.Event.Activated] = function()
-				props.onActivated(props.choice, props.field)
+				props.onActivated(props.field, props.choice)
 			end,
 			BorderSizePixel = 0,
 			Position = UDim2.fromScale(0.0367, 0.0412),
@@ -70,7 +70,11 @@ local function VotingTemplate(props: VotingTemplateProps)
 		}),
 
 		name = e("TextLabel", {
-			FontFace = Font.new("rbxasset://fonts/families/SourceSansPro.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+			FontFace = Font.new(
+				"rbxasset://fonts/families/SourceSansPro.json",
+				Enum.FontWeight.Bold,
+				Enum.FontStyle.Normal
+			),
 			Text = props.choice,
 			TextColor3 = Color3.fromRGB(255, 255, 255),
 			TextScaled = true,

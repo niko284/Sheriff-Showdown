@@ -237,7 +237,7 @@ function EntityModule.GetEntitiesInRange(
 	return EntitiesInRange
 end
 
-function EntityModule.GetEntityAndState(CharacterModel: Model): (Types.Entity?, Types.EntityState?)
+function EntityModule.GetEntityAndState(CharacterModel: Model?): (Types.Entity?, Types.EntityState?)
 	-- Type narrow our character model into an entity, if necessary.
 	local Entity = EntityModule.GetEntity(CharacterModel)
 	local State: Types.EntityState? = nil
@@ -248,12 +248,14 @@ function EntityModule.GetEntityAndState(CharacterModel: Model): (Types.Entity?, 
 		return nil, nil
 	end
 
+	local charModel = CharacterModel :: Model
+
 	if not Entity then
-		warn(string.format("Couldn't grab entity for model '%s'", CharacterModel.Name))
+		warn(string.format("Couldn't grab entity for model '%s'", charModel.Name))
 	end
 
 	if not State and Entity then
-		warn(string.format("Couldn't grab state for model '%s'", CharacterModel.Name))
+		warn(string.format("Couldn't grab state for model '%s'", charModel.Name))
 	end
 
 	return Entity, State

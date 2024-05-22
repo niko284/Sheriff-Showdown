@@ -21,6 +21,7 @@ local DetectionTypes = require(Constants.DetectionTypes)
 local EntityModule = require(ActionShared.Entity)
 local FastCast = require(Packages.FastCast)
 local HitFXSerde = require(Serde.HitFXSerde)
+local InstanceUtils = require(Utils.InstanceUtils)
 local Janitor = require(Packages.Janitor)
 local PhysicsUtils = require(Utils.PhysicsUtils)
 local ProjectileShared = require(Utils.ProjectileShared)
@@ -36,7 +37,7 @@ local MAXIMUM_LATENCY = 0.8 -- 800 ms
 local MAX_LENIENCY_PROJECTILE_ORIGIN = 15
 local INTERPOLATION_VALUE = 0.048
 
-FastCast.VisualizeCasts = true
+FastCast.VisualizeCasts = false
 
 local Common = {
 	Generic = require(Processes.Generic),
@@ -488,7 +489,7 @@ end
 
 type ProjectileData = {
 	Projectile: BasePart?,
-	Origin: CFrame,
+	Origin: Vector3,
 	Velocity: number,
 	Lifetime: number,
 	Direction: Vector3,
@@ -499,11 +500,11 @@ type ProjectileInternal = {
 	CasterShape: "Sphere" | "Block" | "Conform"?,
 	MarkerName: string?,
 	OnShoot: ((Projectile: BasePart, ArgPack: Types.ProcessArgs, StateInfo: Types.ActionStateInfo) -> BasePart)?,
-	OnImpact: ((Entry: Types.CasterEntry) -> ())?,
+	OnImpact: ((ArgPacK: Types.ProcessArgs, Entry: Types.CasterEntry) -> ())?,
 }
 type ProjectileServerInternal = {
 	RayHit: RaycastResult?,
-	Origin: CFrame,
+	Origin: Vector3,
 	Velocity: number,
 	Lifetime: number,
 	Direction: Vector3,
@@ -525,7 +526,7 @@ function Common.ProjectileCast(Projectiles: { ProjectileInternal })
 
 				local StopHits = ArgPack.Interfaces.Comm.StopHits
 
-				local function castProjectile(Projectile: ProjectileInternal)
+				local function castProjectile(Projectile: ProjectileInternal): Vector3?
 					local index = table.find(Projectiles, Projectile)
 
 					local projectileData = Projectile.GetProjectile(ArgPack.Entity, ArgPack)
@@ -536,23 +537,27 @@ function Common.ProjectileCast(Projectiles: { ProjectileInternal })
 					if Projectile.OnShoot and projectile then
 						Projectile.OnShoot(projectile, ArgPack, StateInfo)
 					end
+
+					local filterDescendants =
+						{ ArgPack.Entity, unpack(InstanceUtils.GetAllPlayerAccessories() :: { any }) }
+
 					local initialPromise = nil
 					if Projectile.CasterShape == "Block" and projectile then
-						initialPromise = ProjectileShared.BlockcastProjectile(projectile, { ArgPack.Entity })
+						initialPromise = ProjectileShared.BlockcastProjectile(projectile, filterDescendants)
 					elseif Projectile.CasterShape == "Sphere" and projectile then
 						local radius = math.min(projectile.Size.Z, projectile.Size.Y) / 2
-						initialPromise = ProjectileShared.SpherecastProjectile(projectile, radius, { ArgPack.Entity })
+						initialPromise = ProjectileShared.SpherecastProjectile(projectile, radius, filterDescendants)
 					elseif Projectile.CasterShape == "Conform" and projectile then
-						initialPromise = ProjectileShared.ShapecastProjectile(projectile, { ArgPack.Entity })
+						initialPromise = ProjectileShared.ShapecastProjectile(projectile, filterDescendants)
 					else
 						local caster = FastCast.new()
 						local behavior = FastCast.newBehavior()
 						local newParams = RaycastParams.new()
-						newParams.FilterDescendantsInstances = { ArgPack.Entity }
+						newParams.FilterDescendantsInstances = filterDescendants
 						newParams.FilterType = Enum.RaycastFilterType.Exclude
 						behavior.RaycastParams = newParams
 						local activeCast = caster:Fire(
-							projectileData.Origin.Position,
+							projectileData.Origin,
 							projectileData.Direction.Unit,
 							projectileData.Velocity * projectileData.Direction.Unit,
 							behavior
@@ -573,14 +578,16 @@ function Common.ProjectileCast(Projectiles: { ProjectileInternal })
 								HitPosition = raycastResult.Position,
 							}
 							if Projectile.OnImpact then
-								Projectile.OnImpact(casterEntry)
+								Projectile.OnImpact(ArgPack, casterEntry)
 							end
 							if projectile then
 								projectile:Destroy() -- We should maybe abstract this out to a callback somehow!
 							end
 							ArgPack.Store["OnHit"]:Fire(casterEntry)
 						end)
-						:catch(function() end)
+						:catch(function(err)
+							warn(tostring(err))
+						end)
 						:finally(function()
 							if index == #Projectiles then -- if this was our last projectile, we can stop listening for hits.
 								StopHits:SendToServer(UUIDSerde.Serialize(StateInfo.UUID), "Projectile")
@@ -614,11 +621,11 @@ function Common.ProjectileCast(Projectiles: { ProjectileInternal })
 				local processHitCleaner = ArgPack.Store.ProcessHitCleaner
 
 				listener = processServerEffect:Connect(
-					function(Player: Player, EffectName: string, Timestamp: number, ProjectileOrigin: CFrame)
+					function(Player: Player, EffectName: string, Timestamp: number, ProjectileOrigin: Vector3)
 						if
 							EffectName == "CreateProjectile"
 							and (Player.Character :: any == ArgPack.Entity)
-							and typeof(ProjectileOrigin) == "CFrame"
+							and typeof(ProjectileOrigin) == "Vector3"
 						then
 							local Time = os.clock()
 							local Latency = (workspace:GetServerTimeNow() - Timestamp)
@@ -640,7 +647,7 @@ function Common.ProjectileCast(Projectiles: { ProjectileInternal })
 								end
 
 								-- check the player origin against the projectile origin to make sure the player isn't cheating.
-								local distance = (ProjectileOrigin.Position - serverProjectileData.Origin.Position).Magnitude
+								local distance = (ProjectileOrigin - serverProjectileData.Origin).Magnitude
 
 								if serverProjectileData.Projectile then
 									serverProjectileData.Projectile:Destroy()
@@ -683,7 +690,7 @@ function Common.ProjectileCast(Projectiles: { ProjectileInternal })
 
 									-- we want the displacement vector with origin at our projectile origin and end at the hit entity's position.
 									local displacementVector = (
-										Entry.Entity:GetPivot().Position - ProjectileData.Origin.Position
+										Entry.Entity:GetPivot().Position - ProjectileData.Origin
 									).Unit
 									-- we also want the vector of the hit direction with origin at our projectile origin.
 									local hitDirection = ProjectileData.Direction.Unit
@@ -699,7 +706,7 @@ function Common.ProjectileCast(Projectiles: { ProjectileInternal })
 									-- we need to predict the position of the projectile at the time of the hit.
 
 									local projectedPosition = PhysicsUtils.GetPositionAtTime(
-										ProjectileData.Origin.Position,
+										ProjectileData.Origin,
 										ProjectileData.Direction * ProjectileData.Velocity,
 										Vector3.zero, -- no gravity
 										os.clock() - (Time - Latency - Interpolation)
@@ -712,7 +719,7 @@ function Common.ProjectileCast(Projectiles: { ProjectileInternal })
 									raycastParams.IgnoreWater = true
 
 									local raycastResult = workspace:Raycast(
-										ProjectileData.Origin.Position,
+										ProjectileData.Origin,
 										ProjectileData.Direction.Unit
 											* ProjectileData.Velocity
 											* ProjectileData.Lifetime,

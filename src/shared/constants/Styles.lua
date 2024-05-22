@@ -36,7 +36,7 @@ local Styles: Types.StylesTable = {
 	},
 	OneHandedDefault = {
 		PassiveAnimations = {
-			idle = CreateAnimation(16206667718),
+			idle = CreateAnimation(17048490453),
 		},
 	},
 }

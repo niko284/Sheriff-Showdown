@@ -18,6 +18,8 @@ local HitFXMap = {
 	"CFrame",
 	"Target",
 	"Actor",
+	"Direction",
+	"Origin",
 }
 
 -- // Functions \\

@@ -173,11 +173,6 @@ local function ViewportModel(props: Types.FrameProps & ViewportModelProps)
 			end
 			local cloneModel = props.model:Clone()
 
-			-- Call the onModelCreated callback if it exists for any side effects to the model.
-			if props.onModelCreated then
-				props.onModelCreated(cloneModel)
-			end
-
 			props.model.Archivable = false
 			model = cloneModel
 		elseif props.model and props.useDirectly == true then
@@ -186,7 +181,7 @@ local function ViewportModel(props: Types.FrameProps & ViewportModelProps)
 			return nil :: Model?
 		end
 		return model
-	end, { props.model, props.useDirectly, props.onModelCreated } :: { any })
+	end, { props.model, props.useDirectly } :: { any })
 
 	useEffect(
 		function()
@@ -208,7 +203,11 @@ local function ViewportModel(props: Types.FrameProps & ViewportModelProps)
 						else
 							model:PivotTo(CFrame.new())
 							rotate(currentPitch.current, currentYaw.current, model)
-							setAngles(CFrame.Angles(0, math.pi / 2, 0), model)
+
+							-- inside setAngles, we multiply the cameraCenter by the angles.
+							-- we need to pass in a cframe so that the camera is in front of the lookVector facing the model
+
+							setAngles(CFrame.lookAt(model:GetPivot().Position, -model:GetPivot().LookVector), model)
 							-- Clear old models
 
 							for _, modelDescendant in viewport:GetDescendants() do
@@ -225,6 +224,11 @@ local function ViewportModel(props: Types.FrameProps & ViewportModelProps)
 							else
 								model.Parent = viewport
 							end
+
+							if props.onModelCreated then
+								props.onModelCreated(model)
+							end
+
 							if props.spinSpeed and model and model.PrimaryPart and totalSpin.current then
 								local base = model.PrimaryPart.CFrame
 								model:PivotTo(base :: any * CFrame.Angles(0, totalSpin.current * props.spinSpeed, 0))
