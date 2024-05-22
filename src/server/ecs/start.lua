@@ -49,6 +49,7 @@ local function start(systemsContainers: { Instance }, services)
 			Components.Item({ Id = 1 })
 		)
 	end)
+
 	for _, target in CollectionService:GetTagged("Target") do
 		world:spawn(
 			Components.Target(),

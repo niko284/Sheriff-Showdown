@@ -16,6 +16,7 @@ export type Gun = {
 	LocalCooldownMillis: number,
 	BulletSpeed: number,
 	BulletLifeTime: number,
+	BulletSoundId: number,
 	CriticalDamage: { [string]: number },
 }
 export type Owner = {
@@ -57,6 +58,9 @@ export type Health = {
 	health: number,
 	maxHealth: number,
 	regenRate: number, -- amount of health regenerated per second
+}
+export type Item = {
+	Id: number,
 }
 
 return Components

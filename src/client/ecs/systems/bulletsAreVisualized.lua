@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Assets = ReplicatedStorage.assets :: Folder
 local Guns = Assets:FindFirstChild("guns") :: Folder
 
+local AudioUtils = require(ReplicatedStorage.utils.AudioUtils)
 local ItemUtils = require(ReplicatedStorage.utils.ItemUtils)
 local Matter = require(ReplicatedStorage.packages.Matter)
 local MatterReplication = require(ReplicatedStorage.packages.MatterReplication)
@@ -11,9 +12,10 @@ local MatterReplication = require(ReplicatedStorage.packages.MatterReplication)
 local Components = require(ReplicatedStorage.ecs.components)
 
 local function bulletsAreVisualized(world: Matter.World)
-	for eid, bullet: Components.Bullet in world:query(Components.Bullet):without(Components.Renderable) do
+	for eid, bullet: Components.Bullet, owner: Components.Owner in
+		world:query(Components.Bullet, Components.Owner):without(Components.Renderable)
+	do
 		local serverEntity = world:get(eid, MatterReplication.ServerEntity)
-		local owner = world:get(eid, Components.Owner)
 
 		if serverEntity and owner.OwnedBy == Players.LocalPlayer then
 			continue -- we don't simulate bullets that were replicated from the server and are owned by the local player. this was already done by the client.
@@ -21,7 +23,13 @@ local function bulletsAreVisualized(world: Matter.World)
 
 		local bulletInstance = nil
 
-		local item = world:get(eid, Components.Item)
+		local item =
+			world:get(MatterReplication.resolveServerId(world, bullet.gunId :: number), Components.Item) :: Components.Item
+		local gunThatShotBullet = world:get(
+			MatterReplication.resolveServerId(world, bullet.gunId :: number),
+			Components.Gun
+		) :: Components.Gun
+
 		if item then
 			local itemInfo = ItemUtils.GetItemInfoFromId(item.Id)
 			local gunAssets = Guns:FindFirstChild(itemInfo.Name)
@@ -40,6 +48,7 @@ local function bulletsAreVisualized(world: Matter.World)
 		end
 
 		bulletInstance.Parent = workspace
+		AudioUtils.PlaySoundOnInstance(gunThatShotBullet.BulletSoundId, bulletInstance)
 
 		world:insert(
 			eid,

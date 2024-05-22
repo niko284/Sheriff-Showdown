@@ -7,11 +7,8 @@ local UserInputService = game:GetService("UserInputService")
 
 local Packages = ReplicatedStorage.packages
 local Utils = ReplicatedStorage.utils
-local Assets = ReplicatedStorage.assets :: Folder
-local Guns = Assets:FindFirstChild("guns") :: Folder
 
 local Components = require(ReplicatedStorage.ecs.components)
-local ItemUtils = require(Utils.ItemUtils)
 local Matter = require(Packages.Matter)
 local MatterReplication = require(Packages.MatterReplication)
 local Remotes = require(ReplicatedStorage.Remotes)
@@ -52,7 +49,7 @@ local function gunsCanShoot(world: Matter.World, state)
 
 					-- make origin cframe at origin position facing the direction of the velocity
 					local velocity = dirFromRightHand * gun.BulletSpeed
-					local bulletCFrame = CFrame.new(origin, origin + velocity)
+					local bulletCFrame = CFrame.lookAt(origin, origin + dirFromRightHand)
 
 					gun = gun:patch({
 						CurrentCapacity = gun.CurrentCapacity - 1,
@@ -68,7 +65,7 @@ local function gunsCanShoot(world: Matter.World, state)
 					)
 
 					local actionUUID = HttpService:GenerateGUID(false)
-					world:spawn( -- bullets in our case are not actual projectiles but raycasts.
+					world:spawn(
 						Components.Bullet({
 							gunId = serverEntity.id,
 							filter = bulletFilter,

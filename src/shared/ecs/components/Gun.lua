@@ -2,6 +2,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Matter = require(ReplicatedStorage.packages.Matter)
 
+-- guns are only replicated from the server to the client when they are equipped, so it's less expensive to store some of the bullet information on the gun itself.
+
 local Gun = Matter.component("Gun", {
 	LocalCooldownMillis = 2000, -- How long does the gun have to wait before it can shoot again?
 
@@ -18,6 +20,9 @@ local Gun = Matter.component("Gun", {
 	CurrentCapacity = 10, -- How many bullets are currently in the gun?
 
 	BulletSpeed = 500, -- How fast do the bullets travel? (in studs per second)
+
+	-- The sound that the gun makes when it shoots.
+	BulletSoundId = 1905367471,
 })
 
 return Gun

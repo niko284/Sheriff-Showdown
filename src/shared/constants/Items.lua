@@ -1,18 +1,8 @@
-export type ItemRarity = "Basic" | "Rare" | "Epic" | "Legendary" | "Exotic"
-export type ItemType = "Gun"
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-type ItemGunData = {
-	GunStatisticalData: any,
-}
-export type ItemInfo = {
-	Id: number,
-	Name: string,
-	Rarity: ItemRarity,
-	Type: ItemType,
-	Image: number?,
-} & ItemGunData
+local Types = require(ReplicatedStorage.constants.Types)
 
-local Items: { ItemInfo } = {
+local Items: { Types.ItemInfo } = {
 	{
 		Id = 1,
 		Name = "Blue Hyper Laser",
@@ -21,6 +11,7 @@ local Items: { ItemInfo } = {
 		Rarity = "Legendary",
 		GunStatisticalData = {
 			BulletSpeed = 100,
+			BulletSoundId = 130113322,
 		},
 	},
 }

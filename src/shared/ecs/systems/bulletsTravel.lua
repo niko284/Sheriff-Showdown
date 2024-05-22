@@ -23,7 +23,7 @@ local function bulletsTravel(world: Matter.World, _state)
 		local newPosition = transform.cframe.Position + distanceTraveled
 		local positionChange = newPosition - transform.cframe.Position
 
-		local newCFrame = CFrame.new(newPosition, transform.cframe:VectorToWorldSpace(Vector3.new(0, 0, 1)))
+		local newCFrame = CFrame.new(newPosition, velocity.velocity.Unit + newPosition)
 
 		transform = transform:patch({
 			cframe = newCFrame,

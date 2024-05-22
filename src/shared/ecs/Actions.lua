@@ -108,8 +108,7 @@ return {
 
 		-- Calculate the new starting position of the bullet
 		local bulletStart = actionPayload.origin.Position + actionPayload.velocity * timeToJump
-		local adjustedBulletCFrame =
-			CFrame.new(bulletStart, actionPayload.origin:VectorToWorldSpace(Vector3.new(0, 0, 1)))
+		local adjustedBulletCFrame = CFrame.new(bulletStart, actionPayload.origin.LookVector)
 
 		world:spawn(
 			Components.Bullet({
@@ -147,6 +146,7 @@ return {
 			world:query(Components.Bullet, Components.Identifier, Components.Owner)
 		do
 			if identifier.uuid == actionPayload.actionId and owner.OwnedBy == player then
+				local transform = world:get(eid, Components.Transform)
 				world:despawn(eid) -- despawn the bullet that supposedly hit the target
 				if targetRenderable.instance == player.Character then
 					continue -- don't deal damage to ourselves.
@@ -173,8 +173,6 @@ return {
 				if raycast and raycast.Instance:IsDescendantOf(targetRenderable.instance) == false then
 					continue -- the bullet hit something else, not the target
 				end
-
-				local transform = world:get(eid, Components.Transform)
 
 				-- check if the position between the server-projected bullet and the target hit is close enough.
 				local diff = (hitCFrame.Position - transform.cframe.Position).Magnitude
