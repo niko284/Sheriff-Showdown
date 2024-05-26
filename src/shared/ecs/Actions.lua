@@ -136,7 +136,25 @@ return {
 			return
 		end
 
+		-- get both the target player's and our own player's team.
 		local targetRenderable = world:get(actionPayload.targetEntityId, Components.Renderable)
+		local targetTeam = world:get(actionPayload.targetEntityId, Components.Team) :: Components.Team?
+
+		local attacker = player.Character
+		local attackerTeam: Components.Team? = nil
+
+		if attacker then
+			local targetEntityId = attacker:GetAttribute("serverEntityId") :: number?
+			if targetEntityId then
+				attackerTeam = world:get(targetEntityId, Components.Team)
+			end
+		end
+
+		if targetTeam and attackerTeam and targetTeam.name == attackerTeam.name then
+			warn("Target and attacker are on the same team")
+			return
+		end
+
 		if not targetRenderable then
 			warn("Target entity has no renderable component")
 			return
@@ -196,8 +214,19 @@ return {
 				if health then
 					local damage = gun.CriticalDamage[actionPayload.hitPart.Name] or gun.Damage
 
+					local myChar = player.Character
+					if not myChar then
+						warn("Player has no character")
+						return
+					end
+
+					local myEntityId = myChar:GetAttribute("serverEntityId")
+
 					local newHealth = health.health - damage
-					world:insert(actionPayload.targetEntityId, health:patch({ health = newHealth }))
+					world:insert(
+						actionPayload.targetEntityId,
+						health:patch({ health = newHealth, causedBy = myEntityId })
+					)
 				end
 			end
 		end

@@ -14,4 +14,15 @@ return Net.CreateDefinitions({
 			})),
 		}),
 	}),
+	Round = Net.Definitions.Namespace({
+		StartMatch = Net.Definitions.ServerToClientEvent(),
+		EndMatch = Net.Definitions.ServerToClientEvent(),
+		ApplyTeamIndicator = Net.Definitions.ServerToClientEvent(),
+		SendDistraction = Net.Definitions.ServerToClientEvent(),
+	}),
+	Voting = Net.Definitions.Namespace({
+		ProcessVote = Net.Definitions.ClientToServerEvent({
+			Net.Middleware.TypeChecking(t.string, t.string), -- voting field name and voting choice
+		}),
+	}),
 })

@@ -30,7 +30,7 @@ local function start(systemsContainers: { Instance }, services)
 
 	-- TEST
 
-	for _, player in ipairs(Players:GetPlayers()) do
+	--[[for _, player in ipairs(Players:GetPlayers()) do
 		world:spawn(
 			Components.Gun(Items[1].GunStatisticalData),
 			Components.Owner({
@@ -48,7 +48,7 @@ local function start(systemsContainers: { Instance }, services)
 			}),
 			Components.Item({ Id = 1 })
 		)
-	end)
+	end)--]]
 
 	for _, target in CollectionService:GetTagged("Target") do
 		world:spawn(

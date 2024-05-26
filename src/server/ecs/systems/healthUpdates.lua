@@ -27,8 +27,19 @@ local function healthUpdates(world: Matter.World)
 			if renderable then
 				local humanoid = renderable.instance:FindFirstChildOfClass("Humanoid")
 				if humanoid then
-					print(`setting health of {renderable.instance} to {healthRecord.new.health}`)
-					humanoid.Health = healthRecord.new.health
+					if healthRecord.new.health <= 0 then
+						humanoid.Health = 1 -- set to 1 so the character doesn't die immediately
+						-- insert kill logic afterwards:
+						world:insert(
+							eid,
+							Components.Killed({
+								killerEntityId = healthRecord.new.causedBy,
+								expiry = os.time() + 5, -- 5 seconds duration
+							})
+						)
+					else
+						humanoid.Health = healthRecord.new.health
+					end
 				end
 			end
 		end

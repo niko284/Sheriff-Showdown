@@ -23,6 +23,9 @@ local function renderablesDestroy(world: Matter.World)
 	-- account for a renderable not being in the DOM.
 	for eid, renderable: Components.Renderable in world:query(Renderable) do
 		for _ in useEvent(renderable.instance, "AncestryChanged") do
+			-- we only want to remove renderables if we are in the same environment in which they were created.
+			-- this is because we don't want to remove renderables on the client that were replicated from the server, let the server handle that.
+
 			if renderable.instance:IsDescendantOf(game) == false then
 				world:remove(eid, Renderable) -- will trigger the first part of this function.
 			end

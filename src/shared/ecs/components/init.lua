@@ -58,9 +58,18 @@ export type Health = {
 	health: number,
 	maxHealth: number,
 	regenRate: number, -- amount of health regenerated per second
+	causedBy: number?, -- entity id of the entity that caused the damage
 }
 export type Item = {
 	Id: number,
 }
+export type Team = {
+	name: string,
+}
+export type Killed = {
+	killerEntityId: number,
+	expiry: number,
+}
+export type Ragdolled = {}
 
 return Components

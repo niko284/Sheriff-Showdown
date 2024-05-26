@@ -15,7 +15,19 @@ local collectionName = RunService:IsStudio() and "PlayerData" .. HttpService:Gen
 
 local PlayerDataCollection = Lapis.createCollection(collectionName, {
 	defaultData = require(script.Schema),
-	validate = t.strictInterface({}),
+	validate = t.strictInterface({
+		Inventory = t.strictInterface({
+			Storage = t.table,
+			Equipped = t.table,
+		}),
+		Resources = t.interface({
+			Coins = t.number,
+			Gems = t.number,
+			Level = t.number,
+			Experience = t.number,
+		}),
+		Statistics = t.interface({}),
+	}),
 })
 
 local PlayerDataService =

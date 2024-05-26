@@ -1,3 +1,7 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Matter = require(ReplicatedStorage.packages.Matter)
+
 export type ItemRarity = "Basic" | "Rare" | "Epic" | "Legendary" | "Exotic"
 export type ItemType = "Gun"
 type ItemGunData = {
@@ -59,6 +63,70 @@ export type LeaderboardInfo = {
 		}
 	}?,
 	Mapper: ((...any) -> any)?, -- A function that maps the value to a different value
+}
+
+export type RoundMode = "Singles" | "Duos" | "Distraction"
+export type RoundModeData = {
+	Name: RoundMode,
+	TeamSize: number,
+	TeamsPerMatch: number,
+	TeamNames: { string },
+}
+export type Team = {
+	Players: { Player }, -- list of players in this team.
+	Killed: { Player }, -- list of players eliminated from the round in this team.
+	Name: string,
+}
+export type Match = {
+	Teams: { Team },
+	MatchUUID: string,
+}
+export type Round = {
+	Matches: { Match },
+	RoundMode: RoundMode,
+	Players: { Player },
+	Map: Folder,
+}
+export type RoundModeExtension = {
+	IsGameOver: (Round) -> boolean,
+	StartMatch: (Match, Round, Matter.World) -> (),
+	Data: RoundModeData,
+	ExtraRoundProperties: { [string]: any },
+	ExtraMatchProperties: { [string]: any },
+}
+
+export type VotingPoolField = {
+	Choices: { string },
+	Votes: { [Player]: string },
+}
+export type VotingPool = {
+	Maps: VotingPoolField,
+	RoundModes: VotingPoolField,
+}
+
+-- just the choices for each voting pool field
+export type VotingPoolClient = {
+	VotingEndTime: number,
+	VotingFields: { -- we keep this as an array because it's easier for the client to route through each field and display it.
+		{
+			Field: string,
+			Choices: {
+				{
+					Name: string,
+					Image: number,
+				}
+			},
+		}
+	},
+}
+
+export type Distraction = "Car" | "Eagle" | "Draw"
+export type DistractionData = {
+	AudioId: number,
+}
+
+export type TeamData = {
+	Color: Color3,
 }
 
 return nil
