@@ -13,7 +13,7 @@ local NevermoreService = {
 
 -- // Functions \\
 
-function NevermoreService:Init()
+function NevermoreService:OnStart()
 	NevermoreService:LoadNevermore()
 		:andThen(function(_clientPackages, serverPackages, _sharedPackages)
 			NevermoreService.ServiceBag = require(serverPackages.ServiceBag).new() :: any

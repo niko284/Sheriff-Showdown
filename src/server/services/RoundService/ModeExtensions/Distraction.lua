@@ -45,7 +45,7 @@ function DistractionExtension.StartMatch(Match: Types.Match, _RoundInstance: Typ
 	local matchDistractions = DistractionExtension.GetDistractions()
 
 	-- loop through the distractions and send them to the clients to display every 2 seconds.
-	local playersInMatch = Generic.GetPlayersInMatch(Match)
+	local playersInMatch = RoundService:GetAllPlayersInMatch(Match)
 
 	-- if our match finishes early, we want to stop the distractions from being sent to the clients.
 	Promise.any({

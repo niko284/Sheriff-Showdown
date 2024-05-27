@@ -49,7 +49,7 @@ export type Identifier = {
 }
 export type Slowed = {
 	walkspeedMultiplier: number,
-}
+} & StatusEffect
 export type WalkSpeed = {
 	speed: number,
 	modifier: number,
@@ -66,10 +66,17 @@ export type Item = {
 export type Team = {
 	name: string,
 }
+
+export type StatusEffect = {
+	expiry: number?,
+}
+
 export type Killed = {
 	killerEntityId: number,
-	expiry: number,
-}
+} & StatusEffect
 export type Ragdolled = {}
+export type PlayerComponent = {
+	player: Player,
+}
 
 return Components

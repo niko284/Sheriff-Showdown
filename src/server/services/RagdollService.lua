@@ -10,7 +10,7 @@ local RagdollService = {
 	Name = "RagdollService",
 }
 
-function RagdollService:Start()
+function RagdollService:OnStart()
 	NevermoreService:GetPackage("RagdollService")
 end
 

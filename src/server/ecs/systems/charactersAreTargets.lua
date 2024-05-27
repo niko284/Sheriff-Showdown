@@ -16,6 +16,7 @@ local function charactersAreTargets(world: Matter.World)
 		for _, character in useEvent(player, "CharacterAdded") do
 			world:spawn(
 				Components.Target(),
+				Components.Player({ player = player }), -- also indicate that this target is a player
 				Components.Renderable({
 					instance = character,
 				}),

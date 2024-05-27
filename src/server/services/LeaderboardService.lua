@@ -37,7 +37,7 @@ local LeaderboardService = {
 
 -- // Functions \\
 
-function LeaderboardService:Init()
+function LeaderboardService:OnStart()
 	-- Initialize server leaderboard information.
 
 	table.insert(PlayerDataService.BeforeDocumentCloseCallbacks, function(Player: Player)
@@ -64,8 +64,6 @@ function LeaderboardService:Init()
 	end)
 	updateLeaderboardsTimer:StartNow()
 end
-
-function LeaderboardService:Start() end
 
 function LeaderboardService:SavePlayerLeaderboardData(Player: Player)
 	local playerDocument = PlayerDataService:GetDocument(Player)

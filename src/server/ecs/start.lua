@@ -10,7 +10,9 @@ local Matter = require(ReplicatedStorage.packages.Matter)
 local function start(systemsContainers: { Instance }, services)
 	local world = Matter.World.new()
 
-	local loop = Matter.Loop.new(world)
+	local loop = Matter.Loop.new(world, {
+		services = services,
+	})
 
 	local systems = {}
 	for _, systemContainer in ipairs(systemsContainers) do

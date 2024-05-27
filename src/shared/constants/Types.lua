@@ -73,8 +73,8 @@ export type RoundModeData = {
 	TeamNames: { string },
 }
 export type Team = {
-	Players: { Player }, -- list of players in this team.
-	Killed: { Player }, -- list of players eliminated from the round in this team.
+	Entities: { number }, -- list of entity ids in this team.
+	Killed: { number }, -- list of entity ids that have been killed in this team.
 	Name: string,
 }
 export type Match = {
@@ -128,5 +128,7 @@ export type DistractionData = {
 export type TeamData = {
 	Color: Color3,
 }
+
+export type Status = "Killed" | "Slowed"
 
 return nil
