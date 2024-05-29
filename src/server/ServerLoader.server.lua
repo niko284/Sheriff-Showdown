@@ -13,6 +13,7 @@ local SYSTEM_CONTAINERS = {
 local SERVICE_CONTAINERS = {
 	ServerScriptService.services,
 }
+local LIFECYCLE_METHODS = { "OnInit", "OnStart" }
 
 local function fetchServices(serviceContainers)
 	return Promise.new(function(resolve)
@@ -31,15 +32,21 @@ local function loadServer()
 	return fetchServices(SERVICE_CONTAINERS)
 		:andThen(function(services)
 			-- call :OnStart() on all services.
-			for name, service in services do
-				local method = service.OnStart
-				if type(method) == "function" then
-					task.spawn(function()
+			for _, lifecycleMethod in LIFECYCLE_METHODS do
+				for name, service in services do
+					local method = service[lifecycleMethod]
+					if type(method) == "function" then
 						debug.setmemorycategory(name)
-						method(service) -- we pass the service as the first argument since we are calling it as a method (: instead of .)
-					end)
+						method(service) -- no yielding is allowed in our lifecycle methods.
+					end
 				end
 			end
+
+			-- initialize and start the service bag for our nevermore packages.
+			local serviceBag = services.NevermoreService:GetServiceBag()
+			serviceBag:Init()
+			serviceBag:Start()
+
 			return services
 		end)
 		:andThen(function(services)

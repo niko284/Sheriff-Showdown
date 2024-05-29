@@ -24,7 +24,8 @@ local function charactersAreTargets(world: Matter.World)
 					health = 100,
 					maxHealth = 100,
 					regenRate = 0,
-				})
+				}),
+				Components.Children({}) -- list of entity ids that are owned by this entity
 			)
 		end
 	end

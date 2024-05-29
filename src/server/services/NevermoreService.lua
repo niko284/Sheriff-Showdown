@@ -13,7 +13,7 @@ local NevermoreService = {
 
 -- // Functions \\
 
-function NevermoreService:OnStart()
+function NevermoreService:OnInit()
 	NevermoreService:LoadNevermore()
 		:andThen(function(_clientPackages, serverPackages, _sharedPackages)
 			NevermoreService.ServiceBag = require(serverPackages.ServiceBag).new() :: any
@@ -33,7 +33,7 @@ end
 
 function NevermoreService:LoadNevermore()
 	return Promise.new(function(resolve, _reject, _onCancel)
-		local NevermoreLoaderUtilsModule = ServerScriptService.nodeModules:FindFirstDescendant("LoaderUtils")
+		local NevermoreLoaderUtilsModule = ServerScriptService.nodeModules:FindFirstChild("LoaderUtils", true)
 		local NevermoreLoaderUtils = require(NevermoreLoaderUtilsModule) :: any
 
 		local client, server, shared = NevermoreLoaderUtils.toWallyFormat(ServerScriptService.nodeModules, false)

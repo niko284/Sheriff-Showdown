@@ -7,14 +7,14 @@ local MatterTypes = require(ReplicatedStorage.ecs.MatterTypes)
 
 type KilledRecord = MatterTypes.WorldChangeRecord<Components.Killed>
 
-local function killsAreProcessed(world: Matter.World, services)
+local function killsAreProcessed(world: Matter.World, state)
 	-- killed components are removed when they expire
 	for eid, killed: Components.Killed in world:query(Components.Killed) do
 		local renderable = world:get(eid, Components.Renderable) :: Components.Renderable?
 		if os.time() >= killed.expiry and renderable then
 			local plrFromRenderable = Players:GetPlayerFromCharacter(renderable.instance)
 			if plrFromRenderable then
-				plrFromRenderable:LoadCharacter() -- respawn the player if they were killed
+				task.spawn(plrFromRenderable.LoadCharacter, plrFromRenderable)
 			else
 				renderable.instance:Destroy() -- destroy the entity if it's not a player (e.g. a target dummy)
 			end
@@ -24,7 +24,7 @@ local function killsAreProcessed(world: Matter.World, services)
 	-- killed entities are ragdolled
 	for eid, killedRecord: KilledRecord in world:queryChanged(Components.Killed) do
 		if killedRecord.new then -- killed entities are ragdolled
-			services.StatusService.StatusProcessed:Fire(eid, "Killed")
+			state.services.StatusService.StatusProcessed:Fire(eid, "Killed")
 			local ragdolled = world:get(eid, Components.Ragdolled)
 			if ragdolled == nil then
 				world:insert(eid, Components.Ragdolled())

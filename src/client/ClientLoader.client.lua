@@ -15,6 +15,7 @@ local SYSTEM_CONTAINERS = {
 local CONTROLLER_CONTAINERS = {
 	PlayerScripts.controllers,
 }
+local LIFECYCLE_METHODS = { "OnInit", "OnStart" }
 
 local function fetchControllers(controllerContainers)
 	return Promise.new(function(resolve)
@@ -33,15 +34,21 @@ local function loadClient()
 	return fetchControllers(CONTROLLER_CONTAINERS)
 		:andThen(function(controllers)
 			-- call :OnStart() on all controllers.
-			for name, controller in controllers do
-				local method = controller.OnStart
-				if type(method) == "function" then
-					task.spawn(function()
+			for _, lifecycleMethod in LIFECYCLE_METHODS do
+				for name, controller in controllers do
+					local method = controller[lifecycleMethod]
+					if type(method) == "function" then
 						debug.setmemorycategory(name)
 						method(controller) -- we pass the service as the first argument since we are calling it as a method (: instead of .)
-					end)
+					end
 				end
 			end
+
+			-- initialize and start the service bag for our nevermore packages.
+			local serviceBag = controllers.NevermoreController:GetServiceBag()
+			serviceBag:Init()
+			serviceBag:Start()
+
 			return controllers
 		end)
 		:andThen(function()

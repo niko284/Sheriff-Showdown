@@ -11,7 +11,7 @@ local Lapis = require(ServerPackages.Lapis)
 local Signal = require(Packages.Signal)
 local t = require(Packages.t)
 
-local collectionName = RunService:IsStudio() and "PlayerData" .. HttpService:GenerateGUID(false) or "PlayerData"
+local collectionName = RunService:IsStudio() and "PlayerData" .. HttpService:GenerateGUID(false) or "PlayerData1"
 
 local PlayerDataCollection = Lapis.createCollection(collectionName, {
 	defaultData = require(script.Schema),

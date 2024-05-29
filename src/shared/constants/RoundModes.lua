@@ -1,20 +1,23 @@
 --!strict
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 
 local Types = require(ReplicatedStorage.constants.Types)
 
 local function AllOnSameTeam(RoundInstance: Types.Round): boolean
+	local RoundService = require(ServerScriptService.services.RoundService) :: any
+
 	local Players = RoundInstance.Players
 
 	for _, Match in pairs(RoundInstance.Matches) do
 		for _, Team in pairs(Match.Teams) do
-			local TeamPlayers = Team.Players
+			local TeamEntities = Team.Entities
 
 			local allInTeam = true
 
 			for _, Player in pairs(Players) do
-				if not table.find(TeamPlayers, Player) then
+				if not table.find(TeamEntities, RoundService:GetEntityIdFromPlayer(Player)) then
 					allInTeam = false
 					break
 				end

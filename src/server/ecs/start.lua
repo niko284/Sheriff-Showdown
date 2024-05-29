@@ -30,28 +30,6 @@ local function start(systemsContainers: { Instance }, services)
 		default = RunService.Heartbeat,
 	})
 
-	-- TEST
-
-	--[[for _, player in ipairs(Players:GetPlayers()) do
-		world:spawn(
-			Components.Gun(Items[1].GunStatisticalData),
-			Components.Owner({
-				OwnedBy = player,
-			}),
-			Components.Item({ Id = 1 })
-		)
-	end
-
-	Players.PlayerAdded:Connect(function(Player)
-		world:spawn(
-			Components.Gun(Items[1].GunStatisticalData),
-			Components.Owner({
-				OwnedBy = Player,
-			}),
-			Components.Item({ Id = 1 })
-		)
-	end)--]]
-
 	for _, target in CollectionService:GetTagged("Target") do
 		world:spawn(
 			Components.Target(),

@@ -78,5 +78,8 @@ export type Ragdolled = {}
 export type PlayerComponent = {
 	player: Player,
 }
+export type Children = {
+	children: { number },
+}
 
 return Components
