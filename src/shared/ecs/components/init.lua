@@ -37,7 +37,9 @@ export type Bullet = {
 	filter: { Instance }?,
 	origin: CFrame,
 }
-export type Target = {}
+export type Target = {
+	CanTarget: boolean,
+}
 export type Collided = {
 	raycastResult: RaycastResult?,
 }

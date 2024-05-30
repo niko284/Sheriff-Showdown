@@ -29,7 +29,7 @@ local function charactersAreTargets(world: Matter.World)
 			)
 		end
 	end
-	for entityId, renderableRecord: RenderableRecord in world:queryChanged(Components.Renderable) do
+	--[[for entityId, renderableRecord: RenderableRecord in world:queryChanged(Components.Renderable) do
 		if renderableRecord.new == nil and renderableRecord.old ~= nil then
 			local hasTarget = world:get(entityId, Components.Target)
 			if hasTarget then
@@ -37,7 +37,7 @@ local function charactersAreTargets(world: Matter.World)
 				world:despawn(entityId) -- despawn the target entity if the renderable is removed (like when a character dies)
 			end
 		end
-	end
+	end--]]
 end
 
 return charactersAreTargets

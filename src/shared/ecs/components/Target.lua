@@ -4,6 +4,8 @@ local Packages = ReplicatedStorage.packages
 
 local Matter = require(Packages.Matter)
 
-local Target = Matter.component("Target", {})
+local Target = Matter.component("Target", {
+	CanTarget = false,
+})
 
 return Target

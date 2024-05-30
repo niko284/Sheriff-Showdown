@@ -37,10 +37,17 @@ local function bulletsCollide(world: Matter.World)
 				local targetEntityId = target:GetAttribute("ServerEntityId")
 				local myEntityId = myTarget:GetAttribute("ServerEntityId")
 
-				local targetTeam =
-					world:get(MatterReplication.resolveServerId(world, targetEntityId), Components.Team) :: Components.Team?
+				local targetClientEntityId = MatterReplication.resolveServerId(world, targetEntityId)
+
+				local targetTeam = world:get(targetClientEntityId, Components.Team) :: Components.Team?
 				local myTeam =
 					world:get(MatterReplication.resolveServerId(world, myEntityId), Components.Team) :: Components.Team?
+
+				local targetComponent = world:get(targetClientEntityId, Components.Target)
+
+				if targetComponent and targetComponent.CanTarget == false then
+					return
+				end
 
 				if myTeam and targetTeam and myTeam.name == targetTeam.name then
 					-- don't friendly fire

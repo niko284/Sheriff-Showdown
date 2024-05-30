@@ -455,9 +455,19 @@ function RoundService:WaitForMatchesToFinish(RoundInstance: Types.Round)
 
 					task.delay(WINNER_CELEBRATION_DURATION, function()
 						for _, winningPlayer in RoundService:GetPlayersInTeam(winningTeam) do
+							if winningPlayer:IsDescendantOf(game) == false then
+								continue
+							end
 							EndMatchClient:SendToPlayer(winningPlayer)
 							winningPlayer:LoadCharacter()
 						end
+
+						for _, team in match.Teams do
+							for _, entityId in team.Entities do
+								RoundService.World:despawn(entityId)
+							end
+						end
+
 						local nextMatch = RoundInstance.Matches[index + 1]
 						if nextMatch then
 							task.wait(2)

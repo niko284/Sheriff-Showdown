@@ -14,6 +14,16 @@ local Items: { Types.ItemInfo } = {
 			BulletSoundId = 130113322,
 		},
 	},
+	{
+		Id = 2,
+		Name = "Default",
+		Type = "Gun",
+		Rarity = "Basic",
+		Image = 16381222990,
+		GunStatisticalData = {
+			BulletSoundId = 1905367471,
+		},
+	},
 }
 
 return Items

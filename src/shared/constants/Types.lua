@@ -131,4 +131,21 @@ export type TeamData = {
 
 export type Status = "Killed" | "Slowed"
 
+export type FrameProps = {
+	anchorPoint: Vector2?,
+	autoButtonColor: boolean?,
+	active: boolean?,
+	backgroundColor3: Color3?,
+	backgroundTransparency: number?,
+	borderSizePixel: number?,
+	size: UDim2?,
+	position: UDim2?,
+	sizeConstraint: Enum.SizeConstraint?,
+	visible: boolean?,
+	zIndex: number?,
+	layoutOrder: number?,
+	clipsDescendants: boolean?,
+	rotation: number?,
+}
+
 return nil

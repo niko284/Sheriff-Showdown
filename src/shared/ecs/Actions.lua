@@ -137,8 +137,13 @@ return {
 		end
 
 		-- get both the target player's and our own player's team.
-		local targetRenderable = world:get(actionPayload.targetEntityId, Components.Renderable)
-		local targetTeam = world:get(actionPayload.targetEntityId, Components.Team) :: Components.Team?
+		local targetRenderable: Components.Renderable? = world:get(actionPayload.targetEntityId, Components.Renderable)
+		local targetTeam: Components.Team? = world:get(actionPayload.targetEntityId, Components.Team)
+		local targetComponent: Components.Target? = world:get(actionPayload.targetEntityId, Components.Target)
+
+		if targetComponent == nil or targetComponent.CanTarget == false then
+			return
+		end
 
 		local attacker = player.Character
 		local attackerTeam: Components.Team? = nil
@@ -170,7 +175,7 @@ return {
 					continue -- don't deal damage to ourselves.
 				end
 
-				local gun = world:get(bullet.gunId, Components.Gun) :: Components.Gun?
+				local gun: Components.Gun? = world:get(bullet.gunId, Components.Gun)
 				if not gun then
 					continue
 				end -- the gun that shot this bullet no longer exists
