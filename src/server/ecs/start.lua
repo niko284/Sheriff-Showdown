@@ -28,6 +28,7 @@ local function start(systemsContainers: { Instance }, services)
 
 	loop:begin({
 		default = RunService.Heartbeat,
+		stepped = RunService.Stepped,
 	})
 
 	for _, target in CollectionService:GetTagged("Target") do
@@ -43,6 +44,8 @@ local function start(systemsContainers: { Instance }, services)
 			})
 		)
 	end
+
+	return world
 end
 
 return start

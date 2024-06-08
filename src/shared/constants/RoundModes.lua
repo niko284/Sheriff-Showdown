@@ -33,7 +33,7 @@ local function AllOnSameTeam(RoundInstance: Types.Round): boolean
 end
 
 return {
-	{
+	--[[{
 		Name = "Singles",
 		TeamSize = 1,
 		TeamsPerMatch = 2,
@@ -42,7 +42,7 @@ return {
 			-- the game is over when the player pool consists of only people that were in the same team last round.
 			return AllOnSameTeam(RoundInstance)
 		end,
-	},
+	},--]]
 	{
 		Name = "Duos",
 		TeamSize = 2,
@@ -53,7 +53,7 @@ return {
 			return AllOnSameTeam(RoundInstance)
 		end,
 	},
-	{
+	--[[{
 		Name = "Distraction",
 		UseSpawnType = "Singles",
 		TeamSize = 1,
@@ -63,5 +63,5 @@ return {
 			-- the game is over when the player pool consists of only people that were in the same team last round.
 			return AllOnSameTeam(RoundInstance)
 		end,
-	},
+	},--]]
 } :: { Types.RoundModeData }

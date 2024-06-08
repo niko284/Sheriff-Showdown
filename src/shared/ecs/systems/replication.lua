@@ -5,12 +5,12 @@ local MatterReplication = require(ReplicatedStorage.packages.MatterReplication)
 
 local REPLICATED_COMPONENTS = {
 	Components.Gun,
-	Components.Renderable,
 	Components.Owner,
 	Components.Bullet,
 	Components.Velocity,
 	Components.Target,
 	Components.Item,
+	Components.MerryGoRound,
 	Components.Team,
 }
 

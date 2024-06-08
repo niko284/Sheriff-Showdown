@@ -2,7 +2,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Packages = ReplicatedStorage.packages
 
-local Actions = require(ReplicatedStorage.ecs.Actions)
+local Actions = require(ReplicatedStorage.ecs.actions)
 local Net = require(Packages.Net)
 local t = require(Packages.t)
 

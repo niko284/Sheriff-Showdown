@@ -28,14 +28,14 @@ local function bulletsCollide(world: Matter.World)
 
 			if
 				target
-				and target:GetAttribute("ServerEntityId")
-				and myTarget:GetAttribute("ServerEntityId")
+				and target:GetAttribute("serverEntityId")
+				and myTarget:GetAttribute("serverEntityId")
 				and identifier
 				and owner
 				and owner.OwnedBy == Players.LocalPlayer
 			then
-				local targetEntityId = target:GetAttribute("ServerEntityId")
-				local myEntityId = myTarget:GetAttribute("ServerEntityId")
+				local targetEntityId = target:GetAttribute("serverEntityId")
+				local myEntityId = myTarget:GetAttribute("serverEntityId")
 
 				local targetClientEntityId = MatterReplication.resolveServerId(world, targetEntityId)
 

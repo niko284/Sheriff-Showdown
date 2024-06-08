@@ -33,7 +33,7 @@ local ApplyTeamIndicator = RoundNamespace:Get("ApplyTeamIndicator")
 
 local MAPS_FOLDER = Assets:WaitForChild("maps", 3)
 local ExtensionsFolder = script.ModeExtensions
-local VOTING_DURATION = 16
+local VOTING_DURATION = 4
 local MINIMUM_PLAYERS = 2
 local MAP_VOTING_COUNT = 3
 local ROUND_MODE_VOTING_COUNT = 3
@@ -58,6 +58,9 @@ function RoundService:OnStart()
 	-- load our round extensions
 	for _, extension in ExtensionsFolder:GetChildren() do
 		local extensionModule = require(extension) :: Types.RoundModeExtension
+		if not extensionModule.Data then
+			continue
+		end
 		RoundService.RoundExtensions[extensionModule.Data.Name] = extensionModule
 	end
 
@@ -89,7 +92,7 @@ function RoundService:OnStart()
 	end)
 
 	task.spawn(function()
-		while true do
+		while false do
 			RoundService:WaitForPlayers(MINIMUM_PLAYERS)
 				:andThen(function()
 					return Promise.race({
@@ -159,7 +162,7 @@ end
 
 function RoundService:DoIntermission()
 	print("Intermission phase started.")
-	return Promise.delay(10)
+	return Promise.delay(2)
 end
 
 -- resolves if there are not enough players to start a round (used in the intermission and voting phases)

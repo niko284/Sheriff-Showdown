@@ -20,7 +20,7 @@ export type Gun = {
 	CriticalDamage: { [string]: number },
 }
 export type Owner = {
-	OwnedBy: Player?,
+	OwnedBy: Player,
 }
 export type Transform = {
 	cframe: CFrame,
@@ -82,6 +82,12 @@ export type PlayerComponent = {
 }
 export type Children = {
 	children: { number },
+}
+export type MerryGoRound = {
+	targetAngularVelocity: number,
+	currentAngularVelocity: number,
+	angularAcceleration: number,
+	maxAngularVelocity: number,
 }
 
 return Components

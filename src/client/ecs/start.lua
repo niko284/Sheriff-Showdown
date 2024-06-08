@@ -47,6 +47,8 @@ local function start(systemsContainers: { Instance })
 		Heartbeat = RunService.Heartbeat,
 		Stepped = RunService.Stepped,
 	})
+
+	return world
 end
 
 return start

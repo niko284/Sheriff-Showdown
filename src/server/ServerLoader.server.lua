@@ -3,7 +3,9 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local Packages = ReplicatedStorage.packages
 
+local Components = require(ReplicatedStorage.ecs.components)
 local Promise = require(Packages.Promise)
+local bootstrapCollections = require(ReplicatedStorage.ecs.BootstrapCollections)
 local ecsStart = require(ServerScriptService.ecs.start)
 
 local SYSTEM_CONTAINERS = {
@@ -14,6 +16,11 @@ local SERVICE_CONTAINERS = {
 	ServerScriptService.services,
 }
 local LIFECYCLE_METHODS = { "OnInit", "OnStart" }
+local COLLECTION_COMPONENTS = {
+	MerryGoRound = {
+		Components.MerryGoRound,
+	},
+}
 
 local function fetchServices(serviceContainers)
 	return Promise.new(function(resolve)
@@ -50,7 +57,8 @@ local function loadServer()
 			return services
 		end)
 		:andThen(function(services)
-			ecsStart(SYSTEM_CONTAINERS, services)
+			local world = ecsStart(SYSTEM_CONTAINERS, services)
+			bootstrapCollections(world, COLLECTION_COMPONENTS, { workspace })
 		end)
 end
 

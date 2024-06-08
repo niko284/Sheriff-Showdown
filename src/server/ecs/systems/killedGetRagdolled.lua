@@ -7,7 +7,7 @@ local MatterTypes = require(ReplicatedStorage.ecs.MatterTypes)
 
 type KilledRecord = MatterTypes.WorldChangeRecord<Components.Killed>
 
-local function killsAreProcessed(world: Matter.World, state)
+local function killsAreProcessed(world: Matter.World)
 	-- killed components are removed when they expire
 	for eid, killed: Components.Killed in world:query(Components.Killed) do
 		local renderable = world:get(eid, Components.Renderable) :: Components.Renderable?
@@ -24,7 +24,6 @@ local function killsAreProcessed(world: Matter.World, state)
 	-- killed entities are ragdolled
 	for eid, killedRecord: KilledRecord in world:queryChanged(Components.Killed) do
 		if killedRecord.new then -- killed entities are ragdolled
-			state.services.StatusService.StatusProcessed:Fire(eid, "Killed")
 			local ragdolled = world:get(eid, Components.Ragdolled)
 			if ragdolled == nil then
 				world:insert(eid, Components.Ragdolled())

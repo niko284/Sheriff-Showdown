@@ -2,7 +2,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Util = ReplicatedStorage.utils
 
-local Actions = require(ReplicatedStorage.ecs.Actions)
+local Actions = require(ReplicatedStorage.ecs.actions)
 local Matter = require(ReplicatedStorage.packages.Matter)
 local Remotes = require(ReplicatedStorage.Remotes)
 local UUIDSerde = require(Util.UUIDSerde)
@@ -14,7 +14,6 @@ local useEvent = Matter.useEvent
 
 local function actionsAreConsumed(world: Matter.World)
 	for _, player, actionPayload in useEvent("ProcessAction", ProcessAction) do
-		print(`Processing action: {actionPayload.action}`)
 		local action = Actions[actionPayload.action]
 
 		local success, actionId = pcall(function()

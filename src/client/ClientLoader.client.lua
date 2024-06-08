@@ -5,6 +5,8 @@ local LocalPlayer = Players.LocalPlayer
 local PlayerScripts = LocalPlayer.PlayerScripts
 local Packages = ReplicatedStorage.packages
 
+local BootstrapCollections = require(ReplicatedStorage.ecs.BootstrapCollections)
+local Components = require(ReplicatedStorage.ecs.components)
 local Promise = require(Packages.Promise)
 local ecsStart = require(PlayerScripts.ecs.start)
 
@@ -14,6 +16,9 @@ local SYSTEM_CONTAINERS = {
 }
 local CONTROLLER_CONTAINERS = {
 	PlayerScripts.controllers,
+}
+local COLLECTION_COMPONENTS = {
+	MerryGoRound = {},
 }
 local LIFECYCLE_METHODS = { "OnInit", "OnStart" }
 
@@ -52,7 +57,8 @@ local function loadClient()
 			return controllers
 		end)
 		:andThen(function()
-			ecsStart(SYSTEM_CONTAINERS)
+			local world = ecsStart(SYSTEM_CONTAINERS)
+			BootstrapCollections(world, COLLECTION_COMPONENTS, { workspace })
 		end)
 end
 

@@ -148,4 +148,18 @@ export type FrameProps = {
 	rotation: number?,
 }
 
+export type MiddlewareFn<T> = (world: Matter.World, player: Player, actionPayload: T) -> boolean
+
+-- >> action types ecs
+export type GenericPayload = {
+	action: string,
+	actionId: string,
+}
+
+export type Action<T> = {
+	process: (world: Matter.World, player: Player, actionPayload: T) -> (),
+	middleware: { MiddlewareFn<T> }?,
+	validatePayload: (sentPayload: any) -> boolean,
+}
+
 return nil
