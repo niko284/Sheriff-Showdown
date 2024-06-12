@@ -13,6 +13,7 @@ return Net.CreateDefinitions({
 				action = t.keyOf(Actions),
 			})),
 		}),
+		VisualizeEffect = Net.Definitions.ServerToClientEvent(),
 	}),
 	Round = Net.Definitions.Namespace({
 		StartMatch = Net.Definitions.ServerToClientEvent(),

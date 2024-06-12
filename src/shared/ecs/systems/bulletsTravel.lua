@@ -42,13 +42,6 @@ local function bulletsTravel(world: Matter.World, _state)
 			end
 		end
 	end
-
-	-- Remove bullets that have a lifetime component and have expired.
-	for eid, _bullet, lifetime in world:query(Components.Bullet, Components.Lifetime) do
-		if os.time() >= lifetime.expiry then
-			world:despawn(eid) -- Remove the bullet from the world.
-		end
-	end
 end
 
 return {

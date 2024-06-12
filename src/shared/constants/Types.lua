@@ -162,4 +162,9 @@ export type Action<T> = {
 	validatePayload: (sentPayload: any) -> boolean,
 }
 
+export type VisualEffect<T> = {
+	name: string,
+	visualize: (world: Matter.World, effectPayload: T) -> (),
+}
+
 return nil

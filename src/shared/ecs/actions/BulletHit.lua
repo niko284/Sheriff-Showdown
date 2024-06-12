@@ -113,7 +113,7 @@ return {
 					local newHealth = health.health - damage
 					world:insert(
 						actionPayload.targetEntityId,
-						health:patch({ health = newHealth, causedBy = myEntityId })
+						health:patch({ health = newHealth, causedBy = bullet.gunId })
 					)
 				end
 			end

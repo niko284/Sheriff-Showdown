@@ -58,7 +58,7 @@ local function bulletsCollide(world: Matter.World)
 				ProcessAction:SendToServer({
 					action = "BulletHit",
 					actionId = UUIDSerde.Serialize(identifier.uuid),
-					targetEntityId = target:GetAttribute("ServerEntityId"),
+					targetEntityId = target:GetAttribute("serverEntityId"),
 					hitPart = hit,
 				})
 			end

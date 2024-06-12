@@ -5,8 +5,8 @@ for _, ComponentModule in ipairs(script:GetChildren()) do
 	Components[tostring(Component)] = Component
 end
 
-export type Renderable = {
-	instance: Instance,
+export type Renderable<T> = {
+	instance: T,
 }
 export type Gun = {
 	Damage: number,

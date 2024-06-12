@@ -92,7 +92,7 @@ function RoundService:OnStart()
 	end)
 
 	task.spawn(function()
-		while false do
+		while true do
 			RoundService:WaitForPlayers(MINIMUM_PLAYERS)
 				:andThen(function()
 					return Promise.race({

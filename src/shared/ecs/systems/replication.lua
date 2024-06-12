@@ -9,6 +9,8 @@ local REPLICATED_COMPONENTS = {
 	Components.Bullet,
 	Components.Velocity,
 	Components.Target,
+	Components.Killed,
+	Components.Renderable,
 	Components.Item,
 	Components.MerryGoRound,
 	Components.Team,

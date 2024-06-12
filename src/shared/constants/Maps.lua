@@ -1,7 +1,7 @@
 --!strict
 
 return {
-	--[[{
+	{
 		Name = "Desert",
 		Image = 16345010678,
 	},
@@ -32,13 +32,13 @@ return {
 	{
 		Name = "Castle",
 		Image = 17335347405,
-	},--]]
+	},
 	{
 		Name = "Playground",
 		Image = 0,
 	},
-	--[[{
+	{
 		Name = "Construction",
 		Image = 0,
-	},--]]
+	},
 }

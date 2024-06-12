@@ -10,7 +10,7 @@ type KilledRecord = MatterTypes.WorldChangeRecord<Components.Killed>
 local function killsAreProcessed(world: Matter.World)
 	-- killed components are removed when they expire
 	for eid, killed: Components.Killed in world:query(Components.Killed) do
-		local renderable = world:get(eid, Components.Renderable) :: Components.Renderable?
+		local renderable = world:get(eid, Components.Renderable) :: Components.Renderable<Model>?
 		if os.time() >= killed.expiry and renderable then
 			local plrFromRenderable = Players:GetPlayerFromCharacter(renderable.instance)
 			if plrFromRenderable then

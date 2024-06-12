@@ -24,6 +24,30 @@ local Items: { Types.ItemInfo } = {
 			BulletSoundId = 1905367471,
 		},
 	},
+	{
+		Id = 3,
+		Name = "Halo",
+		Type = "Gun",
+		Rarity = "Exotic",
+		Image = 16410415588,
+	},
+	{
+		Id = 4,
+		Name = "Zombie Launcher",
+		Type = "Gun",
+		Rarity = "Exotic",
+		Image = 17475397607,
+		GunStatisticalData = {
+			BulletSoundId = 30324676,
+		},
+	},
+	{
+		Id = 5,
+		Name = "Bugged",
+		Type = "Gun",
+		Rarity = "Exotic",
+		Image = 17826514316,
+	},
 }
 
 return Items

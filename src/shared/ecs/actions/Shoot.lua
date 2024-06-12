@@ -100,6 +100,7 @@ return {
 		velocity = t.Vector3,
 		timestamp = t.numberPositive,
 		origin = t.CFrame,
+		fromGun = t.numberPositive,
 	}),
 	middleware = {
 		Middlewares.DoesNotHaveComponents({
