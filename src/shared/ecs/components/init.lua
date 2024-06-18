@@ -90,4 +90,10 @@ export type MerryGoRound = {
 	maxAngularVelocity: number,
 }
 
+export type Animation = {
+	animationId: number,
+	looped: boolean,
+	speed: number,
+}
+
 return Components

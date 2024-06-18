@@ -22,7 +22,7 @@ local InterfaceController = {
 
 function InterfaceController:OnInit()
 	-- Disable appropriate core guis.
-	--StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
+	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
 	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.EmotesMenu, false)
 	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
 end

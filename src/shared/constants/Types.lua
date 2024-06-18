@@ -12,26 +12,35 @@ export type ItemInfo = {
 	Name: string,
 	Rarity: ItemRarity,
 	Type: ItemType,
-	Image: number?,
+	Image: number,
+	Default: (boolean | (Player) -> boolean)?,
 	TagWithSerial: boolean?,
 } & ItemGunData
+
+type GunProps = {
+	Kills: number?,
+}
 export type Item = {
 	Id: number,
 	UUID: string,
 	Locked: boolean?,
 	Serial: number?,
 	Level: number?,
-}
+} & GunProps
 
 export type RarityInfo = {
 	TagWithSerial: boolean,
+	Color: Color3,
+	Weight: number,
 }
 
+export type PlayerInventory = {
+	Storage: { Item },
+	Equipped: { Item },
+	GrantedDefaults: { number }, -- list of item ids that the player has been granted by default (to avoid duplicates)
+}
 export type DataSchema = {
-	Inventory: {
-		Storage: { Item },
-		Equipped: { Item },
-	},
+	Inventory: PlayerInventory,
 	Resources: {
 		Coins: number,
 		Gems: number,
@@ -165,6 +174,16 @@ export type Action<T> = {
 export type VisualEffect<T> = {
 	name: string,
 	visualize: (world: Matter.World, effectPayload: T) -> (),
+}
+
+export type PlayerlistPlayer = {
+	Player: Player,
+	Level: number,
+}
+
+export type NetworkResponse = {
+	Success: boolean,
+	Message: string?,
 }
 
 return nil

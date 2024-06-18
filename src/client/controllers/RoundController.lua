@@ -18,7 +18,7 @@ local AudioUtils = require(Utils.AudioUtils)
 local Distractions = require(Constants.Distractions)
 local KeybindInputController = require(Controllers.KeybindInputController)
 local Net = require(Packages.Net)
-local Remotes = require(ReplicatedStorage.Remotes)
+local Remotes = require(ReplicatedStorage.network.Remotes)
 local Signal = require(Packages.Signal)
 local Types = require(Constants.Types)
 

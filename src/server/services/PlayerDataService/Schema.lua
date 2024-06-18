@@ -8,6 +8,7 @@ return {
 	Inventory = {
 		Storage = {},
 		Equipped = {},
+		GrantedDefaults = {},
 	},
 	Resources = {
 		-- Currency

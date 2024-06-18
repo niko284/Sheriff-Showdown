@@ -4,7 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Components = require(ReplicatedStorage.ecs.components)
 local Matter = require(ReplicatedStorage.packages.Matter)
-local Remotes = require(ReplicatedStorage.Remotes)
+local Remotes = require(ReplicatedStorage.network.Remotes)
 local UUIDSerde = require(ReplicatedStorage.utils.UUIDSerde)
 
 local LocalPlayer = Players.LocalPlayer

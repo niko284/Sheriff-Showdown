@@ -7,7 +7,7 @@ local Util = ReplicatedStorage.utils
 local Components = require(ReplicatedStorage.ecs.components)
 local Matter = require(Packages.Matter)
 local MatterReplication = require(Packages.MatterReplication)
-local Remotes = require(ReplicatedStorage.Remotes)
+local Remotes = require(ReplicatedStorage.network.Remotes)
 local UUIDSerde = require(Util.UUIDSerde)
 
 local CombatNamespace = Remotes.Client:GetNamespace("Combat")

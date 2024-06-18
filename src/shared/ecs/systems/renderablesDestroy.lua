@@ -9,8 +9,8 @@ local useEvent = Matter.useEvent
 local Renderable = Components.Renderable
 
 type RenderableRecord = {
-	new: Components.Renderable?,
-	old: Components.Renderable?,
+	new: Components.Renderable<Instance>?,
+	old: Components.Renderable<Instance>?,
 }
 
 local function renderablesDestroy(world: Matter.World)
@@ -23,7 +23,7 @@ local function renderablesDestroy(world: Matter.World)
 		end
 	end
 	-- account for a renderable not being in the DOM.
-	for eid, renderable: Components.Renderable in world:query(Renderable) do
+	for eid, renderable: Components.Renderable<Instance> in world:query(Renderable) do
 		for _ in useEvent(renderable.instance, "AncestryChanged") do
 			if renderable.instance:IsDescendantOf(game) == false then
 				if RunService:IsClient() == true and world:get(eid, MatterReplication.ServerEntity) then

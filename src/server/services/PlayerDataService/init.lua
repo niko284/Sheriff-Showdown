@@ -8,6 +8,7 @@ local ServerPackages = ServerScriptService.ServerPackages
 local Packages = ReplicatedStorage.packages
 
 local Lapis = require(ServerPackages.Lapis)
+local Migrations = require(script.Migrations)
 local Signal = require(Packages.Signal)
 local t = require(Packages.t)
 
@@ -19,6 +20,7 @@ local PlayerDataCollection = Lapis.createCollection(collectionName, {
 		Inventory = t.strictInterface({
 			Storage = t.table,
 			Equipped = t.table,
+			GrantedDefaults = t.array(t.numberPositive),
 		}),
 		Resources = t.interface({
 			Coins = t.number,
@@ -28,6 +30,7 @@ local PlayerDataCollection = Lapis.createCollection(collectionName, {
 		}),
 		Statistics = t.interface({}),
 	}),
+	migrations = Migrations,
 })
 
 local PlayerDataService =

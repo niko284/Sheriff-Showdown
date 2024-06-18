@@ -23,6 +23,7 @@ local Items: { Types.ItemInfo } = {
 		GunStatisticalData = {
 			BulletSoundId = 1905367471,
 		},
+		Default = true,
 	},
 	{
 		Id = 3,
