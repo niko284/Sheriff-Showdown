@@ -32,7 +32,6 @@ return Net.CreateDefinitions({
 		}),
 	}),
 	Inventory = Net.Definitions.Namespace({
-		UpdateInventory = Net.Definitions.ServerToClientEvent(),
 		ItemAdded = Net.Definitions.ServerToClientEvent(),
 		EquipItem = Net.Definitions.ServerAsyncFunction({
 			Net.Middleware.TypeChecking(t.string),

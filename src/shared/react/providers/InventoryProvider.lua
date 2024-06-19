@@ -20,7 +20,7 @@ local function InventoryProvider(props)
 	local inventory, setInventory = useState(nil :: Types.PlayerInventory?)
 
 	useEffect(function()
-		local connection = InventoryController.InventoryChanged:Connect(function(newInventory)
+		local connection = InventoryController:ObserveInventoryChanged(function(newInventory)
 			setInventory(newInventory)
 		end)
 		return function()

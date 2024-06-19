@@ -20,6 +20,7 @@ export type ButtonProps = Types.FrameProps & {
 	strokeColor: Color3,
 	strokeThickness: number,
 	gradientRotation: number,
+	onActivated: (TextButton) -> (),
 }
 
 local function Button(props: ButtonProps)
@@ -32,7 +33,7 @@ local function Button(props: ButtonProps)
 			duration = 0.1, -- seconds
 			easing = ReactSpring.easings.easeInOutQuad,
 		},
-	}, { isPressed, props.size, isHovered } :: { any })
+	}, { isPressed, isHovered } :: { any })
 
 	return e("TextButton", {
 		AutoButtonColor = false,
@@ -46,6 +47,9 @@ local function Button(props: ButtonProps)
 		BorderSizePixel = 0,
 		Position = props.position,
 		Size = props.size,
+		[React.Event.Activated] = function(rbx: TextButton)
+			props.onActivated(rbx)
+		end,
 		[React.Event.MouseEnter] = function()
 			setIsHovered(true) -- // Set the hovered state to true.
 		end,

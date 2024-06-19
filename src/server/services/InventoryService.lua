@@ -7,6 +7,7 @@ local Services = ServerScriptService.services
 local Constants = ReplicatedStorage.constants
 
 local Freeze = require(ReplicatedStorage.packages.Freeze)
+local InventoryUtils = require(ReplicatedStorage.utils.InventoryUtils)
 local ItemService = require(Services.ItemService)
 local ItemTypes = require(Constants.ItemTypes)
 local ItemUtils = require(ReplicatedStorage.utils.ItemUtils)
@@ -15,13 +16,15 @@ local Lapis = require(ServerScriptService.ServerPackages.Lapis)
 local Net = require(ReplicatedStorage.packages.Net)
 local PlayerDataService = require(Services.PlayerDataService)
 local Remotes = require(ReplicatedStorage.network.Remotes)
+local ServerComm = require(ServerScriptService.ServerComm)
 local Types = require(ReplicatedStorage.constants.Types)
 
 local InventoryNamespace = Remotes.Server:GetNamespace("Inventory")
-local UpdateInventory = InventoryNamespace:Get("UpdateInventory") :: Net.ServerSenderEvent
 local ItemAdded = InventoryNamespace:Get("ItemAdded") :: Net.ServerSenderEvent
 local EquipItem = InventoryNamespace:Get("EquipItem") :: Net.ServerAsyncCallback
 local UnequipItem = InventoryNamespace:Get("UnequipItem") :: Net.ServerAsyncCallback
+
+local PlayerInventoryProperty = ServerComm:CreateProperty("PlayerInventory", nil)
 
 local InventoryService = {}
 
@@ -32,7 +35,8 @@ function InventoryService:OnInit()
 		local data = Document:read()
 
 		if data.Inventory then
-			UpdateInventory:SendToPlayer(Player, data.Inventory)
+			print("Setting for")
+			PlayerInventoryProperty:SetFor(Player, data.Inventory)
 		end
 	end)
 
@@ -41,7 +45,7 @@ function InventoryService:OnInit()
 	end)
 
 	UnequipItem:SetCallback(function(Player: Player, ItemUUID: string)
-		return nil
+		return InventoryService:UnequipItemNetworkRequest(Player, ItemUUID)
 	end)
 end
 
@@ -90,26 +94,19 @@ end
 function InventoryService:EquipItem(Player: Player, ItemUUID: string): ()
 	local Document = PlayerDataService:GetDocument(Player)
 	local newData = table.clone(Document:read())
-	local newStorage = table.clone(newData.Inventory.Storage)
-	local newEquipped = table.clone(newData.Inventory.Equipped)
 
-	local indexToRemove = nil
-	for index, item in ipairs(newStorage) do
-		if item.UUID == ItemUUID then
-			indexToRemove = index
-			break
-		end
-	end
+	local newInventory = InventoryUtils.EquipItem(newData.Inventory, ItemUUID)
+	newData.Inventory = newInventory
 
-	if not indexToRemove then
-		return -- Item not found
-	end
+	Document:write(newData)
+end
 
-	local Item = table.remove(newStorage, indexToRemove)
-	table.insert(newEquipped, Item)
+function InventoryService:UnequipItem(Player: Player, ItemUUID: string)
+	local Document = PlayerDataService:GetDocument(Player)
+	local newData = table.clone(Document:read())
 
-	newData.Inventory.Storage = newStorage
-	newData.Inventory.Equipped = newEquipped
+	local newInventory = InventoryUtils.UnequipItem(newData.Inventory, ItemUUID)
+	newData.Inventory = newInventory
 
 	Document:write(newData)
 end
@@ -126,7 +123,30 @@ function InventoryService:GetItemOfUUID(Player: Player, ItemUUID: string): Types
 			return Item
 		end
 	end
+
+	for _, Item in data.Inventory.Equipped do
+		if Item.UUID == ItemUUID then
+			return Item
+		end
+	end
+
 	return nil
+end
+
+function InventoryService:GetItemsOfType(Player: Player, ItemType: Types.ItemType, Equipped: boolean?): { Types.Item }
+	local Document = PlayerDataService:GetDocument(Player)
+	local data = Document:read()
+	local items = if Equipped == true then data.Inventory.Equipped else data.Inventory.Storage
+
+	local filteredItems = {}
+	for _, Item in ipairs(items) do
+		local ItemInfo = ItemUtils.GetItemInfoFromId(Item.Id)
+		if ItemInfo.Type == ItemType then
+			table.insert(filteredItems, Item)
+		end
+	end
+
+	return filteredItems
 end
 
 function InventoryService:EquipItemNetworkRequest(Player: Player, ItemUUID: string): Types.NetworkResponse
@@ -148,6 +168,29 @@ function InventoryService:EquipItemNetworkRequest(Player: Player, ItemUUID: stri
 	end
 
 	InventoryService:EquipItem(Player, ItemUUID)
+
+	return { Success = true }
+end
+
+function InventoryService:UnequipItemNetworkRequest(Player: Player, ItemUUID: string): Types.NetworkResponse
+	local Document = PlayerDataService:GetDocument(Player)
+	if not Document then
+		return { Success = false, Error = "Document not found" }
+	end
+
+	local Item = InventoryService:GetItemOfUUID(Player, ItemUUID)
+	if not Item then
+		return { Success = false, Error = "Item not found" }
+	end
+
+	local ItemInfo = ItemUtils.GetItemInfoFromId(Item.Id)
+	local ItemTypeInfo = ItemTypes[ItemInfo.Type]
+
+	if ItemTypeInfo.CanEquip == false then
+		return { Success = false, Error = "Item cannot be unequipped" }
+	end
+
+	InventoryService:UnequipItem(Player, ItemUUID)
 
 	return { Success = true }
 end

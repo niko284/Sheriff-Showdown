@@ -1,14 +1,16 @@
 --!strict
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Net = require(ReplicatedStorage.packages.Net)
-local Remotes = require(ReplicatedStorage.network.Remotes)
+local LocalPlayer = Players.LocalPlayer
+local PlayerScripts = LocalPlayer.PlayerScripts
+
+local ClientComm = require(PlayerScripts.ClientComm)
 local Signal = require(ReplicatedStorage.packages.Signal)
 local Types = require(ReplicatedStorage.constants.Types)
 
-local InventoryNamespace = Remotes.Client:GetNamespace("Inventory")
-local UpdateInventory = InventoryNamespace:Get("UpdateInventory") :: Net.ClientListenerEvent
+local PlayerInventoryProperty = ClientComm:GetProperty("PlayerInventory")
 
 local InventoryController = {
 	Name = "InventoryController",
@@ -16,9 +18,19 @@ local InventoryController = {
 }
 
 function InventoryController:OnInit()
-	UpdateInventory:Connect(function(newInventory: Types.PlayerInventory)
-		InventoryController.InventoryChanged:Fire(newInventory)
+	PlayerInventoryProperty:Observe(function(newInventory: Types.PlayerInventory?)
+		if newInventory then
+			InventoryController.InventoryChanged:Fire(newInventory)
+		end
 	end)
+end
+
+function InventoryController:ObserveInventoryChanged(callback: (Types.PlayerInventory) -> ())
+	local inventory = PlayerInventoryProperty:Get()
+	if inventory then
+		callback(inventory)
+	end
+	return InventoryController.InventoryChanged:Connect(callback)
 end
 
 return InventoryController

@@ -6,10 +6,12 @@ local Components = ReplicatedStorage.react.components
 
 local Rarities = require(ReplicatedStorage.constants.Rarities)
 local React = require(ReplicatedStorage.packages.React)
+local ReactSpring = require(ReplicatedStorage.packages.ReactSpring)
 local Separator = require(Components.other.Separator)
 local Types = require(ReplicatedStorage.constants.Types)
 
 local e = React.createElement
+local useState = React.useState
 
 type ItemProps = Types.FrameProps & {
 	image: string,
@@ -18,11 +20,22 @@ type ItemProps = Types.FrameProps & {
 	itemUUID: string,
 	onItemClicked: (uuid: string) -> (),
 	itemSerial: number?,
+	gradient: Color3?,
 	killCount: number?,
 }
 
 local function Item(props: ItemProps)
 	local rarityInfo = Rarities[props.rarity]
+
+	local isHovered, setIsHovered = useState(false)
+
+	local styles = ReactSpring.useSpring({
+		scale = if isHovered then 1.08 else 1,
+		config = {
+			duration = 0.1, -- seconds
+			easing = ReactSpring.easings.easeInOutQuad,
+		},
+	}, { isHovered } :: { any })
 
 	return e("Frame", {
 		BackgroundColor3 = Color3.fromRGB(72, 72, 72),
@@ -66,13 +79,24 @@ local function Item(props: ItemProps)
 			[React.Event.Activated] = function()
 				props.onItemClicked(props.itemUUID)
 			end,
+			[React.Event.MouseEnter] = function()
+				setIsHovered(true) -- // Set the hovered state to true.
+			end,
+			[React.Event.MouseLeave] = function()
+				setIsHovered(false) -- // Set the hovered state to false.
+			end,
 		}),
 
 		itemImage = e("ImageLabel", {
 			Image = props.image,
+			AnchorPoint = Vector2.new(0.5, 0.5),
 			BackgroundTransparency = 1,
-			Position = UDim2.fromScale(0.116, 0.171),
+			Position = UDim2.fromScale(0.507, 0.562),
 			Size = UDim2.fromScale(0.781, 0.781),
+		}, {
+			scale = e("UIScale", {
+				Scale = styles.scale,
+			}),
 		}),
 
 		options = e("ImageLabel", {
@@ -81,7 +105,7 @@ local function Item(props: ItemProps)
 			Position = UDim2.fromScale(0.548, 0.0685),
 			Size = UDim2.fromScale(0.384, 0.185),
 		}, {
-			favorite = e("ImageLabel", {
+			favorite = e("ImageButton", {
 				Image = "rbxassetid://17886594006",
 				BackgroundTransparency = 1,
 				Position = UDim2.fromScale(0.607, 0.222),
@@ -160,7 +184,7 @@ local function Item(props: ItemProps)
 
 		gradient = e("ImageLabel", {
 			Image = "rbxassetid://17886581996",
-			ImageColor3 = rarityInfo.Color,
+			ImageColor3 = props.gradient or rarityInfo.Color,
 			BackgroundTransparency = 1,
 			Position = UDim2.fromScale(0.00685, 0.479),
 			Size = UDim2.fromScale(1, 0.521),

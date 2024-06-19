@@ -9,8 +9,8 @@ local Hooks = ReplicatedStorage.react.hooks
 
 local AutomaticScrollingFrame = require(Components.frames.AutomaticScrollingFrame)
 local CloseButton = require(Components.buttons.CloseButton)
-local Freeze = require(ReplicatedStorage.packages.Freeze)
 local InventoryContext = require(Contexts.InventoryContext)
+local InventoryUtils = require(Utils.InventoryUtils)
 local ItemDisplay = require(Components.inventory.ItemDisplay)
 local ItemTemplate = require(Components.items.Item)
 local ItemUtils = require(Utils.ItemUtils)
@@ -32,16 +32,14 @@ local function Inventory(_props: InventoryProps)
 	local inventory: Types.PlayerInventory? = useContext(InventoryContext)
 	local nextOrder = createNextOrder()
 
-	local selectedItem: Types.Item?, setSelectedItem = useState(nil)
+	local selectedItem, setSelectedItem = useState(nil :: Types.Item?)
 	local selectedItemInfo: Types.ItemInfo? = if selectedItem then ItemUtils.GetItemInfoFromId(selectedItem.Id) else nil
 
 	local onItemClicked = useCallback(function(uuid: string)
 		if inventory then
-			for _, inventoryItem in Freeze.List.merge(inventory.Equipped, inventory.Storage) do
-				if inventoryItem.UUID == uuid then
-					setSelectedItem(inventoryItem)
-					break
-				end
+			local item = InventoryUtils.GetItemOfUUID(inventory, uuid)
+			if item then
+				setSelectedItem(item)
 			end
 		end
 	end, { inventory })
@@ -60,11 +58,13 @@ local function Inventory(_props: InventoryProps)
 				killCount = item.Kills,
 				itemUUID = item.UUID,
 				onItemClicked = onItemClicked,
+				gradient = Color3.fromRGB(0, 255, 127), -- override the rarity gradient for equipped items
 			})
 		end
 
 		-- then show the storage items
 		for _, item in inventory.Storage do
+			print("Making ", item.Id)
 			local itemInfo = ItemUtils.GetItemInfoFromId(item.Id)
 			itemElements[item.UUID] = e(ItemTemplate, {
 				layoutOrder = nextOrder(),
@@ -183,6 +183,7 @@ local function Inventory(_props: InventoryProps)
 			itemName = selectedItemInfo.Name,
 			itemId = selectedItem.Id,
 			serial = selectedItem.Serial,
+			itemUUID = selectedItem.UUID,
 			rarity = selectedItemInfo.Rarity,
 			image = string.format("rbxassetid://%d", selectedItemInfo.Image),
 		}),

@@ -25,6 +25,7 @@ function ItemService:GenerateItem(Id: number, IgnoreSerial: boolean?)
 			Id = ItemInformation.Id,
 			UUID = HttpService:GenerateGUID(false),
 			Locked = false,
+			Favorited = false,
 		}
 
 		-- Let's get the unique properties of the item based on its type and add them to the item

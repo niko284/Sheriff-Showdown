@@ -8,6 +8,7 @@ type ItemTypeInfo = {
 	UniqueProps: { [string]: any }?,
 	CanEquip: boolean,
 	CanSell: boolean,
+	EquippedAtOnce: (number | (Types.ItemInfo) -> number)?,
 }
 
 return {
@@ -16,6 +17,7 @@ return {
 		UniqueProps = {
 			Kills = 0, -- amount of kills with this gun
 		},
+		EquippedAtOnce = 1, -- how many guns can be equipped at once
 		CanEquip = true,
 		CanSell = true,
 	},
