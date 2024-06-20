@@ -82,6 +82,90 @@ function InventoryUtils.UnequipItem(Inventory: Types.PlayerInventory, ItemUUID: 
 	return newInventory
 end
 
+function InventoryUtils.LockItem(
+	Inventory: Types.PlayerInventory,
+	ItemUUID: string,
+	Locked: boolean
+): Types.PlayerInventory
+	local storageOrEquipped = nil
+	local indexToLock = nil
+
+	for index, item in ipairs(Inventory.Storage) do
+		if item.UUID == ItemUUID then
+			storageOrEquipped = Inventory.Storage
+			indexToLock = index
+			break
+		end
+	end
+
+	if not storageOrEquipped then
+		for index, item in ipairs(Inventory.Equipped) do
+			if item.UUID == ItemUUID then
+				storageOrEquipped = Inventory.Equipped
+				indexToLock = index
+				break
+			end
+		end
+	end
+
+	if not storageOrEquipped then
+		return Inventory
+	end
+
+	local key = storageOrEquipped == Inventory.Storage and "Storage" or "Equipped"
+	local newInventory = table.clone(Inventory)
+	local newItems = table.clone(newInventory[key])
+	local newItem = table.clone(newItems[indexToLock])
+
+	newItem.Locked = Locked
+	newItems[indexToLock] = newItem
+	newInventory[key] = newItems
+
+	return newInventory
+end
+
+function InventoryUtils.ToggleItemFavorite(
+	Inventory: Types.PlayerInventory,
+	ItemUUID: string,
+	Favorite: boolean
+): Types.PlayerInventory
+	local storageOrEquipped = nil
+	local indexToFavorite = nil
+
+	for index, item in ipairs(Inventory.Storage) do
+		if item.UUID == ItemUUID then
+			storageOrEquipped = Inventory.Storage
+			indexToFavorite = index
+			break
+		end
+	end
+
+	if not storageOrEquipped then
+		for index, item in ipairs(Inventory.Equipped) do
+			if item.UUID == ItemUUID then
+				storageOrEquipped = Inventory.Equipped
+				indexToFavorite = index
+				break
+			end
+		end
+	end
+
+	if not storageOrEquipped then
+		return Inventory
+	end
+
+	local key = storageOrEquipped == Inventory.Storage and "Storage" or "Equipped"
+	local newInventory = table.clone(Inventory)
+	local newItems = table.clone(newInventory[key])
+	local newItem = table.clone(newItems[indexToFavorite])
+
+	newItem.Favorited = Favorite
+	newItems[indexToFavorite] = newItem
+	newInventory[key] = newItems
+
+	return newInventory
+end
+
 function InventoryUtils.GetItemsOfType(
 	Inventory: Types.PlayerInventory,
 	ItemType: Types.ItemType,

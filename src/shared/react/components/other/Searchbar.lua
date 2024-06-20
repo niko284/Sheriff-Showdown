@@ -10,7 +10,9 @@ local Types = require(ReplicatedStorage.constants.Types)
 
 local e = React.createElement
 
-type SearchbarProps = {} & Types.FrameProps
+type SearchbarProps = {
+	onTextChanged: ((rbx: TextBox) -> ())?,
+} & Types.FrameProps
 
 local function Searchbar(props: SearchbarProps)
 	return e("ImageLabel", {
@@ -48,9 +50,11 @@ local function Searchbar(props: SearchbarProps)
 			BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 			BackgroundTransparency = 1,
 			BorderColor3 = Color3.fromRGB(0, 0, 0),
+			Text = "",
 			BorderSizePixel = 0,
 			Position = UDim2.fromOffset(53, 12),
 			Size = UDim2.fromScale(0.642, 0.465),
+			[React.Change.Text] = props.onTextChanged,
 		}),
 	})
 end

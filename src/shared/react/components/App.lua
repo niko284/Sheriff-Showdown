@@ -9,15 +9,30 @@ local Providers = ReplicatedStorage.react.providers
 local AutoUIScale = require(Components.other.AutoUIScale)
 local ConfirmationPrompt = require(Components.other.ConfirmationPrompt)
 local ContextStack = require(ReplicatedStorage.utils.ContextStack)
+local CurrentInterfaceProvider = require(Providers.CurrentInterfaceProvider)
 local DistractionViewport = require(Components.round.DistractionViewport)
 local Inventory = require(Components.inventory.Inventory)
 local InventoryProvider = require(Providers.InventoryProvider)
 local Playerlist = require(Components.playerlist.Playerlist)
 local React = require(ReplicatedStorage.packages.React)
 local ScaleContext = require(Contexts.ScaleContext)
+local SideButtonHUD = require(Components.other.SideButtonHUD)
 
 local e = React.createElement
 local useState = React.useState
+
+local SIDE_BUTTONS = {
+	Inventory = {
+		Image = "rbxassetid://18128564282",
+		Gradient = ColorSequence.new(Color3.fromRGB(220, 234, 58)),
+		LayoutOrder = 2,
+	},
+	Shop = {
+		Image = "rbxassetid://18128752359",
+		Gradient = ColorSequence.new(Color3.fromRGB(58, 234, 119), Color3.fromRGB(43, 255, 149)),
+		LayoutOrder = 1,
+	},
+}
 
 local function App()
 	local currentScale, setScale = useState(1)
@@ -30,6 +45,7 @@ local function App()
 				},
 			}),
 			e(InventoryProvider),
+			e(CurrentInterfaceProvider),
 		},
 	}, {
 		App = e("ScreenGui", {
@@ -47,6 +63,9 @@ local function App()
 			}),
 			distractionViewport = e(DistractionViewport),
 			playerList = e(Playerlist),
+			sideButtons = e(SideButtonHUD, {
+				buttons = SIDE_BUTTONS,
+			}),
 			inventory = e(Inventory),
 			--confirmationPrompt = e(ConfirmationPrompt),
 		}),

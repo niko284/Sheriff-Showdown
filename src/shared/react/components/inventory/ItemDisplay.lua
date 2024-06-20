@@ -25,8 +25,11 @@ local Types = require(ReplicatedStorage.constants.Types)
 local UUIDSerde = require(Serde.UUIDSerde)
 
 local InventoryNamespace = Remotes.Client:GetNamespace("Inventory")
+local LockItem = InventoryNamespace:Get("LockItem") :: Net.ClientAsyncCaller
+local UnlockItem = InventoryNamespace:Get("UnlockItem") :: Net.ClientAsyncCaller
 local EquipItem = InventoryNamespace:Get("EquipItem") :: Net.ClientAsyncCaller
 local UnequipItem = InventoryNamespace:Get("UnequipItem") :: Net.ClientAsyncCaller
+local ToggleItemFavorite = InventoryNamespace:Get("ToggleItemFavorite") :: Net.ClientAsyncCaller
 
 local e = React.createElement
 local useCallback = React.useCallback
@@ -36,6 +39,8 @@ type ItemDisplayProps = Types.FrameProps & {
 	itemName: string,
 	itemId: number,
 	itemUUID: string,
+	isFavorited: boolean,
+	isLocked: boolean,
 	serial: number?,
 	rarity: Types.ItemRarity,
 	image: string,
@@ -81,6 +86,66 @@ local function ItemDisplay(props: ItemDisplayProps)
 		-- rollback if the server fails to complete this request
 		local serializedUUID = UUIDSerde.Serialize(props.itemUUID)
 		UnequipItem:CallServerAsync(serializedUUID)
+			:andThen(function(response: Types.NetworkResponse)
+				if response.Success == false then
+					InventoryController.InventoryChanged:Fire(oldInventory)
+				end
+			end)
+			:catch(function(err)
+				warn(tostring(err))
+				InventoryController.InventoryChanged:Fire(oldInventory)
+			end)
+	end, { inventory, props.itemUUID } :: { any })
+
+	local lockItem = useCallback(function()
+		local oldInventory = inventory :: Types.PlayerInventory
+		local newInventory = InventoryUtils.LockItem(oldInventory, props.itemUUID, true)
+
+		InventoryController.InventoryChanged:Fire(newInventory)
+
+		-- rollback if the server fails to complete this request
+		local serializedUUID = UUIDSerde.Serialize(props.itemUUID)
+		LockItem:CallServerAsync(serializedUUID)
+			:andThen(function(response: Types.NetworkResponse)
+				if response.Success == false then
+					InventoryController.InventoryChanged:Fire(oldInventory)
+				end
+			end)
+			:catch(function(err)
+				warn(tostring(err))
+				InventoryController.InventoryChanged:Fire(oldInventory)
+			end)
+	end, { inventory, props.itemUUID } :: { any })
+
+	local unlockItem = useCallback(function()
+		local oldInventory = inventory :: Types.PlayerInventory
+		local newInventory = InventoryUtils.LockItem(oldInventory, props.itemUUID, false)
+
+		InventoryController.InventoryChanged:Fire(newInventory)
+
+		-- rollback if the server fails to complete this request
+		local serializedUUID = UUIDSerde.Serialize(props.itemUUID)
+		UnlockItem:CallServerAsync(serializedUUID)
+			:andThen(function(response: Types.NetworkResponse)
+				if response.Success == false then
+					InventoryController.InventoryChanged:Fire(oldInventory)
+				end
+			end)
+			:catch(function(err)
+				warn(tostring(err))
+				InventoryController.InventoryChanged:Fire(oldInventory)
+			end)
+	end, { inventory, props.itemUUID } :: { any })
+
+	local toggleItemFavorite = useCallback(function(favorite: boolean)
+		local oldInventory = inventory :: Types.PlayerInventory
+		local newInventory = InventoryUtils.ToggleItemFavorite(oldInventory, props.itemUUID, favorite)
+
+		InventoryController.InventoryChanged:Fire(newInventory)
+
+		-- rollback if the server fails to complete this request
+		local serializedUUID = UUIDSerde.Serialize(props.itemUUID)
+		ToggleItemFavorite:CallServerAsync(serializedUUID, favorite)
 			:andThen(function(response: Types.NetworkResponse)
 				if response.Success == false then
 					InventoryController.InventoryChanged:Fire(oldInventory)
@@ -191,6 +256,7 @@ local function ItemDisplay(props: ItemDisplayProps)
 		options = e("ImageLabel", {
 			Image = "rbxassetid://17886569101",
 			BackgroundTransparency = 1,
+			Visible = false,
 			Position = UDim2.fromOffset(23, 80),
 			Size = UDim2.fromOffset(56, 26),
 		}, {
@@ -223,17 +289,19 @@ local function ItemDisplay(props: ItemDisplayProps)
 			anchorPoint = Vector2.new(0, 0),
 			borderSizePixel = 0,
 			position = UDim2.fromScale(0.0307, 0.674),
-			size = UDim2.fromOffset(278, 100),
+			size = UDim2.fromOffset(280, 107),
 		}, {
-			listLayout = e("UIListLayout", {
-				Padding = UDim.new(0, 7),
-				HorizontalAlignment = Enum.HorizontalAlignment.Center,
+			gridLayout = e("UIGridLayout", {
+				CellPadding = UDim2.fromOffset(6, 10),
+				CellSize = UDim2.fromOffset(131, 42),
+				HorizontalAlignment = Enum.HorizontalAlignment.Left,
 				SortOrder = Enum.SortOrder.LayoutOrder,
 			}),
 
 			padding = e("UIPadding", {
 				PaddingTop = UDim.new(0, 3),
 				PaddingRight = UDim.new(0, 8),
+				PaddingLeft = UDim.new(0, 3),
 			}),
 
 			equip = itemTypeInfo.CanEquip and e(Button, {
@@ -242,8 +310,6 @@ local function ItemDisplay(props: ItemDisplayProps)
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-				position = UDim2.fromOffset(147, 251),
-				size = UDim2.fromOffset(262, 44),
 				text = isEquipped and "Unequip" or "Equip",
 				textColor3 = not isEquipped and Color3.fromRGB(0, 54, 25) or Color3.fromRGB(53, 0, 12),
 				anchorPoint = Vector2.new(0.5, 0.5),
@@ -264,13 +330,65 @@ local function ItemDisplay(props: ItemDisplayProps)
 				onActivated = not isEquipped and equipItem or unequipItem,
 			}),
 
-			sell = itemTypeInfo.CanSell and e(Button, {
-				backgroundTransparency = 1,
-				position = UDim2.fromOffset(147, 303),
+			lock = e(Button, {
 				anchorPoint = Vector2.new(0.5, 0.5),
-				size = UDim2.fromOffset(262, 44),
-				text = "Sell",
+				fontFace = Font.new(
+					"rbxasset://fonts/families/GothamSSm.json",
+					Enum.FontWeight.Bold,
+					Enum.FontStyle.Normal
+				),
+				text = props.isLocked and "Unlock" or "Lock",
+				textColor3 = Color3.fromRGB(0, 0, 0),
+				textSize = 16,
+				strokeThickness = 1.5,
 				layoutOrder = 2,
+				applyStrokeMode = Enum.ApplyStrokeMode.Border,
+				strokeColor = Color3.fromRGB(255, 255, 255),
+				cornerRadius = UDim.new(0, 5),
+				gradient = props.isLocked and ColorSequence.new({
+					ColorSequenceKeypoint.new(0, Color3.fromRGB(115, 114, 114)),
+					ColorSequenceKeypoint.new(1, Color3.fromRGB(74, 74, 74)),
+				}) or ColorSequence.new({
+					ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 198, 0)),
+					ColorSequenceKeypoint.new(1, Color3.fromRGB(244, 157, 5)),
+				}),
+				gradientRotation = -90,
+				onActivated = props.isLocked and unlockItem or lockItem,
+			}),
+
+			favorite = e(Button, {
+				anchorPoint = Vector2.new(0.5, 0.5),
+				fontFace = Font.new(
+					"rbxasset://fonts/families/GothamSSm.json",
+					Enum.FontWeight.Bold,
+					Enum.FontStyle.Normal
+				),
+				text = props.isFavorited and "Unfavorite" or "Favorite",
+				textColor3 = Color3.fromRGB(0, 0, 0),
+				textSize = 16,
+				strokeThickness = 1.5,
+				layoutOrder = 3,
+				applyStrokeMode = Enum.ApplyStrokeMode.Border,
+				strokeColor = Color3.fromRGB(255, 255, 255),
+				cornerRadius = UDim.new(0, 5),
+				gradient = props.isFavorited and ColorSequence.new({
+					ColorSequenceKeypoint.new(0, Color3.fromRGB(115, 114, 114)),
+					ColorSequenceKeypoint.new(1, Color3.fromRGB(74, 74, 74)),
+				}) or ColorSequence.new({
+					ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 150, 255)),
+					ColorSequenceKeypoint.new(1, Color3.fromRGB(21, 85, 150)),
+				}),
+				gradientRotation = -90,
+				onActivated = function()
+					toggleItemFavorite(not props.isFavorited)
+				end,
+			}),
+
+			--[[sell = itemTypeInfo.CanSell and e(Button, {
+				backgroundTransparency = 1,
+				anchorPoint = Vector2.new(0.5, 0.5),
+				text = "Sell",
+				layoutOrder = 4,
 				textColor3 = Color3.fromRGB(255, 255, 255),
 				textSize = 16,
 				strokeThickness = 1.5,
@@ -282,7 +400,7 @@ local function ItemDisplay(props: ItemDisplayProps)
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-			}),
+			}),--]]
 		}),
 	})
 end

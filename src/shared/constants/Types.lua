@@ -23,7 +23,8 @@ type GunProps = {
 export type Item = {
 	Id: number,
 	UUID: string,
-	Locked: boolean?,
+	Locked: boolean,
+	Favorited: boolean,
 	Serial: number?,
 	Level: number?,
 } & GunProps
@@ -185,5 +186,7 @@ export type NetworkResponse = {
 	Success: boolean,
 	Message: string?,
 }
+
+export type Interface = "Shop" | "Inventory"
 
 return nil

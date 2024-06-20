@@ -33,12 +33,24 @@ return Net.CreateDefinitions({
 	}),
 	Inventory = Net.Definitions.Namespace({
 		ItemAdded = Net.Definitions.ServerToClientEvent(),
+		LockItem = Net.Definitions.ServerAsyncFunction({
+			Net.Middleware.TypeChecking(t.string),
+			Deserializer({ UUIDSerde }),
+		}),
+		UnlockItem = Net.Definitions.ServerAsyncFunction({
+			Net.Middleware.TypeChecking(t.string),
+			Deserializer({ UUIDSerde }),
+		}),
 		EquipItem = Net.Definitions.ServerAsyncFunction({
 			Net.Middleware.TypeChecking(t.string),
 			Deserializer({ UUIDSerde }),
 		}),
 		UnequipItem = Net.Definitions.ServerAsyncFunction({
 			Net.Middleware.TypeChecking(t.string),
+			Deserializer({ UUIDSerde }),
+		}),
+		ToggleItemFavorite = Net.Definitions.ServerAsyncFunction({
+			Net.Middleware.TypeChecking(t.string, t.boolean),
 			Deserializer({ UUIDSerde }),
 		}),
 	}),

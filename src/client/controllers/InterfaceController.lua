@@ -10,12 +10,15 @@ local Components = ReplicatedStorage.react.components
 
 local React = require(Packages.React)
 local ReactRoblox = require(Packages.ReactRoblox)
+local Signal = require(Packages.Signal)
+local Types = require(ReplicatedStorage.constants.Types)
 
 local e = React.createElement
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 local InterfaceController = {
 	Name = "InterfaceController",
+	InterfaceChanged = Signal.new() :: Signal.Signal<Types.Interface?>,
 }
 
 -- // Functions \\
@@ -29,7 +32,7 @@ end
 
 function InterfaceController:OnStart()
 	self.Root = ReactRoblox.createRoot(Instance.new("Folder"))
-	self.App = require(Components.App)
+	self.App = require(Components.App) :: any
 	self.GameApp = e(self.App)
 	self.Root:render(ReactRoblox.createPortal({ self.GameApp }, PlayerGui))
 end

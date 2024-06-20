@@ -17,6 +17,7 @@ type ItemProps = Types.FrameProps & {
 	image: string,
 	rarity: Types.ItemRarity,
 	itemName: string,
+	isLocked: boolean,
 	itemUUID: string,
 	onItemClicked: (uuid: string) -> (),
 	itemSerial: number?,
@@ -117,6 +118,7 @@ local function Item(props: ItemProps)
 				BackgroundTransparency = 1,
 				Position = UDim2.fromScale(0.125, 0.259),
 				Size = UDim2.fromScale(0.214, 0.519),
+				ImageColor3 = if props.isLocked then Color3.fromRGB(255, 170, 0) else Color3.fromRGB(255, 255, 255),
 			}),
 
 			seperator = e(Separator, {

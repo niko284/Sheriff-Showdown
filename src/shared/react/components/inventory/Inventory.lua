@@ -18,13 +18,14 @@ local OptionButton = require(Components.buttons.OptionButton)
 local React = require(ReplicatedStorage.packages.React)
 local Searchbar = require(Components.other.Searchbar)
 local Separator = require(Components.other.Separator)
+local StringUtils = require(Utils.StringUtils)
 local Types = require(ReplicatedStorage.constants.Types)
+local animateCurrentInterface = require(Hooks.animateCurrentInterface)
 local createNextOrder = require(Hooks.createNextOrder)
 
 local e = React.createElement
 local useState = React.useState
 local useContext = React.useContext
-local useCallback = React.useCallback
 
 type InventoryProps = {}
 
@@ -32,23 +33,24 @@ local function Inventory(_props: InventoryProps)
 	local inventory: Types.PlayerInventory? = useContext(InventoryContext)
 	local nextOrder = createNextOrder()
 
-	local selectedItem, setSelectedItem = useState(nil :: Types.Item?)
-	local selectedItemInfo: Types.ItemInfo? = if selectedItem then ItemUtils.GetItemInfoFromId(selectedItem.Id) else nil
+	local selectedUUID, setSelectedUUID = useState(nil)
+	local searchQuery, setSearchQuery = useState("")
 
-	local onItemClicked = useCallback(function(uuid: string)
-		if inventory then
-			local item = InventoryUtils.GetItemOfUUID(inventory, uuid)
-			if item then
-				setSelectedItem(item)
-			end
-		end
-	end, { inventory })
+	local _shouldRender, styles =
+		animateCurrentInterface("Inventory", UDim2.fromScale(0.5, 0.5), UDim2.fromScale(0.5, 2))
+
+	local selectedItem = inventory and selectedUUID and InventoryUtils.GetItemOfUUID(inventory, selectedUUID)
+
+	local selectedItemInfo: Types.ItemInfo? = if selectedItem then ItemUtils.GetItemInfoFromId(selectedItem.Id) else nil
 
 	local itemElements = {}
 	if inventory then
 		-- show the equipped items first
 		for _, item in inventory.Equipped do
 			local itemInfo = ItemUtils.GetItemInfoFromId(item.Id)
+			if not StringUtils.MatchesSearch(itemInfo.Name, searchQuery) then
+				continue
+			end
 			itemElements[item.UUID] = e(ItemTemplate, {
 				layoutOrder = nextOrder(),
 				image = string.format("rbxassetid://%d", itemInfo.Image),
@@ -56,25 +58,29 @@ local function Inventory(_props: InventoryProps)
 				itemName = itemInfo.Name,
 				itemSerial = item.Serial,
 				killCount = item.Kills,
+				isLocked = item.Locked,
 				itemUUID = item.UUID,
-				onItemClicked = onItemClicked,
+				onItemClicked = setSelectedUUID,
 				gradient = Color3.fromRGB(0, 255, 127), -- override the rarity gradient for equipped items
 			})
 		end
 
 		-- then show the storage items
 		for _, item in inventory.Storage do
-			print("Making ", item.Id)
 			local itemInfo = ItemUtils.GetItemInfoFromId(item.Id)
+			if not StringUtils.MatchesSearch(itemInfo.Name, searchQuery) then
+				continue
+			end
 			itemElements[item.UUID] = e(ItemTemplate, {
 				layoutOrder = nextOrder(),
 				image = string.format("rbxassetid://%d", itemInfo.Image),
 				rarity = itemInfo.Rarity,
 				itemName = itemInfo.Name,
+				isLocked = item.Locked,
 				itemSerial = item.Serial,
 				itemUUID = item.UUID,
 				killCount = item.Kills,
-				onItemClicked = onItemClicked,
+				onItemClicked = setSelectedUUID,
 			}) :: any
 		end
 	end
@@ -83,7 +89,7 @@ local function Inventory(_props: InventoryProps)
 		Image = "rbxassetid://17886529902",
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		BackgroundTransparency = 1,
-		Position = UDim2.fromScale(0.5, 0.5),
+		Position = styles.position,
 		Size = UDim2.fromOffset(848, 608),
 	}, {
 		separator = e(Separator, {
@@ -154,6 +160,9 @@ local function Inventory(_props: InventoryProps)
 			searchbar = e(Searchbar, {
 				position = UDim2.fromOffset(612, 23),
 				size = UDim2.fromOffset(162, 43),
+				onTextChanged = function(rbx: TextBox)
+					setSearchQuery(rbx.Text)
+				end,
 			}),
 
 			close = e(CloseButton, {
@@ -182,7 +191,9 @@ local function Inventory(_props: InventoryProps)
 			size = UDim2.fromOffset(293, 340),
 			itemName = selectedItemInfo.Name,
 			itemId = selectedItem.Id,
+			isFavorited = selectedItem.Favorited or false,
 			serial = selectedItem.Serial,
+			isLocked = selectedItem.Locked or false,
 			itemUUID = selectedItem.UUID,
 			rarity = selectedItemInfo.Rarity,
 			image = string.format("rbxassetid://%d", selectedItemInfo.Image),

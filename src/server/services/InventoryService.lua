@@ -23,6 +23,9 @@ local InventoryNamespace = Remotes.Server:GetNamespace("Inventory")
 local ItemAdded = InventoryNamespace:Get("ItemAdded") :: Net.ServerSenderEvent
 local EquipItem = InventoryNamespace:Get("EquipItem") :: Net.ServerAsyncCallback
 local UnequipItem = InventoryNamespace:Get("UnequipItem") :: Net.ServerAsyncCallback
+local LockItem = InventoryNamespace:Get("LockItem") :: Net.ServerAsyncCallback
+local UnlockItem = InventoryNamespace:Get("UnlockItem") :: Net.ServerAsyncCallback
+local ToggleItemFavorite = InventoryNamespace:Get("ToggleItemFavorite") :: Net.ServerAsyncCallback
 
 local PlayerInventoryProperty = ServerComm:CreateProperty("PlayerInventory", nil)
 
@@ -46,6 +49,18 @@ function InventoryService:OnInit()
 
 	UnequipItem:SetCallback(function(Player: Player, ItemUUID: string)
 		return InventoryService:UnequipItemNetworkRequest(Player, ItemUUID)
+	end)
+
+	LockItem:SetCallback(function(Player: Player, ItemUUID: string)
+		return InventoryService:LockItemNetworkRequest(Player, ItemUUID)
+	end)
+
+	UnlockItem:SetCallback(function(Player: Player, ItemUUID: string)
+		return InventoryService:UnlockItemNetworkRequest(Player, ItemUUID)
+	end)
+
+	ToggleItemFavorite:SetCallback(function(Player: Player, ItemUUID: string, Favorite: boolean)
+		return InventoryService:ToggleItemFavoriteNetworkRequest(Player, ItemUUID, Favorite)
 	end)
 end
 
@@ -106,6 +121,36 @@ function InventoryService:UnequipItem(Player: Player, ItemUUID: string)
 	local newData = table.clone(Document:read())
 
 	local newInventory = InventoryUtils.UnequipItem(newData.Inventory, ItemUUID)
+	newData.Inventory = newInventory
+
+	Document:write(newData)
+end
+
+function InventoryService:LockItem(Player: Player, ItemUUID: string): ()
+	local Document = PlayerDataService:GetDocument(Player)
+	local newData = table.clone(Document:read())
+
+	local newInventory = InventoryUtils.LockItem(newData.Inventory, ItemUUID, true)
+	newData.Inventory = newInventory
+
+	Document:write(newData)
+end
+
+function InventoryService:UnlockItem(Player: Player, ItemUUID: string): ()
+	local Document = PlayerDataService:GetDocument(Player)
+	local newData = table.clone(Document:read())
+
+	local newInventory = InventoryUtils.LockItem(newData.Inventory, ItemUUID, false)
+	newData.Inventory = newInventory
+
+	Document:write(newData)
+end
+
+function InventoryService:ToggleItemFavorite(Player: Player, ItemUUID: string, Favorite: boolean): ()
+	local Document = PlayerDataService:GetDocument(Player)
+	local newData = table.clone(Document:read())
+
+	local newInventory = InventoryUtils.ToggleItemFavorite(newData.Inventory, ItemUUID, Favorite)
 	newData.Inventory = newInventory
 
 	Document:write(newData)
@@ -191,6 +236,58 @@ function InventoryService:UnequipItemNetworkRequest(Player: Player, ItemUUID: st
 	end
 
 	InventoryService:UnequipItem(Player, ItemUUID)
+
+	return { Success = true }
+end
+
+function InventoryService:LockItemNetworkRequest(Player: Player, ItemUUID: string): Types.NetworkResponse
+	local Document = PlayerDataService:GetDocument(Player)
+	if not Document then
+		return { Success = false, Error = "Document not found" }
+	end
+
+	local Item = InventoryService:GetItemOfUUID(Player, ItemUUID)
+	if not Item then
+		return { Success = false, Error = "Item not found" }
+	end
+
+	InventoryService:LockItem(Player, ItemUUID)
+
+	return { Success = true }
+end
+
+function InventoryService:UnlockItemNetworkRequest(Player: Player, ItemUUID: string): Types.NetworkResponse
+	local Document = PlayerDataService:GetDocument(Player)
+	if not Document then
+		return { Success = false, Error = "Document not found" }
+	end
+
+	local Item = InventoryService:GetItemOfUUID(Player, ItemUUID)
+	if not Item then
+		return { Success = false, Error = "Item not found" }
+	end
+
+	InventoryService:UnlockItem(Player, ItemUUID)
+
+	return { Success = true }
+end
+
+function InventoryService:ToggleItemFavoriteNetworkRequest(
+	Player: Player,
+	ItemUUID: string,
+	Favorite: boolean
+): Types.NetworkResponse
+	local Document = PlayerDataService:GetDocument(Player)
+	if not Document then
+		return { Success = false, Error = "Document not found" }
+	end
+
+	local Item = InventoryService:GetItemOfUUID(Player, ItemUUID)
+	if not Item then
+		return { Success = false, Error = "Item not found" }
+	end
+
+	InventoryService:ToggleItemFavorite(Player, ItemUUID, Favorite)
 
 	return { Success = true }
 end

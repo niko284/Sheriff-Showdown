@@ -42,6 +42,7 @@ local function Button(props: ButtonProps)
 		FontFace = props.fontFace,
 		Text = props.text,
 		TextColor3 = props.textColor3,
+		LayoutOrder = props.layoutOrder,
 		TextSize = props.textSize,
 		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 		BorderSizePixel = 0,

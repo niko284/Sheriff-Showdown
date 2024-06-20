@@ -21,6 +21,7 @@ local function InventoryProvider(props)
 
 	useEffect(function()
 		local connection = InventoryController:ObserveInventoryChanged(function(newInventory)
+			print(newInventory)
 			setInventory(newInventory)
 		end)
 		return function()
