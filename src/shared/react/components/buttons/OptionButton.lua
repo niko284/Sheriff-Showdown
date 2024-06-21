@@ -9,19 +9,28 @@ local e = React.createElement
 
 type OptionButtonProps = {
 	image: string,
+	gradient: ColorSequence?,
+	onActivated: ((rbx: ImageButton) -> ())?,
 } & Types.FrameProps
 
 local function OptionButton(props: OptionButtonProps)
 	return e("ImageButton", {
+		AnchorPoint = props.anchorPoint,
+		AutoButtonColor = false,
 		ScaleType = Enum.ScaleType.Tile,
-		BackgroundColor3 = Color3.fromRGB(72, 72, 72),
+		BackgroundColor3 = props.backgroundColor3 or Color3.fromRGB(72, 72, 72),
 		BorderColor3 = Color3.fromRGB(0, 0, 0),
 		BorderSizePixel = 0,
 		Position = props.position,
 		Size = props.size,
+		[React.Event.Activated] = function(rbx: ImageButton)
+			if props.onActivated then
+				props.onActivated(rbx)
+			end
+		end,
 	}, {
 		gradient = e("UIGradient", {
-			Color = ColorSequence.new({
+			Color = props.gradient or ColorSequence.new({
 				ColorSequenceKeypoint.new(0, Color3.fromRGB(134, 134, 134)),
 				ColorSequenceKeypoint.new(0.0328, Color3.fromRGB(172, 172, 172)),
 				ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255)),
@@ -47,4 +56,4 @@ local function OptionButton(props: OptionButtonProps)
 	})
 end
 
-return OptionButton
+return React.memo(OptionButton)

@@ -20,19 +20,17 @@ type SideButtonHUDProps = {
 }
 
 local function SideButtonHUD(props: SideButtonHUDProps)
-	local sideButtonElements = {}
+	local sideButtonElements = {} :: React.ReactElement<any, any>
 
 	for name, sideButton in pairs(props.buttons) do
-		table.insert(
-			sideButtonElements,
-			e(SideButton, {
-				layoutOrder = sideButton.LayoutOrder,
-				icon = sideButton.Image,
-				buttonPath = name,
-				size = UDim2.fromOffset(78, 78),
-				gradient = sideButton.Gradient,
-			})
-		)
+		sideButtonElements[name] = e(SideButton, {
+			layoutOrder = sideButton.LayoutOrder,
+			icon = sideButton.Image,
+			buttonPath = name,
+			zIndex = sideButton.LayoutOrder,
+			size = UDim2.fromOffset(78, 78),
+			gradient = sideButton.Gradient,
+		})
 	end
 
 	return e("Frame", {
@@ -53,4 +51,4 @@ local function SideButtonHUD(props: SideButtonHUDProps)
 	})
 end
 
-return SideButtonHUD
+return React.memo(SideButtonHUD)

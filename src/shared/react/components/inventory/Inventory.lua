@@ -1,14 +1,18 @@
 --!strict
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local LocalPlayer = Players.LocalPlayer
 local Components = ReplicatedStorage.react.components
 local Contexts = ReplicatedStorage.react.contexts
 local Utils = ReplicatedStorage.utils
 local Hooks = ReplicatedStorage.react.hooks
+local Controllers = LocalPlayer.PlayerScripts.controllers
 
 local AutomaticScrollingFrame = require(Components.frames.AutomaticScrollingFrame)
 local CloseButton = require(Components.buttons.CloseButton)
+local InterfaceController = require(Controllers.InterfaceController)
 local InventoryContext = require(Contexts.InventoryContext)
 local InventoryUtils = require(Utils.InventoryUtils)
 local ItemDisplay = require(Components.inventory.ItemDisplay)
@@ -35,6 +39,7 @@ local function Inventory(_props: InventoryProps)
 
 	local selectedUUID, setSelectedUUID = useState(nil)
 	local searchQuery, setSearchQuery = useState("")
+	local expandedGrid, setExpandedGrid = useState(false)
 
 	local _shouldRender, styles =
 		animateCurrentInterface("Inventory", UDim2.fromScale(0.5, 0.5), UDim2.fromScale(0.5, 2))
@@ -59,6 +64,7 @@ local function Inventory(_props: InventoryProps)
 				itemSerial = item.Serial,
 				killCount = item.Kills,
 				isLocked = item.Locked,
+				isFavorited = item.Favorited,
 				itemUUID = item.UUID,
 				onItemClicked = setSelectedUUID,
 				gradient = Color3.fromRGB(0, 255, 127), -- override the rarity gradient for equipped items
@@ -76,6 +82,7 @@ local function Inventory(_props: InventoryProps)
 				image = string.format("rbxassetid://%d", itemInfo.Image),
 				rarity = itemInfo.Rarity,
 				itemName = itemInfo.Name,
+				isFavorited = item.Favorited,
 				isLocked = item.Locked,
 				itemSerial = item.Serial,
 				itemUUID = item.UUID,
@@ -167,7 +174,10 @@ local function Inventory(_props: InventoryProps)
 
 			close = e(CloseButton, {
 				size = UDim2.fromOffset(43, 43),
-				position = UDim2.fromOffset(781, 23),
+				position = UDim2.fromScale(0.945, 0.51),
+				onActivated = function()
+					InterfaceController.InterfaceChanged:Fire(nil)
+				end,
 			}),
 		}),
 
@@ -210,7 +220,7 @@ local function Inventory(_props: InventoryProps)
 		}, {
 			gridLayout = e("UIGridLayout", {
 				CellPadding = UDim2.fromOffset(10, 10),
-				CellSize = UDim2.fromOffset(146, 146),
+				CellSize = expandedGrid and UDim2.fromOffset(220, 220) or UDim2.fromOffset(146, 146),
 				SortOrder = Enum.SortOrder.LayoutOrder,
 			}),
 
@@ -222,10 +232,15 @@ local function Inventory(_props: InventoryProps)
 			}),
 		}),
 
-		optionButton = e(OptionButton, {
+		gridExpansion = e(OptionButton, {
 			image = "rbxassetid://17886581750",
 			size = UDim2.fromOffset(43, 43),
 			position = UDim2.fromOffset(781, 119),
+			onActivated = function()
+				setExpandedGrid(function()
+					return not expandedGrid
+				end)
+			end,
 		}),
 	})
 end

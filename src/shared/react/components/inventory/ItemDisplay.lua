@@ -405,4 +405,4 @@ local function ItemDisplay(props: ItemDisplayProps)
 	})
 end
 
-return ItemDisplay
+return React.memo(ItemDisplay)

@@ -7,15 +7,15 @@ local Types = require(ReplicatedStorage.constants.Types)
 
 local e = React.createElement
 
-type SeparatorProps = Types.FrameProps
+type SeparatorProps = Types.FrameProps & { image: string }
 
 local function Separator(props: SeparatorProps)
 	return e("ImageLabel", {
-		Image = "rbxassetid://17884887691",
+		Image = props.image or "rbxassetid://17884887691",
 		BackgroundTransparency = 1,
 		Position = props.position,
 		Size = props.size,
 	})
 end
 
-return Separator
+return React.memo(Separator)

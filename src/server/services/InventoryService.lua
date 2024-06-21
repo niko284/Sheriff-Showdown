@@ -64,6 +64,12 @@ function InventoryService:OnInit()
 	end)
 end
 
+function InventoryService:GetInventory(Player: Player): Types.PlayerInventory -- read-only
+	local Document = PlayerDataService:GetDocument(Player)
+	local Data = Document:read()
+	return Data.Inventory
+end
+
 function InventoryService:GrantDefaults(Player: Player, Document: Lapis.Document<Types.DataSchema>): ()
 	local data = Document:read()
 	local grantedDefaults = table.clone(data.Inventory.GrantedDefaults)

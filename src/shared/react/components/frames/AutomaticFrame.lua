@@ -73,8 +73,6 @@ local function AutomaticFrame(props: AutomaticFrameProps)
 	local containerSize, setContainerSize = useBinding(props.instanceProps.Size)
 	local scaleRatio = useContext(ScaleContext)
 
-	print(scaleRatio)
-
 	local resizeFrame = useCallback(
 		function(container: GuiObject, layout: UIGridStyleLayout)
 			local axis = props.automaticSize or Enum.AutomaticSize.XY

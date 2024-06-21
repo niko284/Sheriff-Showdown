@@ -187,6 +187,50 @@ export type NetworkResponse = {
 	Message: string?,
 }
 
+export type Currency = "Coins" | "Gems"
+export type CurrencyData = {
+	CanPurchase: boolean,
+	Color: Color3,
+}
+
 export type Interface = "Shop" | "Inventory"
+
+export type ProductInfo = {
+	Name: string,
+	Description: string,
+	PriceInRobux: number,
+	Created: string,
+	Updated: string,
+	ContentRatingTypeId: number,
+	MinimumMembershipLevel: number,
+	IsPublicDomain: boolean,
+	Creator: {
+		CreatorType: "User" | "Group",
+		CreatorTargetId: number,
+		HasVerifiedBadge: boolean,
+		Name: string,
+		Id: number,
+	},
+	AssetId: number,
+	AssetTypeId: number,
+	IsForSale: boolean,
+	IsLimited: boolean,
+	IsLimitedUnique: boolean,
+	IsNew: boolean,
+	Remaining: number,
+	Sales: number,
+	SaleAvailabilityLocations: { Enum.ProductLocationRestriction },
+	CanBeSoldInThisGame: boolean,
+	ProductId: number,
+	IconImageAssetId: number,
+}
+
+export type Crate = "Standard" | "Classic"
+export type CrateInfo = {
+	OpenAnimation: number,
+	ShopImage: number,
+	ShopLayoutOrder: number,
+	ItemContents: { string },
+}
 
 return nil

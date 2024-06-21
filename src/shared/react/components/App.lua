@@ -16,6 +16,7 @@ local InventoryProvider = require(Providers.InventoryProvider)
 local Playerlist = require(Components.playerlist.Playerlist)
 local React = require(ReplicatedStorage.packages.React)
 local ScaleContext = require(Contexts.ScaleContext)
+local Shop = require(Components.shop.Shop)
 local SideButtonHUD = require(Components.other.SideButtonHUD)
 
 local e = React.createElement
@@ -63,6 +64,7 @@ local function App()
 			}),
 			distractionViewport = e(DistractionViewport),
 			playerList = e(Playerlist),
+			shop = e(Shop),
 			sideButtons = e(SideButtonHUD, {
 				buttons = SIDE_BUTTONS,
 			}),
