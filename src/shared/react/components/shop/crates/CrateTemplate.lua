@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Components = ReplicatedStorage.react.components
 
 local Button = require(Components.buttons.Button)
+local ContentDisplay = require(Components.shop.crates.ContentDisplay)
 local Crates = require(ReplicatedStorage.constants.Crates)
 local ItemUtils = require(ReplicatedStorage.utils.ItemUtils)
 local OptionButton = require(Components.buttons.OptionButton)
@@ -14,6 +15,8 @@ local Types = require(ReplicatedStorage.constants.Types)
 
 local e = React.createElement
 local useEffect = React.useEffect
+local useRef = React.useRef
+local useState = React.useState
 
 type CrateTemplateProps = Types.FrameProps & {
 	crateImage: string,
@@ -26,16 +29,14 @@ type CrateTemplateProps = Types.FrameProps & {
 local function CrateTemplate(props: CrateTemplateProps)
 	local crateInfo = Crates[props.crateName]
 
-	local previewContents, setPreviewContents = React.useState({} :: { number }) -- Item Ids
+	local previewContents, setPreviewContents = useState(function()
+		local newContents = {}
+		local itemNames = table.clone(crateInfo.ItemContents)
 
-	useEffect(function()
-		local rotationTimer = Timer.new(props.rotationTime)
-		rotationTimer.Tick:Connect(function()
-			-- Pick new contents to show at random
+		local newPreviewsToAppend = 2
 
-			local newContents = {}
-			local itemNames = table.clone(crateInfo.ItemContents)
-
+		for _ = 1, newPreviewsToAppend do
+			local contents = {}
 			for _ = 1, props.amountOfPreviewItems do
 				if #itemNames == 0 then
 					break
@@ -44,44 +45,68 @@ local function CrateTemplate(props: CrateTemplateProps)
 
 				local itemFromName = ItemUtils.GetItemInfoFromName(randomItemName)
 				if itemFromName then
-					table.insert(newContents, itemFromName.Id)
+					table.insert(contents, itemFromName.Id)
 				end
 			end
+			table.insert(newContents, contents)
+		end
 
-			setPreviewContents(newContents)
+		return newContents
+	end)
+
+	local contentDisplayRefs = useRef({}) :: { current: any }
+	local pageLayoutRef = useRef(nil :: UIPageLayout?)
+	local currentIndex = useRef(1) :: { current: number }
+
+	useEffect(function()
+		local timer = Timer.new(props.rotationTime)
+		timer.Tick:Connect(function()
+			if pageLayoutRef.current then
+				local nextIndex = currentIndex.current == 1 and 2 or 1
+				pageLayoutRef.current:JumpToIndex(nextIndex)
+				task.delay(pageLayoutRef.current.TweenTime, function()
+					setPreviewContents(function(old)
+						local newContents = table.clone(old)
+						newContents[nextIndex] = old[nextIndex]
+
+						local contents = {}
+						local itemNames = table.clone(crateInfo.ItemContents)
+						for _ = 1, props.amountOfPreviewItems do
+							if #itemNames == 0 then
+								break
+							end
+							local randomItemName = table.remove(itemNames, math.random(1, #itemNames)) :: string
+
+							local itemFromName = ItemUtils.GetItemInfoFromName(randomItemName)
+							if itemFromName then
+								table.insert(contents, itemFromName.Id)
+							end
+						end
+
+						newContents[currentIndex.current] = contents
+
+						return newContents
+					end)
+				end)
+				currentIndex.current = nextIndex
+			end
 		end)
 
-		rotationTimer:StartNow()
+		timer:StartNow()
 
 		return function()
-			rotationTimer:Destroy()
+			timer:Destroy()
 		end
-	end, { props.rotationTime, props.amountOfPreviewItems })
+	end, {})
 
-	local previewElements = {}
-	for _, itemId in previewContents do
-		local itemInfo = ItemUtils.GetItemInfoFromId(itemId)
-		previewElements[itemId] = e("Frame", {
-			BackgroundColor3 = Color3.fromRGB(133, 133, 133),
-			BorderColor3 = Color3.fromRGB(0, 0, 0),
-			BorderSizePixel = 0,
-			Position = UDim2.fromOffset(14, 14),
-			Size = UDim2.fromOffset(53, 53),
-		}, {
-			contentImage = e("ImageLabel", {
-				Image = string.format("rbxassetid://%d", itemInfo.Image),
-				BackgroundTransparency = 1,
-				Position = UDim2.fromOffset(6, 6),
-				Size = UDim2.fromOffset(42, 43),
-			}),
-
-			corner = e("UICorner", {
-				CornerRadius = UDim.new(0, 3),
-			}),
-
-			stroke = e("UIStroke", {
-				Color = Color3.fromRGB(158, 158, 158),
-			}),
+	local contentDisplayElements = {}
+	for index, itemList in previewContents do
+		contentDisplayElements[index] = e(ContentDisplay, {
+			itemIds = itemList,
+			layoutOrder = index,
+			displayRef = function(node: Frame)
+				contentDisplayRefs.current[index] = node
+			end,
 		})
 	end
 
@@ -106,6 +131,31 @@ local function CrateTemplate(props: CrateTemplateProps)
 			Position = UDim2.fromOffset(45, 74),
 			Size = UDim2.fromOffset(166, 166),
 			ZIndex = 0,
+		}),
+
+		contentHolder = e("Frame", {
+			BackgroundColor3 = Color3.fromRGB(103, 103, 103),
+			BorderColor3 = Color3.fromRGB(0, 0, 0),
+			BorderSizePixel = 0,
+			Position = UDim2.fromOffset(0, 183),
+			ClipsDescendants = true,
+			Size = UDim2.fromOffset(253, 81),
+		}, {
+			contentDisplays = e(React.Fragment, nil, contentDisplayElements),
+			pageLayout = e("UIPageLayout", {
+				ref = pageLayoutRef,
+				SortOrder = Enum.SortOrder.LayoutOrder,
+				ScrollWheelInputEnabled = false,
+				TouchInputEnabled = false,
+				GamepadInputEnabled = false,
+				Circular = true,
+				EasingDirection = Enum.EasingDirection.InOut,
+				FillDirection = Enum.FillDirection.Vertical,
+				HorizontalAlignment = Enum.HorizontalAlignment.Center,
+				VerticalAlignment = Enum.VerticalAlignment.Center,
+				TweenTime = 0.75,
+				EasingStyle = Enum.EasingStyle.Quad,
+			}),
 		}),
 
 		purchaseButton = e(Button, {
@@ -166,31 +216,6 @@ local function CrateTemplate(props: CrateTemplateProps)
 			BackgroundTransparency = 1,
 			Position = UDim2.fromOffset(22, 53),
 			Size = UDim2.fromOffset(81, 14),
-		}),
-
-		contentDisplay = e("Frame", {
-			BackgroundColor3 = Color3.fromRGB(103, 103, 103),
-			BorderColor3 = Color3.fromRGB(0, 0, 0),
-			BorderSizePixel = 0,
-			Position = UDim2.fromOffset(0, 183),
-			Size = UDim2.fromOffset(253, 81),
-		}, {
-			contentList = e("Frame", {
-				BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-				BackgroundTransparency = 1,
-				BorderColor3 = Color3.fromRGB(0, 0, 0),
-				BorderSizePixel = 0,
-				Position = UDim2.fromScale(0.0435, 0.111),
-				Size = UDim2.fromOffset(231, 62),
-			}, {
-				listLayout = e("UIListLayout", {
-					Padding = UDim.new(0, 6),
-					FillDirection = Enum.FillDirection.Horizontal,
-					SortOrder = Enum.SortOrder.LayoutOrder,
-					VerticalAlignment = Enum.VerticalAlignment.Center,
-				}),
-				previews = e(React.Fragment, nil, previewElements),
-			}),
 		}),
 	})
 end

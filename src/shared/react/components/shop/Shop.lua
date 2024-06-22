@@ -8,6 +8,7 @@ local Controllers = Players.LocalPlayer.PlayerScripts.controllers
 
 local Button = require(Components.buttons.Button)
 local CloseButton = require(Components.buttons.CloseButton)
+local CrateContentsPage = require(Components.shop.pages.CrateContentsPage)
 local CratesPage = require(Components.shop.pages.CratesPage)
 local CurrencyHolder = require(Components.shop.CurrencyHolder)
 local FeaturedPage = require(Components.shop.pages.FeaturedPage)
@@ -29,6 +30,9 @@ local SHOP_CATEGORIES = {
 	Crates = {
 		Element = CratesPage,
 		LayoutOrder = 2,
+	},
+	CrateContents = {
+		Element = CrateContentsPage,
 	},
 } :: { [ShopCategory]: ShopCategoryData }
 
@@ -89,6 +93,7 @@ local function Shop(_props: ShopProps)
 			pageRef = function(ref)
 				pageRefs.current[categoryName :: ShopCategory] = ref
 			end,
+			switchToCategory = setCurrentCategory,
 		})
 	end
 
