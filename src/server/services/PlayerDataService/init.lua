@@ -29,6 +29,8 @@ local PlayerDataCollection = Lapis.createCollection(collectionName, {
 			Experience = t.number,
 		}),
 		Statistics = t.interface({}),
+		Settings = t.interface({}),
+		CodesRedeemed = t.array(t.string),
 	}),
 	migrations = Migrations,
 })

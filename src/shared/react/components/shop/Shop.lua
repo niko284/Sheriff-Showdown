@@ -5,21 +5,27 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Components = ReplicatedStorage.react.components
 local Controllers = Players.LocalPlayer.PlayerScripts.controllers
+local Contexts = ReplicatedStorage.react.contexts
 
 local Button = require(Components.buttons.Button)
 local CloseButton = require(Components.buttons.CloseButton)
-local CrateContentsPage = require(Components.shop.pages.CrateContentsPage)
+local CodeInput = require(Components.shop.CodeInput)
 local CratesPage = require(Components.shop.pages.CratesPage)
 local CurrencyHolder = require(Components.shop.CurrencyHolder)
+local CurrencyPage = require(Components.shop.pages.CurrencyPage)
 local FeaturedPage = require(Components.shop.pages.FeaturedPage)
+local GamepassPage = require(Components.shop.pages.GamepassPage)
 local InterfaceController = require(Controllers.InterfaceController)
+local OptionButton = require(Components.buttons.OptionButton)
 local React = require(ReplicatedStorage.packages.React)
 local Separator = require(Components.other.Separator)
+local ShopContext = require(Contexts.ShopContext)
 local animateCurrentInterface = require(ReplicatedStorage.react.hooks.animateCurrentInterface)
 
 local e = React.createElement
 local useState = React.useState
 local useRef = React.useRef
+local useContext = React.useContext
 local useEffect = React.useEffect
 
 local SHOP_CATEGORIES = {
@@ -31,12 +37,17 @@ local SHOP_CATEGORIES = {
 		Element = CratesPage,
 		LayoutOrder = 2,
 	},
-	CrateContents = {
-		Element = CrateContentsPage,
+	Currency = {
+		Element = CurrencyPage,
+		LayoutOrder = 3,
+	},
+	Gamepasses = {
+		Element = GamepassPage,
+		LayoutOrder = 4,
 	},
 } :: { [ShopCategory]: ShopCategoryData }
 
-type ShopCategory = "Home" | "Crates" | "Currency" | "Gamepass"
+type ShopCategory = "Home" | "Crates" | "Currency" | "Gamepasses"
 type ShopCategoryData = {
 	Element: any,
 	LayoutOrder: number,
@@ -45,13 +56,16 @@ type ShopProps = {}
 
 local function Shop(_props: ShopProps)
 	local currentCategory, setCurrentCategory = useState("Home" :: ShopCategory)
+	local showCodeInput, setShowCodeInput = useState(false)
+
+	local shopState = useContext(ShopContext)
 	local pageRefs = useRef({}) :: { current: { [ShopCategory]: any } }
 	local pageLayoutRef = useRef(nil :: UIPageLayout?)
 
 	local _shouldRender, styles = animateCurrentInterface("Shop", UDim2.fromScale(0.5, 0.5), UDim2.fromScale(0.5, 2))
 
 	local categoryButtonElements = {} :: { [string]: any }
-	for categoryName, _ in pairs(SHOP_CATEGORIES) do
+	for categoryName, categoryInfo in pairs(SHOP_CATEGORIES) do
 		categoryButtonElements[categoryName] = e(Button, {
 			text = categoryName,
 			textColor3 = if currentCategory == categoryName
@@ -74,6 +88,7 @@ local function Shop(_props: ShopProps)
 				Enum.FontWeight.Bold,
 				Enum.FontStyle.Normal
 			),
+			layoutOrder = categoryInfo.LayoutOrder,
 			applyStrokeMode = Enum.ApplyStrokeMode.Border,
 			strokeColor = Color3.fromRGB(255, 255, 255),
 			strokeThickness = 0.5,
@@ -117,17 +132,42 @@ local function Shop(_props: ShopProps)
 			size = UDim2.fromOffset(797, 3),
 		}),
 
-		giftButton = e("ImageLabel", {
-			Image = "rbxassetid://18134646407",
+		codeInput = showCodeInput and e(CodeInput, {
+			position = UDim2.fromOffset(209, 252),
+			codesPosition = UDim2.fromScale(0.504, 0.779),
+		}),
+
+		optionList = e("Frame", {
+			BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 			BackgroundTransparency = 1,
-			Position = UDim2.fromOffset(782, 119),
-			Size = UDim2.fromOffset(42, 42),
+			BorderColor3 = Color3.fromRGB(0, 0, 0),
+			BorderSizePixel = 0,
+			Position = UDim2.fromScale(0.725, 0.191),
+			Size = UDim2.fromOffset(216, 45),
 		}, {
-			giftIcon = e("ImageLabel", {
-				Image = "rbxassetid://18134657918",
-				BackgroundTransparency = 1,
-				Position = UDim2.fromOffset(9, 9),
-				Size = UDim2.fromOffset(23, 23),
+			listLayout = e("UIListLayout", {
+				Padding = UDim.new(0, 10),
+				FillDirection = Enum.FillDirection.Horizontal,
+				HorizontalAlignment = Enum.HorizontalAlignment.Right,
+				SortOrder = Enum.SortOrder.LayoutOrder,
+			}),
+			giftButton = e(OptionButton, {
+				size = UDim2.fromOffset(42, 42),
+				image = "rbxassetid://18184690498",
+				layoutOrder = 2,
+				onActivated = function()
+					InterfaceController.InterfaceChanged:Fire("GiftingSelection")
+				end,
+			}),
+			codesButton = e(OptionButton, {
+				size = UDim2.fromOffset(42, 42),
+				image = "rbxassetid://18184990547",
+				onActivated = function()
+					setShowCodeInput(function(show)
+						return not show
+					end)
+				end,
+				layoutOrder = 1,
 			}),
 		}),
 
@@ -140,8 +180,9 @@ local function Shop(_props: ShopProps)
 			Position = UDim2.fromScale(0.014, 0.332),
 			Size = UDim2.fromOffset(830, 406),
 		}, {
-			uIPageLayout = e("UIPageLayout", {
+			pageLayout = e("UIPageLayout", {
 				ref = pageLayoutRef,
+				Circular = true,
 				SortOrder = Enum.SortOrder.LayoutOrder,
 				ScrollWheelInputEnabled = false,
 				TouchInputEnabled = false,
@@ -170,9 +211,15 @@ local function Shop(_props: ShopProps)
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-				Text = "Shop",
+				Text = if shopState.giftRecipient == nil
+					then "Shop"
+					else string.format(
+						'<font color="rgb(255,228,80)">Gifting to</font> %s',
+						shopState.giftRecipient.Name
+					),
 				TextColor3 = Color3.fromRGB(255, 255, 255),
 				TextSize = 22,
+				RichText = true,
 				TextXAlignment = Enum.TextXAlignment.Left,
 				BackgroundTransparency = 1,
 				Position = UDim2.fromOffset(64, 35),
@@ -188,7 +235,9 @@ local function Shop(_props: ShopProps)
 			}),
 
 			shopIcon = e("ImageLabel", {
-				Image = "rbxassetid://18134622781",
+				Image = if shopState.giftRecipient == nil
+					then "rbxassetid://18134622781"
+					else "rbxassetid://18184643894",
 				BackgroundTransparency = 1,
 				Position = UDim2.fromOffset(24, 30),
 				Size = UDim2.fromOffset(24, 27),
@@ -197,6 +246,11 @@ local function Shop(_props: ShopProps)
 			coins = e(CurrencyHolder, {
 				currency = "Coins",
 				position = UDim2.fromOffset(625, 24),
+			}),
+
+			gems = e(CurrencyHolder, {
+				currency = "Gems",
+				position = UDim2.fromOffset(510, 24),
 			}),
 		}),
 

@@ -16,6 +16,7 @@ type OptionButtonProps = {
 local function OptionButton(props: OptionButtonProps)
 	return e("ImageButton", {
 		AnchorPoint = props.anchorPoint,
+		LayoutOrder = props.layoutOrder,
 		AutoButtonColor = false,
 		ScaleType = Enum.ScaleType.Tile,
 		BackgroundColor3 = props.backgroundColor3 or Color3.fromRGB(72, 72, 72),
@@ -46,7 +47,8 @@ local function OptionButton(props: OptionButtonProps)
 		image = e("ImageLabel", {
 			Image = props.image,
 			BackgroundTransparency = 1,
-			Position = UDim2.fromOffset(11, 10),
+			Position = UDim2.fromScale(0.5, 0.5),
+			AnchorPoint = Vector2.new(0.5, 0.5),
 			Size = UDim2.fromOffset(22, 22),
 		}),
 

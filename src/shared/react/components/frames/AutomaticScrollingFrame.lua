@@ -39,7 +39,7 @@ type AutomaticScrollingFrameProps = Types.FrameProps & {
 }
 
 local defaultProps = {
-	anchorPoint = Vector2.new(0.5, 0.5),
+	anchorPoint = Vector2.new(0, 0),
 	backgroundTransparency = 1,
 	scrollBarImageTransparency = 0,
 	borderSizePixel = 0,

@@ -5,12 +5,16 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Components = ReplicatedStorage.react.components
 
 local AutomaticScrollingFrame = require(Components.frames.AutomaticScrollingFrame)
+local CrateContentsPage = require(Components.shop.pages.CrateContentsPage)
 local CrateTemplate = require(Components.shop.crates.CrateTemplate)
 local Crates = require(ReplicatedStorage.constants.Crates)
 local React = require(ReplicatedStorage.packages.React)
 local Types = require(ReplicatedStorage.constants.Types)
 
 local e = React.createElement
+local useState = React.useState
+local useRef = React.useRef
+local useEffect = React.useEffect
 
 type CratePageProps = Types.FrameProps & {
 	pageRef: (ref: Frame) -> (),
@@ -18,6 +22,9 @@ type CratePageProps = Types.FrameProps & {
 }
 
 local function CratePage(props: CratePageProps)
+	local crateToView, setCrateToView = useState(nil :: Types.Crate?)
+	local pageLayoutRef = useRef(nil :: UIPageLayout?)
+
 	local crateElements = {}
 	for crateName, crateInfo in Crates do
 		crateElements[crateName] = e(CrateTemplate, {
@@ -28,25 +35,49 @@ local function CratePage(props: CratePageProps)
 			amountOfPreviewItems = 4,
 			size = UDim2.fromOffset(254, 339),
 			onViewContents = function()
-				props.switchToCategory("CrateContents")
+				setCrateToView(crateName)
 			end,
 		})
 	end
 
+	useEffect(function()
+		if pageLayoutRef.current then
+			pageLayoutRef.current:JumpToIndex(crateToView and 2 or 1)
+		end
+	end, { crateToView })
+
 	return e("Frame", {
 		BackgroundTransparency = 1,
-		
+		ClipsDescendants = true,
+		Size = UDim2.fromScale(1, 1.03),
+		ref = function(rbx: Frame)
+			props.pageRef(rbx)
+		end,
+		LayoutOrder = props.layoutOrder,
 	}, {
+
+		pageLayout = e("UIPageLayout", {
+			Circular = true,
+			ref = pageLayoutRef,
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			ScrollWheelInputEnabled = false,
+			TouchInputEnabled = false,
+			GamepadInputEnabled = false,
+			EasingDirection = Enum.EasingDirection.InOut,
+			FillDirection = Enum.FillDirection.Horizontal,
+			HorizontalAlignment = Enum.HorizontalAlignment.Center,
+			VerticalAlignment = Enum.VerticalAlignment.Center,
+			TweenTime = 0.2,
+			EasingStyle = Enum.EasingStyle.Quad,
+		}),
+
 		cratePurchasePage = e("Frame", {
 			BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 			BackgroundTransparency = 1,
 			BorderColor3 = Color3.fromRGB(0, 0, 0),
 			BorderSizePixel = 0,
-			LayoutOrder = props.layoutOrder,
-			Size = UDim2.fromScale(1, 1.03),
-			ref = function(rbx: Frame)
-				props.pageRef(rbx)
-			end,
+			LayoutOrder = 2,
+			Size = UDim2.fromScale(1, 1),
 		}, {
 			crates = e("TextLabel", {
 				FontFace = Font.new(
@@ -56,7 +87,7 @@ local function CratePage(props: CratePageProps)
 				),
 				Text = "Crates",
 				TextColor3 = Color3.fromRGB(255, 255, 255),
-				TextSize = 16,
+				TextSize = 20,
 				TextXAlignment = Enum.TextXAlignment.Left,
 				BackgroundTransparency = 1,
 				Position = UDim2.fromOffset(18, 19),
@@ -87,6 +118,12 @@ local function CratePage(props: CratePageProps)
 
 				crates = e(React.Fragment, nil, crateElements :: any),
 			}),
+		}),
+
+		crateContents = e(CrateContentsPage, {
+			crateName = crateToView,
+			layoutOrder = 1,
+			onBack = setCrateToView,
 		}),
 	})
 end

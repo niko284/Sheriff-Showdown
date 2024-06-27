@@ -54,4 +54,14 @@ return Net.CreateDefinitions({
 			Deserializer({ UUIDSerde }),
 		}),
 	}),
+	Shop = Net.Definitions.Namespace({
+		SubmitCode = Net.Definitions.ServerAsyncFunction({
+			Net.Middleware.TypeChecking(t.string),
+		}),
+	}),
+	Settings = Net.Definitions.Namespace({
+		ChangeSetting = Net.Definitions.ServerAsyncFunction({
+			Net.Middleware.TypeChecking(t.string, t.union(t.boolean, t.string, t.number, t.map(t.string, t.boolean))),
+		}),
+	}),
 })

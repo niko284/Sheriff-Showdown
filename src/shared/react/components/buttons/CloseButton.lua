@@ -32,6 +32,7 @@ local function CloseButton(props: CloseButtonProps)
 		BorderColor3 = Color3.fromRGB(0, 0, 0),
 		BorderSizePixel = 0,
 		Position = props.position,
+		ZIndex = props.zIndex,
 		Size = props.size,
 		[React.Event.MouseEnter] = function()
 			setIsHovered(true) -- // Set the hovered state to true.

@@ -24,6 +24,7 @@ type CrateTemplateProps = Types.FrameProps & {
 	crateDescription: string,
 	rotationTime: number,
 	amountOfPreviewItems: number,
+	onViewContents: (rbx: Frame) -> (),
 }
 
 local function CrateTemplate(props: CrateTemplateProps)
@@ -185,6 +186,7 @@ local function CrateTemplate(props: CrateTemplateProps)
 			image = "rbxassetid://18141436407",
 			gradient = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(255, 255, 255)),
 			backgroundColor3 = Color3.fromRGB(255, 255, 255),
+			onActivated = props.onViewContents,
 		}),
 
 		crateName = e("TextLabel", {
@@ -195,7 +197,7 @@ local function CrateTemplate(props: CrateTemplateProps)
 			),
 			Text = props.crateName,
 			TextColor3 = Color3.fromRGB(255, 255, 255),
-			TextSize = 16,
+			TextSize = 20,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			BackgroundTransparency = 1,
 			Position = UDim2.fromOffset(22, 35),

@@ -1,0 +1,81 @@
+--!strict
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Components = ReplicatedStorage.react.components
+
+local React = require(ReplicatedStorage.packages.React)
+local ToggleButton = require(Components.buttons.ToggleButton)
+local Types = require(ReplicatedStorage.constants.Types)
+
+local e = React.createElement
+
+type ToggleTemplateProps = Types.FrameProps & {
+	toggled: boolean,
+	name: string,
+	description: string,
+	changeSetting: (settingName: string, settingValue: Types.SettingValue) -> (),
+}
+
+local function ToggleTemplate(props: ToggleTemplateProps)
+	return e("Frame", {
+		BackgroundColor3 = Color3.fromRGB(72, 72, 72),
+		BackgroundTransparency = 0.64,
+		BorderColor3 = Color3.fromRGB(0, 0, 0),
+		BorderSizePixel = 0,
+		LayoutOrder = props.layoutOrder,
+		Size = props.size,
+	}, {
+		corner = e("UICorner", {
+			CornerRadius = UDim.new(0, 5),
+		}),
+
+		description = e("TextLabel", {
+			FontFace = Font.new(
+				"rbxasset://fonts/families/GothamSSm.json",
+				Enum.FontWeight.Medium,
+				Enum.FontStyle.Normal
+			),
+			Text = props.description,
+			TextColor3 = Color3.fromRGB(255, 255, 255),
+			TextSize = 12,
+			TextTransparency = 0.38,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			BackgroundTransparency = 1,
+			Position = UDim2.fromOffset(16, 42),
+			Size = UDim2.fromOffset(200, 11),
+		}),
+
+		name = e("TextLabel", {
+			FontFace = Font.new(
+				"rbxasset://fonts/families/GothamSSm.json",
+				Enum.FontWeight.Bold,
+				Enum.FontStyle.Normal
+			),
+			Text = props.name,
+			TextColor3 = Color3.fromRGB(255, 255, 255),
+			TextSize = 16,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			BackgroundTransparency = 1,
+			Position = UDim2.fromOffset(16, 19),
+			Size = UDim2.fromOffset(115, 16),
+		}),
+
+		stroke = e("UIStroke", {
+			Color = Color3.fromRGB(255, 255, 255),
+			Thickness = 0.5,
+			Transparency = 0.67,
+		}),
+
+		toggle = e(ToggleButton, {
+			position = UDim2.fromOffset(721, 18),
+			size = UDim2.fromOffset(62, 36),
+			toggled = props.toggled,
+			onActivated = function(toggled: boolean)
+				props.changeSetting(props.name, toggled)
+			end,
+		}),
+	})
+end
+
+return React.memo(ToggleTemplate)

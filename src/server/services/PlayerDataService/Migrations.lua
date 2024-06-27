@@ -9,4 +9,10 @@ return {
 	function(old)
 		return Freeze.Dictionary.setIn(old, { "Inventory", "GrantedDefaults" }, {})
 	end,
+	function(old)
+		return Freeze.Dictionary.set(old, "CodesRedeemed", {})
+	end,
+	function(old)
+		return Freeze.Dictionary.set(old, "Settings", {})
+	end,
 }

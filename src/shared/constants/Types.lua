@@ -48,6 +48,8 @@ export type DataSchema = {
 		Level: number,
 		Experience: number,
 	},
+	CodesRedeemed: { string },
+	Settings: PlayerDataSettings,
 }
 
 -- >> Leaderboard Types
@@ -193,7 +195,7 @@ export type CurrencyData = {
 	Color: Color3,
 }
 
-export type Interface = "Shop" | "Inventory"
+export type Interface = "Shop" | "Inventory" | "GiftingSelection" | "Settings"
 
 export type ProductInfo = {
 	Name: string,
@@ -231,6 +233,43 @@ export type CrateInfo = {
 	ShopImage: number,
 	ShopLayoutOrder: number,
 	ItemContents: { string },
+}
+
+export type Gamepass = {
+	Featured: boolean,
+	GamepassId: number,
+}
+
+-- >> Setting Types
+
+export type SettingValue = boolean | string | number
+export type SettingType = "Slider" | "Toggle" | "Dropdown" | "List" | "Input"
+export type SettingChoiceInfo = {
+	Color: Color3,
+	LayoutOrder: number,
+}
+export type Setting = {
+	Name: string,
+	Description: string,
+	Type: SettingType,
+	Category: string,
+	Icon: string,
+	Default: number | boolean | string, --sliders, toggles, dropdowns/input respectively.
+	Choices: { string }?, -- List setting type
+	ChoiceColors: { [string]: Color3 }?, -- List setting type
+	ChoiceInfo: { [string]: SettingChoiceInfo }?, -- List setting type
+	Maximum: number?, -- sliders
+	Minimum: number?, -- sliders
+	Increment: number?, -- sliders
+	Selections: { string }?, -- Dropdowns
+}
+
+export type SettingInternal = {
+	Value: SettingValue,
+}
+
+export type PlayerDataSettings = {
+	[string]: SettingInternal,
 }
 
 return nil

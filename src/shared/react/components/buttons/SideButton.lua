@@ -110,6 +110,7 @@ local function SideButton(props: SideButtonProps)
 			endPosition = UDim2.fromScale(0.51, 0.05),
 			strokeTransparencyEnd = 0.25,
 			textSize = 22,
+			rotation = 0,
 		}),
 
 		stroke = e("UIStroke", {
@@ -132,7 +133,7 @@ local function SideButton(props: SideButtonProps)
 			BackgroundTransparency = 1,
 			Position = UDim2.fromOffset(21, 20),
 			Size = UDim2.fromOffset(36, 38),
-			Rotation = iconStyles.rotation,
+			Rotation = 0,
 			ImageTransparency = iconStyles.transparency,
 		}, {
 			--[[scale = e("UIScale", {

@@ -18,5 +18,7 @@ return {
 		Level = 1,
 		Experience = 0,
 	},
+	CodesRedeemed = {}, -- string[]
 	Statistics = {},
+	Settings = {},
 } :: Types.DataSchema

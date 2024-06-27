@@ -5,7 +5,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Components = ReplicatedStorage.react.components
 
 local FeaturedItem = require(Components.shop.FeaturedItem)
+local Freeze = require(ReplicatedStorage.packages.Freeze)
 local GamepassSlideshow = require(Components.shop.GamepassSlideshow)
+local Gamepasses = require(ReplicatedStorage.constants.Gamepasses)
 local ItemUtils = require(ReplicatedStorage.utils.ItemUtils)
 local LargeFeaturedItem = require(Components.shop.LargeFeaturedItem)
 local React = require(ReplicatedStorage.packages.React)
@@ -36,14 +38,6 @@ local LARGE_FEATURED_ITEMS = {
 		id = 5,
 	},
 }
-local FEATURED_GAMEPASSES = {
-	{
-		id = 52316442,
-	},
-	{
-		id = 52316520,
-	},
-}
 
 local function FeaturedPage(props: FeaturedPageProps)
 	local smallFeaturedItemElements = {} :: { [string]: any }
@@ -70,6 +64,17 @@ local function FeaturedPage(props: FeaturedPageProps)
 		})
 	end
 
+	local FEATURED_GAMEPASSES = Freeze.List.map(
+		Freeze.List.filter(Gamepasses, function(gamepass, _index)
+			return gamepass.Featured
+		end),
+		function(gamepass, _index)
+			return {
+				id = gamepass.GamepassId,
+			}
+		end
+	)
+
 	return e("Frame", {
 		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 		BackgroundTransparency = 1,
@@ -91,7 +96,7 @@ local function FeaturedPage(props: FeaturedPageProps)
 			Size = UDim2.fromOffset(539, 164),
 		}, {
 			listLayout = e("UIListLayout", {
-				Padding = UDim.new(0, 12),
+				Padding = UDim.new(0, 20),
 				FillDirection = Enum.FillDirection.Horizontal,
 				SortOrder = Enum.SortOrder.LayoutOrder,
 				VerticalAlignment = Enum.VerticalAlignment.Center,
@@ -130,7 +135,7 @@ local function FeaturedPage(props: FeaturedPageProps)
 			),
 			Text = "Featured",
 			TextColor3 = Color3.fromRGB(255, 255, 255),
-			TextSize = 16,
+			TextSize = 20,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			BackgroundTransparency = 1,
 			Position = UDim2.fromOffset(18, 19),
@@ -145,7 +150,7 @@ local function FeaturedPage(props: FeaturedPageProps)
 			),
 			Text = "Gamepasses",
 			TextColor3 = Color3.fromRGB(255, 255, 255),
-			TextSize = 16,
+			TextSize = 20,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			BackgroundTransparency = 1,
 			Position = UDim2.fromOffset(562, 19),

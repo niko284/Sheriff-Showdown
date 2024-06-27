@@ -61,7 +61,7 @@ local function Tooltip(props: TooltipProps)
 				Text = props.name,
 				TextColor3 = Color3.fromRGB(255, 255, 255),
 				TextSize = props.textSize,
-				Rotation = 20,
+				Rotation = props.rotation or 20,
 				TextTransparency = styles.hoverTransparency,
 				AnchorPoint = Vector2.new(0.5, 0.5),
 				BackgroundColor3 = Color3.fromRGB(255, 255, 255),

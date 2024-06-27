@@ -19,6 +19,7 @@ local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local InterfaceController = {
 	Name = "InterfaceController",
 	InterfaceChanged = Signal.new() :: Signal.Signal<Types.Interface?>,
+	UpdateShopState = Signal.new(),
 }
 
 -- // Functions \\
