@@ -174,7 +174,7 @@ local function Slider(props: SliderProps)
 			end,
 		}),
 
-		value = e("TextLabel", {
+		value = e("TextBox", {
 			FontFace = Font.new(
 				"rbxasset://fonts/families/GothamSSm.json",
 				Enum.FontWeight.Bold,
@@ -187,12 +187,21 @@ local function Slider(props: SliderProps)
 				end
 				return newValue
 			end),
+			[React.Change.Text] = function(rbx: TextBox)
+				local newValue = tonumber(rbx.Text)
+				if newValue then
+					newValue = math.clamp(newValue, props.minimum, props.maximum)
+					setDraggerPosition(
+						UDim2.fromScale((newValue - props.minimum) / (props.maximum - props.minimum), 0.5)
+					)
+				end
+			end,
 			TextColor3 = Color3.fromRGB(255, 255, 255),
 			TextSize = 13,
 			TextTransparency = 0.694,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			BackgroundTransparency = 1,
-			Position = UDim2.fromOffset(176, -1),
+			Position = UDim2.fromOffset(180, 0),
 			Size = UDim2.fromOffset(14, 10),
 		}),
 
@@ -200,8 +209,10 @@ local function Slider(props: SliderProps)
 			BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 			BorderColor3 = Color3.fromRGB(0, 0, 0),
 			BorderSizePixel = 0,
-			Position = UDim2.fromScale(0, 0.5),
-			Size = draggerPosition,
+			Position = UDim2.fromScale(0, 0),
+			Size = draggerPosition:map(function(newPosition: UDim2)
+				return UDim2.fromScale(newPosition.X.Scale, 1)
+			end),
 		}, {
 			corner = e("UICorner", {
 				CornerRadius = UDim.new(1, 0),

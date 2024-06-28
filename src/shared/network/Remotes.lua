@@ -61,7 +61,10 @@ return Net.CreateDefinitions({
 	}),
 	Settings = Net.Definitions.Namespace({
 		ChangeSetting = Net.Definitions.ServerAsyncFunction({
-			Net.Middleware.TypeChecking(t.string, t.union(t.boolean, t.string, t.number, t.map(t.string, t.boolean))),
+			Net.Middleware.TypeChecking(
+				t.string,
+				t.union(t.boolean, t.string, t.number, t.map(t.string, t.boolean), t.map(t.string, t.string))
+			),
 		}),
 	}),
 })

@@ -15,6 +15,8 @@ local CategoryTemplate = require(Components.settings.CategoryTemplate)
 local CloseButton = require(Components.buttons.CloseButton)
 local Freeze = require(ReplicatedStorage.packages.Freeze)
 local InputTemplate = require(Components.settings.InputTemplate)
+local InterfaceController = require(Controllers.InterfaceController)
+local KeybindTemplate = require(Components.settings.KeybindTemplate)
 local Net = require(ReplicatedStorage.packages.Net)
 local React = require(ReplicatedStorage.packages.React)
 local Remotes = require(ReplicatedStorage.network.Remotes)
@@ -32,12 +34,14 @@ local ChangeSetting = SettingsNamespace:Get("ChangeSetting") :: Net.ClientAsyncC
 
 local e = React.createElement
 local useContext = React.useContext
+local useState = React.useState
 local useCallback = React.useCallback
 
 local SETTING_TO_ELEMENT = {
 	Input = InputTemplate,
 	Slider = SliderTemplate,
 	Toggle = ToggleTemplate,
+	Keybind = KeybindTemplate,
 } :: { [Types.SettingType]: React.React_Component<any, any> }
 
 type SettingsProps = {}
@@ -45,6 +49,8 @@ type SettingsProps = {}
 local function Settings(_props: SettingsProps)
 	local settingsState = useContext(SettingsContext)
 	local nextOrder = createNextOrder()
+
+	local listeningForKeybind, setListeningForKeybind = useState(nil)
 
 	local _shouldRender, styles =
 		animateCurrentInterface("Settings", UDim2.fromScale(0.5, 0.5), UDim2.fromScale(0.5, 2))
@@ -58,11 +64,10 @@ local function Settings(_props: SettingsProps)
 		newSettingsState[settingName] = newSetting
 
 		SettingsController.SettingsChanged:Fire(newSettingsState)
-
-		print(settingValue)
 		ChangeSetting:CallServerAsync(settingName, settingValue)
 			:andThen(function(response: Types.NetworkResponse)
 				if response.Success == false then
+					warn(response.Message)
 					SettingsController.SettingsChanged:Fire(oldSettingsState)
 				end
 			end)
@@ -99,6 +104,11 @@ local function Settings(_props: SettingsProps)
 							description = settingInfo.Description,
 							size = UDim2.fromOffset(799, 71),
 							changeSetting = changeSetting,
+
+							-- for KeybindTemplate
+							onToggle = settingInfo.Type == "Keybind" and setListeningForKeybind,
+							listeningForInput = listeningForKeybind == settingName,
+							setListeningForInput = setListeningForKeybind,
 						}
 					)
 				)
@@ -149,6 +159,9 @@ local function Settings(_props: SettingsProps)
 				position = UDim2.fromScale(0.947, 0.512),
 				size = UDim2.fromOffset(43, 43),
 				zIndex = 2,
+				onActivated = function()
+					InterfaceController.InterfaceChanged:Fire(nil)
+				end,
 			}),
 
 			settingsIcon2 = e("ImageLabel", {

@@ -7,6 +7,7 @@ local Services = ServerScriptService.services
 local Constants = ReplicatedStorage.constants
 local Packages = ReplicatedStorage.packages
 
+local EnumUtils = require(ReplicatedStorage.utils.EnumUtils)
 local Freeze = require(Packages.Freeze)
 local Net = require(Packages.Net)
 local PlayerDataService = require(Services.PlayerDataService)
@@ -25,6 +26,21 @@ local SettingTypes = {
 	Slider = t.numberConstrained(0, 100),
 	Dropdown = t.string,
 	List = t.map(t.string, t.boolean),
+	Input = t.string,
+	Keybind = t.map(t.string, t.string),
+}
+
+local AllowedDevices = { "MouseKeyboard", "Gamepad" }
+local RestrictedKeybinds = { -- TODO: Add more keybinds. Table defines the keybinds that are restricted.
+	[Enum.KeyCode.W] = true,
+	[Enum.KeyCode.A] = true,
+	[Enum.KeyCode.S] = true,
+	[Enum.KeyCode.D] = true,
+	[Enum.KeyCode.KeypadEnter] = true,
+	[Enum.KeyCode.Space] = true,
+	[Enum.KeyCode.LeftShift] = true,
+	[Enum.KeyCode.RightShift] = true,
+	[Enum.KeyCode.Slash] = true,
 }
 
 local SettingsService = {
@@ -41,6 +57,7 @@ function SettingsService:OnInit()
 		self.PlayerSettings:SetFor(Player, Data.Settings)
 	end)
 	ChangeSetting:SetCallback(function(Player: Player, SettingName: string, Value: Types.SettingValue)
+		print(Player, SettingName, Value)
 		return self:ChangeSettingNetworkRequest(Player, SettingName, Value)
 	end)
 end
@@ -66,6 +83,18 @@ function SettingsService:IsValidValue(Setting: Types.Setting, Value: any): boole
 		elseif Setting.Type == "List" and Setting.Choices then -- Verify that all choices are valid
 			for choice, _ in Value do
 				if not table.find(Setting.Choices, choice) then
+					return false
+				end
+			end
+		elseif Setting.Type == "Keybind" then
+			for device, enum in pairs(Value) do
+				if table.find(AllowedDevices, device) == nil then
+					return false
+				end
+				if not EnumUtils.IsEnum(Enum.KeyCode, enum) then
+					return false
+				end
+				if RestrictedKeybinds[enum] then
 					return false
 				end
 			end
@@ -96,13 +125,13 @@ function SettingsService:ChangeSettingNetworkRequest(
 			SettingsService.SettingChanged:Fire(Player, SettingName, Value)
 			return {
 				Success = true,
-				Response = "Setting changed successfully",
+				Message = "Setting changed successfully",
 			}
 		end
 	end
 	return {
 		Success = false,
-		Response = "Invalid setting or value",
+		Message = "Invalid setting or value",
 	}
 end
 return SettingsService

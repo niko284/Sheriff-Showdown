@@ -25,7 +25,7 @@ local function createStylesTable(isOpened: boolean, openPosition: UDim2, closedP
 			transparency = isOpened and 0 or 1,
 		},
 		from = if isOpened then { position = UDim2.fromScale(0.5, 0), transparency = isOpened and 1 or 0 } else nil,
-		config = not isOpened and { duration = 0.55 } or ReactSpring.config.wobbly,
+		config = { duration = 0.3 },
 		reset = isOpened,
 	}
 end

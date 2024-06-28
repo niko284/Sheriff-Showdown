@@ -242,8 +242,8 @@ export type Gamepass = {
 
 -- >> Setting Types
 
-export type SettingValue = boolean | string | number
-export type SettingType = "Slider" | "Toggle" | "Dropdown" | "List" | "Input"
+export type SettingValue = boolean | string | number | KeybindMap
+export type SettingType = "Slider" | "Toggle" | "Dropdown" | "List" | "Input" | "Keybind"
 export type SettingChoiceInfo = {
 	Color: Color3,
 	LayoutOrder: number,
@@ -254,7 +254,7 @@ export type Setting = {
 	Type: SettingType,
 	Category: string,
 	Icon: string,
-	Default: number | boolean | string, --sliders, toggles, dropdowns/input respectively.
+	Default: SettingValue, --sliders, toggles, dropdowns/input respectively.
 	Choices: { string }?, -- List setting type
 	ChoiceColors: { [string]: Color3 }?, -- List setting type
 	ChoiceInfo: { [string]: SettingChoiceInfo }?, -- List setting type
@@ -262,6 +262,7 @@ export type Setting = {
 	Minimum: number?, -- sliders
 	Increment: number?, -- sliders
 	Selections: { string }?, -- Dropdowns
+	InputVerifiers: { (string) -> boolean }?, -- Input setting type
 }
 
 export type SettingInternal = {
@@ -270,6 +271,11 @@ export type SettingInternal = {
 
 export type PlayerDataSettings = {
 	[string]: SettingInternal,
+}
+
+export type DeviceType = "MouseKeyboard" | "Gamepad"
+export type KeybindMap = {
+	[DeviceType]: string,
 }
 
 return nil

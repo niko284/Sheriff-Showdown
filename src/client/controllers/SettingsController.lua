@@ -102,6 +102,15 @@ function SettingsController:BuildSettingProps(
 		return {
 			layoutOrder = layoutOrder,
 			currentInput = settingInternal.Value,
+			inputVerifiers = settingInfo.InputVerifiers,
+			inputRange = { 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1 },
+			outputRange = { 0, -15, 15, -15, 15, -15, 15, -15, 15, -15, 0 },
+		}
+	elseif settingInfo.Type == "Keybind" then
+		print(layoutOrder)
+		return {
+			layoutOrder = layoutOrder,
+			keybindMap = settingInternal.Value,
 		}
 	else
 		return {}

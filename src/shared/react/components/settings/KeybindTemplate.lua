@@ -1,74 +1,53 @@
 --!strict
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
 
-local MappedInterpolation = require(ReplicatedStorage.utils.MappedInterpolation)
+local InputLib = require(ReplicatedStorage.packages.Input)
 local React = require(ReplicatedStorage.packages.React)
-local ReactSpring = require(ReplicatedStorage.packages.ReactSpring)
-local StringUtils = require(ReplicatedStorage.utils.StringUtils)
+local Settings = require(ReplicatedStorage.constants.Settings)
 local Types = require(ReplicatedStorage.constants.Types)
 
-local e = React.createElement
-local useCallback = React.useCallback
-local useRef = React.useRef
+local PreferredInput = InputLib.PreferredInput
 
-type InputTemplateProps = Types.FrameProps & {
-	name: string,
-	description: string,
-	currentInput: string,
+local e = React.createElement
+local useEffect = React.useEffect
+
+type KeybindTemplateProps = Types.FrameProps & {
+	listeningForInput: boolean,
+	keybindMap: Types.KeybindMap,
+	setListeningForInput: (newValue: string?) -> (),
 	changeSetting: (settingName: string, settingValue: Types.SettingValue) -> (),
-	inputRange: { number },
-	outputRange: { number },
-	inputVerifiers: { (input: string) -> boolean }?,
+	description: string,
+	name: string,
 }
 
-local function InputTemplate(props: InputTemplateProps)
-	local isShaking = useRef(false)
+local validInputTypes = {
+	Enum.UserInputType.Keyboard,
+	Enum.UserInputType.Gamepad1,
+}
 
-	local styles, api = ReactSpring.useSpring(function()
-		return {
-			from = {
-				x = 0,
-				y = 0,
-			},
-		}
-	end)
-
-	local animateInvalidInput = useCallback(function()
-		if isShaking.current == true then
-			return
-		end
-
-		isShaking.current = true
-		api.start({
-			to = {
-				x = 1,
-				y = 1,
-			},
-		})
-			:andThenCall(api.start, {
-				x = 0,
-				y = 0,
-				immediate = true,
-			})
-			:finally(function()
-				isShaking.current = false
-			end)
-	end, {})
-
-	local verifyInput = useCallback(function(input: string)
-		local isValid = true
-
-		if props.inputVerifiers then
-			for _, verifier in props.inputVerifiers do
-				isValid = isValid and verifier(input) -- if already false, it will stay false
+local function KeybindTemplate(props: KeybindTemplateProps)
+	useEffect(function()
+		local inputBegan = UserInputService.InputBegan:Connect(function(Input, Processed)
+			if props.listeningForInput and not Processed and table.find(validInputTypes, Input.UserInputType) then
+				local inputType = PreferredInput.Current :: any
+				local newKeybindMap = table.clone(props.keybindMap)
+				newKeybindMap[inputType] = Input.KeyCode.Name
+				props.changeSetting(props.name, newKeybindMap)
+				props.setListeningForInput(nil)
 			end
+		end)
+		return function()
+			inputBegan:Disconnect()
 		end
+	end, { props.listeningForInput, props.keybindMap, props.name, props.changeSetting } :: { any })
 
-		return isValid
-	end, { props.inputVerifiers })
+	local settingInfo = Settings[props.name]
+	local defaultKeybinds = settingInfo.Default :: Types.KeybindMap -- we might need to display the default keybind for the current device if the user has not set a keybidn for it.
 
-	local inputBoxPosition = UDim2.fromScale(0.907, 0.507)
+	local currentKeybind = props.keybindMap[PreferredInput.Current :: Types.DeviceType]
+		or defaultKeybinds[PreferredInput.Current :: Types.DeviceType]
 
 	return e("Frame", {
 		BackgroundColor3 = Color3.fromRGB(72, 72, 72),
@@ -124,18 +103,7 @@ local function InputTemplate(props: InputTemplateProps)
 			BackgroundTransparency = 0.89,
 			BorderColor3 = Color3.fromRGB(0, 0, 0),
 			BorderSizePixel = 0,
-			Position = React.joinBindings({ styles.x, styles.y } :: { any }):map(function(values)
-				if not inputBoxPosition then
-					return UDim2.new(0, 0, 0, 0) -- Button might be in a layout, so we don't want to move it.
-				end
-				if values[1] == 0 or values[2] == 0 then
-					return inputBoxPosition
-				end
-				local xInterpolated =
-					MappedInterpolation(values[1], props.inputRange, props.outputRange, "identity", "identity")
-				return UDim2.fromScale(inputBoxPosition.X.Scale, inputBoxPosition.Y.Scale)
-					+ UDim2.fromOffset(xInterpolated, 0)
-			end),
+			Position = UDim2.fromScale(0.907, 0.507),
 			Size = UDim2.fromOffset(122, 36),
 		}, {
 			corner = e("UICorner", {
@@ -149,16 +117,14 @@ local function InputTemplate(props: InputTemplateProps)
 				Transparency = 0.69,
 			}),
 
-			textBox = e("TextBox", {
-				CursorPosition = -1,
+			inputRequestButton = e("TextButton", {
 				FontFace = Font.new(
 					"rbxasset://fonts/families/GothamSSm.json",
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-				PlaceholderColor3 = Color3.fromRGB(255, 255, 255),
 				AnchorPoint = Vector2.new(0.5, 0.5),
-				Text = props.currentInput,
+				Text = ((not props.listeningForInput and currentKeybind) or "Press a key") :: string,
 				TextColor3 = Color3.fromRGB(255, 255, 255),
 				TextSize = 20,
 				TextScaled = true,
@@ -169,21 +135,13 @@ local function InputTemplate(props: InputTemplateProps)
 				ClipsDescendants = true,
 				Position = UDim2.fromScale(0.5, 0.5),
 				Size = UDim2.fromScale(0.86, 0.6),
-				[React.Event.FocusLost] = function(rbx)
-					local onlySpaces = StringUtils.ContainsOnlySpaces(rbx.Text)
-					if verifyInput(rbx.Text) or onlySpaces then
-						if onlySpaces then
-							return
-						end
-						props.changeSetting(props.name, rbx.Text)
-					else
-						animateInvalidInput()
-						rbx.Text = props.currentInput
-					end
+				[React.Event.Activated] = function()
+					-- if we're not listening for input, set it to the setting name, otherwise we pressed the button to stop listening for input
+					props.setListeningForInput(not props.listeningForInput and props.name or nil)
 				end,
 			}),
 		}),
 	})
 end
 
-return React.memo(InputTemplate)
+return React.memo(KeybindTemplate)

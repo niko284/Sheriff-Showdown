@@ -57,7 +57,11 @@ local function Tooltip(props: TooltipProps)
 		}),
 		text = e(AutomaticFrame, {
 			instanceProps = {
-				Font = Enum.Font.FredokaOne,
+				FontFace = Font.new(
+					"rbxasset://fonts/families/GothamSSm.json",
+					Enum.FontWeight.Bold,
+					Enum.FontStyle.Normal
+				),
 				Text = props.name,
 				TextColor3 = Color3.fromRGB(255, 255, 255),
 				TextSize = props.textSize,

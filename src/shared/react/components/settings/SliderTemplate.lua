@@ -17,6 +17,7 @@ type SliderTemplateProps = Types.FrameProps & {
 	maximum: number,
 	percentage: number,
 	increment: number,
+	changeSetting: (settingName: string, settingValue: Types.SettingValue) -> (),
 }
 
 local function SliderTemplate(props: SliderTemplateProps)
@@ -76,6 +77,9 @@ local function SliderTemplate(props: SliderTemplateProps)
 			minimum = props.minimum,
 			maximum = props.maximum,
 			increment = props.increment,
+			onSliderReleased = function(percentage)
+				props.changeSetting(props.name, percentage)
+			end,
 			snap = true,
 		}),
 	})
