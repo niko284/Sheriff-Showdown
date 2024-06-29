@@ -32,15 +32,15 @@ local SettingTypes = {
 
 local AllowedDevices = { "MouseKeyboard", "Gamepad" }
 local RestrictedKeybinds = { -- TODO: Add more keybinds. Table defines the keybinds that are restricted.
-	[Enum.KeyCode.W] = true,
-	[Enum.KeyCode.A] = true,
-	[Enum.KeyCode.S] = true,
-	[Enum.KeyCode.D] = true,
-	[Enum.KeyCode.KeypadEnter] = true,
-	[Enum.KeyCode.Space] = true,
-	[Enum.KeyCode.LeftShift] = true,
-	[Enum.KeyCode.RightShift] = true,
-	[Enum.KeyCode.Slash] = true,
+	W = true,
+	A = true,
+	S = true,
+	D = true,
+	KeypadEnter = true,
+	Space = true,
+	LeftShift = true,
+	RightShift = true,
+	Slash = true,
 }
 
 local SettingsService = {
@@ -91,7 +91,7 @@ function SettingsService:IsValidValue(Setting: Types.Setting, Value: any): boole
 				if table.find(AllowedDevices, device) == nil then
 					return false
 				end
-				if not EnumUtils.IsEnum(Enum.KeyCode, enum) then
+				if (enum ~= "None" :: any) and not EnumUtils.IsEnum(Enum.KeyCode, enum) then
 					return false
 				end
 				if RestrictedKeybinds[enum] then

@@ -33,7 +33,7 @@ local ApplyTeamIndicator = RoundNamespace:Get("ApplyTeamIndicator")
 
 local MAPS_FOLDER = Assets:WaitForChild("maps", 3)
 local ExtensionsFolder = script.ModeExtensions
-local VOTING_DURATION = 4
+local VOTING_DURATION = 25
 local MINIMUM_PLAYERS = 2
 local MAP_VOTING_COUNT = 3
 local ROUND_MODE_VOTING_COUNT = 3
@@ -388,7 +388,7 @@ function RoundService:StartMatch(RoundInstance: Types.Round, Match: Types.Match)
 			local randomSpawnerIndex = math.random(1, #spawners)
 			local spawnPoint = spawners[randomSpawnerIndex]
 
-			local renderable: Components.Renderable? = world:get(entityId, Components.Renderable)
+			local renderable: Components.Renderable<Model>? = world:get(entityId, Components.Renderable)
 
 			if renderable and renderable.instance:IsA("PVInstance") then
 				renderable.instance:PivotTo(spawnPoint.CFrame * CFrame.new(0, 5, 0))
@@ -537,7 +537,7 @@ end
 
 -- mostly for NPC/Target dummies
 function RoundService:GetEntityIdFromRenderable(RenderableInstance: Instance): number?
-	for eid, renderable: Components.Renderable, _target in
+	for eid, renderable: Components.Renderable<Model>, _target in
 		RoundService.World:query(Components.Renderable, Components.Target)
 	do
 		if renderable.instance == RenderableInstance then

@@ -33,7 +33,15 @@ local function KeybindTemplate(props: KeybindTemplateProps)
 			if props.listeningForInput and not Processed and table.find(validInputTypes, Input.UserInputType) then
 				local inputType = PreferredInput.Current :: any
 				local newKeybindMap = table.clone(props.keybindMap)
+
+				for device: Types.DeviceType, keybind in newKeybindMap do
+					if keybind == Input.KeyCode.Name then
+						newKeybindMap[device] = "None" -- avoid duplicate keybinds
+					end
+				end
+
 				newKeybindMap[inputType] = Input.KeyCode.Name
+
 				props.changeSetting(props.name, newKeybindMap)
 				props.setListeningForInput(nil)
 			end

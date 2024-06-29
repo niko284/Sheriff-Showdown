@@ -13,6 +13,7 @@ local Controllers = PlayerScripts.controllers
 local AutomaticScrollingFrame = require(Components.frames.AutomaticScrollingFrame)
 local CategoryTemplate = require(Components.settings.CategoryTemplate)
 local CloseButton = require(Components.buttons.CloseButton)
+local DropdownTemplate = require(Components.settings.DropdownTemplate)
 local Freeze = require(ReplicatedStorage.packages.Freeze)
 local InputTemplate = require(Components.settings.InputTemplate)
 local InterfaceController = require(Controllers.InterfaceController)
@@ -42,6 +43,7 @@ local SETTING_TO_ELEMENT = {
 	Slider = SliderTemplate,
 	Toggle = ToggleTemplate,
 	Keybind = KeybindTemplate,
+	Dropdown = DropdownTemplate,
 } :: { [Types.SettingType]: React.React_Component<any, any> }
 
 type SettingsProps = {}
@@ -96,21 +98,19 @@ local function Settings(_props: SettingsProps)
 				end
 				elements[settingName] = e(
 					element,
-					Freeze.Dictionary.merge(
-						SettingsController:BuildSettingProps(settingName, settingInternal, nextOrder()),
-						{
-							name = settingName,
-							key = settingName,
-							description = settingInfo.Description,
-							size = UDim2.fromOffset(799, 71),
-							changeSetting = changeSetting,
+					Freeze.Dictionary.merge(SettingsController:BuildSettingProps(settingName, settingInternal), {
+						name = settingName,
+						key = settingName,
+						description = settingInfo.Description,
+						size = UDim2.fromOffset(799, 71),
+						layoutOrder = nextOrder(),
+						changeSetting = changeSetting,
 
-							-- for KeybindTemplate
-							onToggle = settingInfo.Type == "Keybind" and setListeningForKeybind,
-							listeningForInput = listeningForKeybind == settingName,
-							setListeningForInput = setListeningForKeybind,
-						}
-					)
+						-- for KeybindTemplate
+						onToggle = settingInfo.Type == "Keybind" and setListeningForKeybind,
+						listeningForInput = listeningForKeybind == settingName,
+						setListeningForInput = setListeningForKeybind,
+					})
 				)
 			end
 		end

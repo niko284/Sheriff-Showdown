@@ -20,6 +20,7 @@ export type ButtonProps = Types.FrameProps & {
 	strokeColor: Color3,
 	strokeThickness: number,
 	gradientRotation: number,
+	strokeTransparency: number?,
 	onActivated: (TextButton) -> (),
 }
 
@@ -47,6 +48,7 @@ local function Button(props: ButtonProps)
 		BackgroundColor3 = props.backgroundColor3 or Color3.fromRGB(255, 255, 255),
 		BorderSizePixel = 0,
 		Position = props.position,
+		ZIndex = props.zIndex,
 		Size = props.size,
 		[React.Event.Activated] = function(rbx: TextButton)
 			props.onActivated(rbx)
@@ -90,6 +92,7 @@ local function Button(props: ButtonProps)
 			ApplyStrokeMode = props.applyStrokeMode,
 			Color = props.strokeColor,
 			Thickness = props.strokeThickness,
+			Transparency = props.strokeTransparency,
 		}),
 		gradient = props.gradient and e("UIGradient", {
 			Color = props.gradient,

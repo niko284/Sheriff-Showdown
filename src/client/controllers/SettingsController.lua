@@ -78,39 +78,35 @@ function SettingsController:FillInSettings(playerSettings: Types.PlayerDataSetti
 	return fullSettings
 end
 
-function SettingsController:BuildSettingProps(
-	settingName: string,
-	settingInternal: Types.SettingInternal,
-	layoutOrder: number
-): any
+function SettingsController:BuildSettingProps(settingName: string, settingInternal: Types.SettingInternal): any
 	local settingInfo = Settings[settingName]
 	if settingInfo.Type == "Slider" then
 		return {
 			minimum = settingInfo.Minimum,
 			maximum = settingInfo.Maximum,
 			percentage = settingInternal.Value,
-			layoutOrder = layoutOrder,
 			increment = settingInfo.Increment,
 		}
 	elseif settingInfo.Type == "Toggle" then
 		return {
 			buttonType = "Secondary",
-			layoutOrder = layoutOrder,
 			toggled = settingInternal.Value,
 		}
 	elseif settingInfo.Type == "Input" then
 		return {
-			layoutOrder = layoutOrder,
 			currentInput = settingInternal.Value,
 			inputVerifiers = settingInfo.InputVerifiers,
 			inputRange = { 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1 },
 			outputRange = { 0, -15, 15, -15, 15, -15, 15, -15, 15, -15, 0 },
 		}
 	elseif settingInfo.Type == "Keybind" then
-		print(layoutOrder)
 		return {
-			layoutOrder = layoutOrder,
 			keybindMap = settingInternal.Value,
+		}
+	elseif settingInfo.Type == "Dropdown" then
+		return {
+			currentSelection = settingInternal.Value,
+			selections = settingInfo.Selections,
 		}
 	else
 		return {}

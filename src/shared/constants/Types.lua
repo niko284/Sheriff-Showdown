@@ -195,7 +195,7 @@ export type CurrencyData = {
 	Color: Color3,
 }
 
-export type Interface = "Shop" | "Inventory" | "GiftingSelection" | "Settings"
+export type Interface = "Shop" | "Inventory" | "GiftingSelection" | "Settings" | "Voting"
 
 export type ProductInfo = {
 	Name: string,

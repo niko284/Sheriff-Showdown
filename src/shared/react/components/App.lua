@@ -22,6 +22,7 @@ local SettingsProvider = require(Providers.SettingsProvider)
 local Shop = require(Components.shop.Shop)
 local ShopProvider = require(Providers.ShopProvider)
 local SideButtonHUD = require(Components.other.SideButtonHUD)
+local Voting = require(Components.voting.Voting)
 
 local e = React.createElement
 local useState = React.useState
@@ -85,6 +86,7 @@ local function App()
 			sideButtons = e(SideButtonHUD, {
 				buttons = SIDE_BUTTONS,
 			}),
+			voting = e(Voting),
 			inventory = e(Inventory),
 			settings = e(Settings),
 			--confirmationPrompt = e(ConfirmationPrompt),
