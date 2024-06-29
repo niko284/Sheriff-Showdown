@@ -8,9 +8,11 @@ local Hooks = ReplicatedStorage.react.hooks
 local Components = ReplicatedStorage.react.components
 local PlayerScripts = LocalPlayer.PlayerScripts
 local Controllers = PlayerScripts.controllers
+local Contexts = ReplicatedStorage.react.contexts
 
 local AutomaticScrollingFrame = require(Components.frames.AutomaticScrollingFrame)
 local CloseButton = require(Components.buttons.CloseButton)
+local CurrentInterfaceContext = require(Contexts.CurrentInterfaceContext)
 local InterfaceController = require(Controllers.InterfaceController)
 local Net = require(ReplicatedStorage.packages.Net)
 local React = require(ReplicatedStorage.packages.React)
@@ -26,34 +28,42 @@ local ProcessVote = VotingNamespace:Get("ProcessVote") :: Net.ClientSenderEvent
 local useState = React.useState
 local useEffect = React.useEffect
 local useCallback = React.useCallback
+local useContext = React.useContext
 local e = React.createElement
 
 type VotingProps = {}
 local function Voting(_props: VotingProps)
 	local votingPool, setVotingPool = useState(nil :: Types.VotingPoolClient?)
 	local currentFieldIndex, setCurrentFieldIndex = useState(nil :: number?)
+	local currentInterface = useContext(CurrentInterfaceContext)
 
 	local _shouldRender, styles = animateCurrentInterface("Voting", UDim2.fromScale(0.5, 0.5), UDim2.fromScale(0.5, 2))
 
 	local onVotingFieldChoiceSelected = useCallback(function(votingField: string, votingChoice: string)
 		setCurrentFieldIndex(currentFieldIndex and (currentFieldIndex :: number + 1) or 1)
 
+		if currentFieldIndex + 1 > #votingPool.VotingFields then
+			setVotingPool(nil :: any)
+			InterfaceController.InterfaceChanged:Fire(nil)
+		end
+
 		-- send the choice to the server
 		ProcessVote:SendToServer(votingField, votingChoice)
 
 		-- for this voting pool field, we need to send the choice selected to the server for tallying. also, pop up the next voting field if it exists.
-	end, { currentFieldIndex } :: { any })
+	end, { currentFieldIndex, votingPool } :: { any })
 
 	useEffect(function()
-		local startVotingConnection = RoundController:ObserveVotingStarted(function(VotingPoolClient)
-			print(VotingPoolClient)
+		local startVotingConnection = RoundController.StartVoting:Connect(function(VotingPoolClient)
 			InterfaceController.InterfaceChanged:Fire("Voting")
 			setVotingPool(VotingPoolClient)
 			setCurrentFieldIndex(1) -- start at the first field. when a button is clicked on the voting template, it will increment the index
 		end)
 
 		local endVotingConnection = RoundController.EndVoting:Connect(function()
-			InterfaceController.InterfaceChanged:Fire(nil)
+			if currentInterface.current == "Voting" then
+				InterfaceController.InterfaceChanged:Fire(nil)
+			end
 			setVotingPool(nil :: any)
 			setCurrentFieldIndex(nil :: any)
 		end)
@@ -62,7 +72,7 @@ local function Voting(_props: VotingProps)
 			startVotingConnection:Disconnect()
 			endVotingConnection:Disconnect()
 		end
-	end, {})
+	end, { currentInterface })
 
 	-- with the voting pool, we can create the voting template components
 	local votingComponents = {}
@@ -74,9 +84,9 @@ local function Voting(_props: VotingProps)
 				votingComponents,
 				e(VotingTemplate, {
 					choice = choice.Name,
-					size = UDim2.fromOffset(164, 191),
+					size = UDim2.fromOffset(254, 373),
 					layoutOrder = index,
-					key = choice,
+					key = choice.Name .. votingChoices.Field,
 					field = votingChoices.Field,
 					onActivated = onVotingFieldChoiceSelected,
 					backgroundImage = choice.Image,
@@ -86,6 +96,7 @@ local function Voting(_props: VotingProps)
 	end
 
 	return e("ImageLabel", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
 		Image = "rbxassetid://18250424460",
 		BackgroundTransparency = 1,
 		Position = styles.position,

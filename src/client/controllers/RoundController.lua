@@ -64,7 +64,6 @@ function RoundController:OnStart()
 		end
 	end)
 	VotingPoolClient:Observe(function(VotingPool: Types.VotingPoolClient)
-		print(VotingPool)
 		if VotingPool then
 			RoundController.StartVoting:Fire(VotingPool)
 		else

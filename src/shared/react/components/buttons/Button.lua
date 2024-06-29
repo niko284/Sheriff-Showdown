@@ -17,7 +17,7 @@ export type ButtonProps = Types.FrameProps & {
 	textSize: number,
 	fontFace: Font,
 	applyStrokeMode: Enum.ApplyStrokeMode,
-	strokeColor: Color3,
+	strokeColor: Color3?,
 	strokeThickness: number,
 	gradientRotation: number,
 	strokeTransparency: number?,
@@ -88,7 +88,7 @@ local function Button(props: ButtonProps)
 		corner = e("UICorner", {
 			CornerRadius = props.cornerRadius,
 		}),
-		stroke = e("UIStroke", {
+		stroke = props.strokeColor and e("UIStroke", {
 			ApplyStrokeMode = props.applyStrokeMode,
 			Color = props.strokeColor,
 			Thickness = props.strokeThickness,

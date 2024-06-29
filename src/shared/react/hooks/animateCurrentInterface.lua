@@ -40,6 +40,7 @@ local function animateCurrentInterface(
 	local lastAnimationPromise = useRef(nil)
 
 	local currentInterface = useContext(CurrentInterfaceContext)
+	print(currentInterface)
 
 	local styles, api = ReactSpring.useSpring(function()
 		local stylesFn = (buildStyles or createStylesTable) :: any

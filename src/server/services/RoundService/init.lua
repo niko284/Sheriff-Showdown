@@ -162,7 +162,7 @@ end
 
 function RoundService:DoIntermission()
 	print("Intermission phase started.")
-	return Promise.delay(2)
+	return Promise.delay(10)
 end
 
 -- resolves if there are not enough players to start a round (used in the intermission and voting phases)
