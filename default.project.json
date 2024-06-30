@@ -9,10 +9,6 @@
       "packages": {
         "$path": "Packages",
         "$ignoreUnknownInstances": true
-      },
-      "vendor": {
-        "$path": "vendor", 
-        "$ignoreUnknownInstances": true
       }
     },
 

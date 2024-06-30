@@ -56,6 +56,10 @@ function SettingsController:Init()
 	end)
 end
 
+function SettingsController:GetReplicatedSettings()
+	return PlayerSettingsProperty:Get()
+end
+
 function SettingsController:ObserveSettingsChanged(callback: (Types.PlayerDataSettings) -> ())
 	local playerSettings = PlayerSettingsProperty:Get()
 	if playerSettings then

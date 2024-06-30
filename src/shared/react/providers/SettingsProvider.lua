@@ -21,7 +21,13 @@ local function SettingsProvider(props)
 	local settingsState, setSettingsState = useState({} :: Types.PlayerDataSettings)
 
 	useEffect(function()
-		local settingsChanged = SettingsController:ObserveSettingsChanged(
+		if settingsState == nil then
+			local playerSettings = SettingsController:GetReplicatedSettings()
+			if playerSettings then
+				setSettingsState(playerSettings)
+			end
+		end
+		local settingsChanged = SettingsController.SettingsChanged:Connect(
 			function(playerSettings: Types.PlayerDataSettings)
 				setSettingsState(playerSettings)
 			end
@@ -30,7 +36,7 @@ local function SettingsProvider(props)
 		return function()
 			settingsChanged:Disconnect()
 		end
-	end, {})
+	end, {settingsState})
 
 	return e(SettingsContext.Provider, {
 		value = settingsState,

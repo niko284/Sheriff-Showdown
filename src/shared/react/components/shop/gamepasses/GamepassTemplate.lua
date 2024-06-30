@@ -1,6 +1,8 @@
 --!strict
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local MarketplaceService = game:GetService("MarketplaceService")
 
 local React = require(ReplicatedStorage.packages.React)
 local useProductInfoFromId = require(ReplicatedStorage.react.hooks.useProductInfoFromId)
@@ -22,6 +24,16 @@ local function GamepassTemplate(props: GamepassTemplateProps)
 	}, {
 		corner = e("UICorner", {
 			CornerRadius = UDim.new(0, 5),
+		}),
+
+		button = e("TextButton", {
+			BackgroundTransparency = 1,
+			Text = "",
+			ZIndex = 2,
+			Size = UDim2.fromScale(1, 1),
+			[React.Event.Activated] = function()
+				MarketplaceService:PromptGamePassPurchase(Players.LocalPlayer, props.gamepassId)
+			end,
 		}),
 
 		stroke = e("UIStroke", {

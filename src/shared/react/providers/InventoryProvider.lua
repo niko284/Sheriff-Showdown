@@ -20,13 +20,19 @@ local function InventoryProvider(props)
 	local inventory, setInventory = useState(nil :: Types.PlayerInventory?)
 
 	useEffect(function()
-		local connection = InventoryController:ObserveInventoryChanged(function(newInventory)
+		if inventory == nil then
+			local replicatedInventory = InventoryController:GetReplicatedInventory()
+			if replicatedInventory then
+				setInventory(replicatedInventory)
+			end
+		end
+		local connection = InventoryController.InventoryChanged:Connect(function(newInventory)
 			setInventory(newInventory)
 		end)
 		return function()
 			connection:Disconnect()
 		end
-	end, {})
+	end, {inventory})
 
 	return e(InventoryContext.Provider, {
 		value = inventory,

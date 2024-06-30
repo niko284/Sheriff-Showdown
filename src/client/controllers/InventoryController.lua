@@ -25,6 +25,10 @@ function InventoryController:OnInit()
 	end)
 end
 
+function InventoryController:GetReplicatedInventory()
+	return PlayerInventoryProperty:Get()
+end
+
 function InventoryController:ObserveInventoryChanged(callback: (Types.PlayerInventory) -> ())
 	local inventory = PlayerInventoryProperty:Get()
 	if inventory then

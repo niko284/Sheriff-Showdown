@@ -7,10 +7,13 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local Services = ServerScriptService.services
 local Packages = ReplicatedStorage.packages
 
+local ServerComm = require(ServerScriptService.ServerComm)
 local PlayerDataService = require(Services.PlayerDataService)
 local Schema = require(Services.PlayerDataService.Schema)
 local Sift = require(Packages.Sift)
 local Signal = require(Packages.Signal)
+
+local PlayerResourcesProperty = ServerComm:CreateProperty("PlayerResources", {})
 
 local ResourceService = { Name = "ResourceService", ResourceSignals = {} :: { [string]: Signal.Signal<Player, any> } }
 
@@ -18,6 +21,10 @@ function ResourceService:OnInit()
 	for ResourceName, _ in pairs(Schema.Resources) do
 		ResourceService.ResourceSignals[ResourceName] = Signal.new()
 	end
+	PlayerDataService.DocumentLoaded:Connect(function(Player, Document)
+		local Data = Document:read()
+		PlayerResourcesProperty:SetFor(Player, Data.Resources)
+	end)
 end
 
 function ResourceService:SetResource(Player: Player, Resource: string, Value: any): ()

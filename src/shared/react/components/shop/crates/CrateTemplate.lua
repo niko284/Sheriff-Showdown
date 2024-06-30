@@ -177,6 +177,9 @@ local function CrateTemplate(props: CrateTemplateProps)
 			strokeColor = Color3.fromRGB(255, 255, 255),
 			strokeThickness = 1.5,
 			gradientRotation = -90,
+			onActivated = function()
+				
+			end
 		}),
 
 		viewContents = e(OptionButton, {

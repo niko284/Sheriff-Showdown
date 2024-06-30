@@ -14,6 +14,7 @@ local DistractionViewport = require(Components.round.DistractionViewport)
 local GiftingSelectionList = require(Components.shop.GiftingSelectionList)
 local Inventory = require(Components.inventory.Inventory)
 local InventoryProvider = require(Providers.InventoryProvider)
+local ResourceProvider = require(Providers.ResourceProvider)
 local Playerlist = require(Components.playerlist.Playerlist)
 local React = require(ReplicatedStorage.packages.React)
 local ScaleContext = require(Contexts.ScaleContext)
@@ -58,6 +59,7 @@ local function App()
 			e(InventoryProvider),
 			e(CurrentInterfaceProvider),
 			e(SettingsProvider),
+			e(ResourceProvider),
 		},
 	}, {
 		App = e("ScreenGui", {

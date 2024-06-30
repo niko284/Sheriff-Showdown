@@ -40,14 +40,15 @@ export type PlayerInventory = {
 	Equipped: { Item },
 	GrantedDefaults: { number }, -- list of item ids that the player has been granted by default (to avoid duplicates)
 }
+export type PlayerResources = {
+	Coins: number,
+	Gems: number,
+	Level: number,
+	Experience: number,
+}
 export type DataSchema = {
 	Inventory: PlayerInventory,
-	Resources: {
-		Coins: number,
-		Gems: number,
-		Level: number,
-		Experience: number,
-	},
+	Resources: PlayerResources,
 	CodesRedeemed: { string },
 	Settings: PlayerDataSettings,
 }
