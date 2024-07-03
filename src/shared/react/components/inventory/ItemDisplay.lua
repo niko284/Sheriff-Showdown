@@ -12,6 +12,7 @@ local Serde = ReplicatedStorage.network.serde
 
 local AutomaticScrollingFrame = require(Components.frames.AutomaticScrollingFrame)
 local Button = require(Components.buttons.Button)
+local InterfaceController = require(PlayerScripts.controllers.InterfaceController)
 local InventoryContext = require(ReplicatedStorage.react.contexts.InventoryContext)
 local InventoryController = require(PlayerScripts.controllers.InventoryController)
 local InventoryUtils = require(Utils.InventoryUtils)
@@ -30,6 +31,7 @@ local UnlockItem = InventoryNamespace:Get("UnlockItem") :: Net.ClientAsyncCaller
 local EquipItem = InventoryNamespace:Get("EquipItem") :: Net.ClientAsyncCaller
 local UnequipItem = InventoryNamespace:Get("UnequipItem") :: Net.ClientAsyncCaller
 local ToggleItemFavorite = InventoryNamespace:Get("ToggleItemFavorite") :: Net.ClientAsyncCaller
+local OpenCrate = InventoryNamespace:Get("OpenCrate") :: Net.ClientAsyncCaller
 
 local e = React.createElement
 local useCallback = React.useCallback
@@ -42,13 +44,16 @@ type ItemDisplayProps = Types.FrameProps & {
 	isFavorited: boolean,
 	isLocked: boolean,
 	serial: number?,
-	rarity: Types.ItemRarity,
+	rarity: Types.ItemRarity?,
 	image: string,
 	killCount: number?,
 }
 
 local function ItemDisplay(props: ItemDisplayProps)
-	local rarityInfo = Rarities[props.rarity]
+	local rarityInfo = nil
+	if props.rarity then
+		rarityInfo = Rarities[props.rarity]
+	end
 
 	local itemInfo = ItemUtils.GetItemInfoFromId(props.itemId)
 	local itemTypeInfo = ItemTypes[itemInfo.Type]
@@ -157,6 +162,30 @@ local function ItemDisplay(props: ItemDisplayProps)
 			end)
 	end, { inventory, props.itemUUID } :: { any })
 
+	local openCrate = useCallback(function()
+		if not inventory then
+			return -- silence type checker (inventory is not nil here)
+		end
+
+		local serializedUUID = UUIDSerde.Serialize(props.itemUUID)
+
+		local newInventory = InventoryUtils.RemoveItem(inventory, props.itemUUID)
+
+		InventoryController.InventoryChanged:Fire(newInventory)
+
+		OpenCrate:CallServerAsync(serializedUUID)
+			:andThen(function(response: Types.NetworkResponse)
+				if response.Success == false then
+					warn(response.Message)
+					InventoryController.InventoryChanged:Fire(inventory) -- rollback
+				end
+			end)
+			:catch(function(err)
+				InventoryController.InventoryChanged:Fire(inventory) -- rollback
+				warn(tostring(err))
+			end)
+	end, { props.itemUUID, inventory } :: { any })
+
 	return e("ImageLabel", {
 		Image = "rbxassetid://17886556400",
 		BackgroundTransparency = 1,
@@ -178,7 +207,7 @@ local function ItemDisplay(props: ItemDisplayProps)
 			Size = UDim2.fromOffset(124, 15),
 		}),
 
-		rarity = e("TextLabel", {
+		rarity = rarityInfo and e("TextLabel", {
 			FontFace = Font.new(
 				"rbxasset://fonts/families/GothamSSm.json",
 				Enum.FontWeight.Medium,
@@ -330,6 +359,54 @@ local function ItemDisplay(props: ItemDisplayProps)
 				onActivated = not isEquipped and equipItem or unequipItem,
 			}),
 
+			openCrate = itemInfo.Type == "Crate" and e(Button, {
+				anchorPoint = Vector2.new(0.5, 0.5),
+				fontFace = Font.new(
+					"rbxasset://fonts/families/GothamSSm.json",
+					Enum.FontWeight.Bold,
+					Enum.FontStyle.Normal
+				),
+				text = "Open",
+				textColor3 = Color3.fromRGB(0, 0, 0),
+				textSize = 16,
+				strokeThickness = 1.5,
+				layoutOrder = 1,
+				applyStrokeMode = Enum.ApplyStrokeMode.Border,
+				strokeColor = Color3.fromRGB(255, 255, 255),
+				cornerRadius = UDim.new(0, 5),
+				gradient = ColorSequence.new({
+					ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 119)),
+					ColorSequenceKeypoint.new(1, Color3.fromRGB(158, 227, 142)),
+				}),
+				gradientRotation = -90,
+				onActivated = openCrate,
+			}),
+
+			viewCrateContents = itemInfo.Type == "Crate" and e(Button, {
+				anchorPoint = Vector2.new(0.5, 0.5),
+				fontFace = Font.new(
+					"rbxasset://fonts/families/GothamSSm.json",
+					Enum.FontWeight.Bold,
+					Enum.FontStyle.Normal
+				),
+				text = "Contents",
+				textColor3 = Color3.fromRGB(0, 0, 0),
+				textSize = 16,
+				strokeThickness = 1.5,
+				layoutOrder = 4,
+				applyStrokeMode = Enum.ApplyStrokeMode.Border,
+				strokeColor = Color3.fromRGB(255, 255, 255),
+				cornerRadius = UDim.new(0, 5),
+				gradient = ColorSequence.new({
+					ColorSequenceKeypoint.new(0, Color3.fromRGB(149, 0, 255)),
+					ColorSequenceKeypoint.new(1, Color3.fromRGB(193, 149, 224)),
+				}),
+				gradientRotation = -90,
+				onActivated = function()
+					InterfaceController.ViewCrateContents:Fire(props.itemName :: Types.Crate)
+				end,
+			}),
+
 			lock = e(Button, {
 				anchorPoint = Vector2.new(0.5, 0.5),
 				fontFace = Font.new(
@@ -349,8 +426,8 @@ local function ItemDisplay(props: ItemDisplayProps)
 					ColorSequenceKeypoint.new(0, Color3.fromRGB(115, 114, 114)),
 					ColorSequenceKeypoint.new(1, Color3.fromRGB(74, 74, 74)),
 				}) or ColorSequence.new({
-					ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 198, 0)),
-					ColorSequenceKeypoint.new(1, Color3.fromRGB(244, 157, 5)),
+					ColorSequenceKeypoint.new(0, Color3.fromRGB(252, 68, 118)),
+					ColorSequenceKeypoint.new(1, Color3.fromRGB(203, 35, 67)),
 				}),
 				gradientRotation = -90,
 				onActivated = props.isLocked and unlockItem or lockItem,

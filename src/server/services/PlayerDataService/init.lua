@@ -1,5 +1,7 @@
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local ServerPackages = ServerScriptService.ServerPackages
@@ -10,7 +12,7 @@ local Migrations = require(script.Migrations)
 local Signal = require(Packages.Signal)
 local t = require(Packages.t)
 
-local collectionName = "PlayerData3" --RunService:IsStudio() and "PlayerData" .. HttpService:GenerateGUID(false) or "PlayerData1"
+local collectionName = RunService:IsStudio() and "PlayerData" .. HttpService:GenerateGUID(false) or "PlayerData5"
 
 local PlayerDataCollection = Lapis.createCollection(collectionName, {
 	defaultData = require(script.Schema),

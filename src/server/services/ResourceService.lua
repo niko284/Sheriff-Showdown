@@ -7,13 +7,13 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local Services = ServerScriptService.services
 local Packages = ReplicatedStorage.packages
 
-local ServerComm = require(ServerScriptService.ServerComm)
 local PlayerDataService = require(Services.PlayerDataService)
 local Schema = require(Services.PlayerDataService.Schema)
+local ServerComm = require(ServerScriptService.ServerComm)
 local Sift = require(Packages.Sift)
 local Signal = require(Packages.Signal)
 
-local PlayerResourcesProperty = ServerComm:CreateProperty("PlayerResources", {})
+local PlayerResourcesProperty = ServerComm:CreateProperty("PlayerResources", nil)
 
 local ResourceService = { Name = "ResourceService", ResourceSignals = {} :: { [string]: Signal.Signal<Player, any> } }
 
@@ -32,6 +32,7 @@ function ResourceService:SetResource(Player: Player, Resource: string, Value: an
 	local newData = table.clone(document:read())
 	newData.Resources = Sift.Dictionary.set(newData.Resources, Resource, Value)
 	document:write(newData)
+	PlayerResourcesProperty:SetFor(Player, newData.Resources)
 end
 
 function ResourceService:GetResource(Player: Player, Resource: string): any

@@ -6,6 +6,8 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local Services = ServerScriptService.services
 local Constants = ReplicatedStorage.constants
 
+local CrateUtils = require(ReplicatedStorage.utils.CrateUtils)
+local Crates = require(Constants.Crates)
 local Freeze = require(ReplicatedStorage.packages.Freeze)
 local InventoryUtils = require(ReplicatedStorage.utils.InventoryUtils)
 local ItemService = require(Services.ItemService)
@@ -15,17 +17,21 @@ local Items = require(Constants.Items)
 local Lapis = require(ServerScriptService.ServerPackages.Lapis)
 local Net = require(ReplicatedStorage.packages.Net)
 local PlayerDataService = require(Services.PlayerDataService)
+local Promise = require(ReplicatedStorage.packages.Promise)
+local RarityUtils = require(ReplicatedStorage.utils.RarityUtils)
 local Remotes = require(ReplicatedStorage.network.Remotes)
 local ServerComm = require(ServerScriptService.ServerComm)
 local Types = require(ReplicatedStorage.constants.Types)
 
 local InventoryNamespace = Remotes.Server:GetNamespace("Inventory")
 local ItemAdded = InventoryNamespace:Get("ItemAdded") :: Net.ServerSenderEvent
+local ItemRemoved = InventoryNamespace:Get("ItemRemoved") :: Net.ServerSenderEvent
 local EquipItem = InventoryNamespace:Get("EquipItem") :: Net.ServerAsyncCallback
 local UnequipItem = InventoryNamespace:Get("UnequipItem") :: Net.ServerAsyncCallback
 local LockItem = InventoryNamespace:Get("LockItem") :: Net.ServerAsyncCallback
 local UnlockItem = InventoryNamespace:Get("UnlockItem") :: Net.ServerAsyncCallback
 local ToggleItemFavorite = InventoryNamespace:Get("ToggleItemFavorite") :: Net.ServerAsyncCallback
+local OpenCrate = InventoryNamespace:Get("OpenCrate") :: Net.ServerAsyncCallback
 
 local PlayerInventoryProperty = ServerComm:CreateProperty("PlayerInventory", nil)
 
@@ -62,6 +68,10 @@ function InventoryService:OnInit()
 	ToggleItemFavorite:SetCallback(function(Player: Player, ItemUUID: string, Favorite: boolean)
 		return InventoryService:ToggleItemFavoriteNetworkRequest(Player, ItemUUID, Favorite)
 	end)
+
+	OpenCrate:SetCallback(function(Player: Player, CrateUUID: string)
+		return InventoryService:OpenCrateNetworkRequest(Player, CrateUUID)
+	end)
 end
 
 function InventoryService:GetInventory(Player: Player): Types.PlayerInventory -- read-only
@@ -87,7 +97,7 @@ function InventoryService:GrantDefaults(Player: Player, Document: Lapis.Document
 				:andThen(function(Item: Types.Item)
 					wasGrantedAtLeastOne = true
 					table.insert(grantedDefaults, ItemInfo.Id)
-					InventoryService:AddItem(Player, Item)
+					InventoryService:AddItem(Player, Item, false)
 				end)
 				:catch(function() end)
 				:awaitStatus()
@@ -109,6 +119,21 @@ function InventoryService:AddItem(Player: Player, Item: Types.Item, sendNetworkE
 
 	if sendNetworkEvent ~= false then
 		ItemAdded:SendToPlayer(Player, Item)
+	end
+end
+
+function InventoryService:RemoveItem(Player: Player, Item: Types.Item, sendNetworkEvent: boolean?): ()
+	local Document = PlayerDataService:GetDocument(Player)
+	local newData = table.clone(Document:read())
+
+	local newInventory = InventoryUtils.RemoveItem(newData.Inventory, Item.UUID)
+
+	newData.Inventory = newInventory
+
+	Document:write(newData)
+
+	if sendNetworkEvent ~= false then
+		ItemRemoved:SendToPlayer(Player, Item)
 	end
 end
 
@@ -296,6 +321,52 @@ function InventoryService:ToggleItemFavoriteNetworkRequest(
 	InventoryService:ToggleItemFavorite(Player, ItemUUID, Favorite)
 
 	return { Success = true }
+end
+
+function InventoryService:OpenCrateNetworkRequest(Player: Player, CrateUUID: string): Types.NetworkResponse
+	local Document = PlayerDataService:GetDocument(Player)
+	if not Document then
+		return { Success = false, Message = "Document not found" }
+	end
+
+	local Item = InventoryService:GetItemOfUUID(Player, CrateUUID)
+	if not Item then
+		return { Success = false, Message = "Item not found" }
+	end
+
+	local ItemInfo = ItemUtils.GetItemInfoFromId(Item.Id)
+	if ItemInfo.Type ~= "Crate" then
+		return { Success = false, Message = "Item is not a crate" }
+	end
+
+	local crateInfo = Crates[ItemInfo.Name :: Types.Crate]
+	if not crateInfo then
+		return { Success = false, Message = "Crate info not found" }
+	end
+
+	local crateWeights = crateInfo.Weights
+	local rarity = RarityUtils.SelectRandomRarity(crateWeights)
+	local crateItems = CrateUtils.GetCrateContents(ItemInfo.Name :: Types.Crate)
+
+	local filteredRarityItems = Freeze.List.filter(crateItems, function(info)
+		return info.Rarity == rarity
+	end)
+
+	local randomItem = filteredRarityItems[math.random(1, #filteredRarityItems)]
+
+	local status = ItemService:GenerateItem(randomItem.Id)
+		:andThen(function(generatedItem: Types.Item)
+			InventoryService:RemoveItem(Player, Item, false) -- client will handle the removal of the crate item as well, no need to send a network event
+			InventoryService:AddItem(Player, generatedItem, true)
+		end)
+		:catch(function() end)
+		:awaitStatus()
+
+	if status == Promise.Status.Resolved then
+		return { Success = true, Message = "Opened crate" }
+	else
+		return { Success = false, Message = "Failed to open crate" }
+	end
 end
 
 return InventoryService

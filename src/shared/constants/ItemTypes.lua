@@ -21,4 +21,9 @@ return {
 		CanEquip = true,
 		CanSell = true,
 	},
+	Crate = {
+		TagWithSerial = false,
+		CanEquip = false,
+		CanSell = false,
+	},
 } :: { [Types.ItemType]: ItemTypeInfo }

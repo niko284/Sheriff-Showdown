@@ -14,6 +14,9 @@ local e = React.createElement
 type ConfirmationPromptProps = Types.FrameProps & {
 	description: string,
 	title: string,
+	acceptText: string?,
+	onAccept: () -> (),
+	onCancel: () -> (),
 }
 
 local function ConfirmationPrompt(props: ConfirmationPromptProps)
@@ -109,6 +112,7 @@ local function ConfirmationPrompt(props: ConfirmationPromptProps)
 			strokeColor = Color3.fromRGB(255, 255, 255),
 			applyStrokeMode = Enum.ApplyStrokeMode.Border,
 			gradientRotation = -90,
+			onActivated = props.onCancel,
 		}),
 
 		acceptButton = e(Button, {
@@ -117,7 +121,7 @@ local function ConfirmationPrompt(props: ConfirmationPromptProps)
 				Enum.FontWeight.Bold,
 				Enum.FontStyle.Normal
 			),
-			text = "Accept",
+			text = props.acceptText or "Accept",
 			textColor3 = Color3.fromRGB(0, 54, 25),
 			textSize = 16,
 			position = UDim2.fromOffset(215, 191),
@@ -131,6 +135,7 @@ local function ConfirmationPrompt(props: ConfirmationPromptProps)
 			strokeColor = Color3.fromRGB(255, 255, 255),
 			applyStrokeMode = Enum.ApplyStrokeMode.Border,
 			gradientRotation = -90,
+			onActivated = props.onAccept,
 		}),
 	})
 end

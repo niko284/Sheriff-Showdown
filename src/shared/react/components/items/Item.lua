@@ -15,7 +15,7 @@ local useState = React.useState
 
 type ItemProps = Types.FrameProps & {
 	image: string,
-	rarity: Types.ItemRarity,
+	rarity: Types.ItemRarity?,
 	itemName: string,
 	isLocked: boolean,
 	isFavorited: boolean,
@@ -27,7 +27,10 @@ type ItemProps = Types.FrameProps & {
 }
 
 local function Item(props: ItemProps)
-	local rarityInfo = Rarities[props.rarity]
+	local rarityInfo = nil
+	if props.rarity then
+		rarityInfo = Rarities[props.rarity]
+	end
 
 	local isHovered, setIsHovered = useState(false)
 
@@ -44,7 +47,7 @@ local function Item(props: ItemProps)
 		BorderSizePixel = 0,
 		LayoutOrder = props.layoutOrder,
 	}, {
-		killCount = e("Frame", {
+		killCount = props.killCount and e("Frame", {
 			BackgroundTransparency = 1,
 			Position = UDim2.fromScale(0.53, 0.808),
 			Size = UDim2.fromScale(0.445, 0.0822),
@@ -56,7 +59,7 @@ local function Item(props: ItemProps)
 				Size = UDim2.fromScale(0.215, 1),
 			}),
 
-			kills = props.killCount and e("TextLabel", {
+			kills = e("TextLabel", {
 				FontFace = Font.new(
 					"rbxasset://fonts/families/GothamSSm.json",
 					Enum.FontWeight.SemiBold,
@@ -145,7 +148,7 @@ local function Item(props: ItemProps)
 			ZIndex = 2,
 		}),
 
-		rarity = e("TextLabel", {
+		rarity = rarityInfo and e("TextLabel", {
 			FontFace = Font.new(
 				"rbxasset://fonts/families/GothamSSm.json",
 				Enum.FontWeight.ExtraBold,
@@ -186,9 +189,9 @@ local function Item(props: ItemProps)
 			CornerRadius = UDim.new(0, 5),
 		}),
 
-		gradient = e("ImageLabel", {
+		gradient = rarityInfo and e("ImageLabel", {
 			Image = "rbxassetid://17886581996",
-			ImageColor3 = props.gradient or rarityInfo.Color,
+			ImageColor3 = props.gradient or rarityInfo and rarityInfo.Color,
 			BackgroundTransparency = 1,
 			Position = UDim2.fromScale(0.00685, 0.479),
 			Size = UDim2.fromScale(1, 0.521),

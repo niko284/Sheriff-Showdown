@@ -3,14 +3,14 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Matter = require(ReplicatedStorage.packages.Matter)
 
 export type ItemRarity = "Basic" | "Rare" | "Epic" | "Legendary" | "Exotic"
-export type ItemType = "Gun"
+export type ItemType = "Gun" | "Crate"
 type ItemGunData = {
 	GunStatisticalData: any,
 }
 export type ItemInfo = {
 	Id: number,
 	Name: string,
-	Rarity: ItemRarity,
+	Rarity: ItemRarity?,
 	Type: ItemType,
 	Image: number,
 	Default: (boolean | (Player) -> boolean)?,
@@ -234,6 +234,14 @@ export type CrateInfo = {
 	ShopImage: number,
 	ShopLayoutOrder: number,
 	ItemContents: { string },
+	PurchaseMethods: {
+		{
+			Type: "Coins" | "Gems" | "Robux",
+			Price: number?,
+			ProductId: number?,
+		}
+	},
+	Weights: { [ItemRarity]: number },
 }
 
 export type Gamepass = {
@@ -277,6 +285,11 @@ export type PlayerDataSettings = {
 export type DeviceType = "MouseKeyboard" | "Gamepad"
 export type KeybindMap = {
 	[DeviceType]: string,
+}
+
+export type ShopContext = {
+	giftRecipient: Player?,
+	crateToView: Crate?,
 }
 
 return nil

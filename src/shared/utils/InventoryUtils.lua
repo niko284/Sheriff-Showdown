@@ -166,6 +166,46 @@ function InventoryUtils.ToggleItemFavorite(
 	return newInventory
 end
 
+function InventoryUtils.RemoveItem(Inventory: Types.PlayerInventory, ItemUUID: string): Types.PlayerInventory
+	local newInventory = table.clone(Inventory)
+	local newStorage = table.clone(newInventory.Storage)
+	local newEquipped = table.clone(newInventory.Equipped)
+
+	local indexToRemove = nil
+	local storageOrEquipped = nil
+
+	for index, item in ipairs(newStorage) do
+		if item.UUID == ItemUUID then
+			indexToRemove = index
+			storageOrEquipped = newStorage
+			break
+		end
+	end
+
+	if not indexToRemove then
+		for index, item in ipairs(newEquipped) do
+			if item.UUID == ItemUUID then
+				indexToRemove = index
+				storageOrEquipped = newEquipped
+				break
+			end
+		end
+	end
+
+	if not indexToRemove then
+		return newInventory
+	end
+
+	if indexToRemove then
+		table.remove(storageOrEquipped, indexToRemove)
+	end
+
+	newInventory.Storage = newStorage
+	newInventory.Equipped = newEquipped
+
+	return newInventory
+end
+
 function InventoryUtils.GetItemsOfType(
 	Inventory: Types.PlayerInventory,
 	ItemType: Types.ItemType,

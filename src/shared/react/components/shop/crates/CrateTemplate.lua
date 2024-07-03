@@ -25,6 +25,7 @@ type CrateTemplateProps = Types.FrameProps & {
 	rotationTime: number,
 	amountOfPreviewItems: number,
 	onViewContents: (rbx: Frame) -> (),
+	onCratePurchase: (crateName: Types.Crate) -> (),
 }
 
 local function CrateTemplate(props: CrateTemplateProps)
@@ -178,8 +179,8 @@ local function CrateTemplate(props: CrateTemplateProps)
 			strokeThickness = 1.5,
 			gradientRotation = -90,
 			onActivated = function()
-				
-			end
+				props.onCratePurchase(props.crateName)
+			end,
 		}),
 
 		viewContents = e(OptionButton, {

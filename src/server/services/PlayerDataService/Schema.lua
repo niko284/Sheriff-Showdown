@@ -12,7 +12,7 @@ return {
 	},
 	Resources = {
 		-- Currency
-		Coins = 100,
+		Coins = 100000,
 		Gems = 0,
 		-- Level
 		Level = 1,

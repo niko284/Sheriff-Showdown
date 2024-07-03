@@ -20,6 +20,7 @@ local InterfaceController = {
 	Name = "InterfaceController",
 	InterfaceChanged = Signal.new() :: Signal.Signal<Types.Interface?>,
 	UpdateShopState = Signal.new(),
+	ViewCrateContents = Signal.new() :: Signal.Signal<Types.Crate>,
 }
 
 -- // Functions \\

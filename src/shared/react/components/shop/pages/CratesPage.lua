@@ -1,13 +1,18 @@
 --!strict
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local LocalPlayer = Players.LocalPlayer
 local Components = ReplicatedStorage.react.components
+local Controllers = LocalPlayer.PlayerScripts.controllers
 
 local AutomaticScrollingFrame = require(Components.frames.AutomaticScrollingFrame)
 local CrateContentsPage = require(Components.shop.pages.CrateContentsPage)
+local CratePurchasePrompt = require(Components.shop.crates.CratePurchasePrompt)
 local CrateTemplate = require(Components.shop.crates.CrateTemplate)
 local Crates = require(ReplicatedStorage.constants.Crates)
+local InterfaceController = require(Controllers.InterfaceController)
 local React = require(ReplicatedStorage.packages.React)
 local Types = require(ReplicatedStorage.constants.Types)
 
@@ -23,6 +28,8 @@ type CratePageProps = Types.FrameProps & {
 
 local function CratePage(props: CratePageProps)
 	local crateToView, setCrateToView = useState(nil :: Types.Crate?)
+	local crateToPurchase, setCrateToPurchase = useState(nil :: Types.Crate?)
+
 	local pageLayoutRef = useRef(nil :: UIPageLayout?)
 
 	local crateElements = {}
@@ -37,12 +44,23 @@ local function CratePage(props: CratePageProps)
 			onViewContents = function()
 				setCrateToView(crateName)
 			end,
+			onCratePurchase = setCrateToPurchase,
 		})
 	end
 
 	useEffect(function()
+		local viewCrateContents = InterfaceController.ViewCrateContents:Connect(function(crateName: Types.Crate)
+			InterfaceController.InterfaceChanged:Fire("Shop")
+			props.switchToCategory("Crates")
+			setCrateToView(crateName)
+		end)
+
 		if pageLayoutRef.current then
 			pageLayoutRef.current:JumpToIndex(crateToView and 2 or 1)
+		end
+
+		return function()
+			viewCrateContents:Disconnect()
 		end
 	end, { crateToView })
 
@@ -55,7 +73,6 @@ local function CratePage(props: CratePageProps)
 		end,
 		LayoutOrder = props.layoutOrder,
 	}, {
-
 		pageLayout = e("UIPageLayout", {
 			Circular = true,
 			ref = pageLayoutRef,
@@ -92,6 +109,17 @@ local function CratePage(props: CratePageProps)
 				BackgroundTransparency = 1,
 				Position = UDim2.fromOffset(18, 19),
 				Size = UDim2.fromOffset(54, 13),
+			}),
+
+			cratePurchasePrompt = crateToPurchase and e(CratePurchasePrompt, {
+				crateName = crateToPurchase,
+				switchToCategory = function(category: string)
+					props.switchToCategory(category)
+					setCrateToPurchase(nil :: Types.Crate?)
+				end,
+				onCancel = function()
+					setCrateToPurchase(nil :: Types.Crate?)
+				end,
 			}),
 
 			cratesList = e(AutomaticScrollingFrame, {

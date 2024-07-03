@@ -338,6 +338,18 @@ local Items: { Types.ItemInfo } = {
 			BulletSoundId = 97848313,
 		},
 	},
+	{
+		Id = 36,
+		Name = "Standard",
+		Type = "Crate",
+		Image = 16417980472,
+	},
+	{
+		Id = 37,
+		Name = "Classic",
+		Type = "Crate",
+		Image = 16560968952,
+	},
 }
 
 return Items

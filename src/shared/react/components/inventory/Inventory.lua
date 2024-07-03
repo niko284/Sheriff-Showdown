@@ -30,6 +30,7 @@ local createNextOrder = require(Hooks.createNextOrder)
 local e = React.createElement
 local useState = React.useState
 local useContext = React.useContext
+local useEffect = React.useEffect
 
 type InventoryProps = {}
 
@@ -91,6 +92,16 @@ local function Inventory(_props: InventoryProps)
 			}) :: any
 		end
 	end
+
+	-- this can happen if the selected item is removed from the inventory, then we should deselect it from the display. (i.e a crate is opened and the item is removed)
+	useEffect(function()
+		if selectedUUID then
+			local item = InventoryUtils.GetItemOfUUID(inventory, selectedUUID)
+			if not item then
+				setSelectedUUID(nil)
+			end
+		end
+	end, { inventory, selectedUUID } :: { any })
 
 	return e("ImageLabel", {
 		Image = "rbxassetid://17886529902",
@@ -220,7 +231,7 @@ local function Inventory(_props: InventoryProps)
 		}, {
 			gridLayout = e("UIGridLayout", {
 				CellPadding = UDim2.fromOffset(10, 10),
-				CellSize = expandedGrid and UDim2.fromOffset(220, 220) or UDim2.fromOffset(146, 146),
+				CellSize = expandedGrid and UDim2.fromOffset(110, 110) or UDim2.fromOffset(146, 146),
 				SortOrder = Enum.SortOrder.LayoutOrder,
 			}),
 

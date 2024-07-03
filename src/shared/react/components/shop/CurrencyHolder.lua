@@ -2,15 +2,23 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local Contexts = ReplicatedStorage.react.contexts
 local Components = ReplicatedStorage.react.components
 
 local AutomaticFrame = require(Components.frames.AutomaticFrame)
 local Currencies = require(ReplicatedStorage.constants.Currencies)
+local FormatNumber = require(ReplicatedStorage.utils.FormatNumber)
 local React = require(ReplicatedStorage.packages.React)
+local ReactSpring = require(ReplicatedStorage.packages.ReactSpring)
+local ResourceContext = require(Contexts.ResourceContext)
 local Separator = require(Components.other.Separator)
 local Types = require(ReplicatedStorage.constants.Types)
 
+local NumberFormatter = FormatNumber.NumberFormatter
+
 local e = React.createElement
+local useContext = React.useContext
+local useRef = React.useRef
 
 type CurrencyHolderProps = Types.FrameProps & {
 	currency: Types.Currency,
@@ -19,7 +27,18 @@ type CurrencyHolderProps = Types.FrameProps & {
 local function CurrencyHolder(props: CurrencyHolderProps)
 	local currencyData = Currencies[props.currency]
 
-	print(currencyData.CanPurchase)
+	local resources = useContext(ResourceContext)
+	local formatter = useRef(NumberFormatter.with():Precision(FormatNumber.Precision.integer()))
+
+	local amount = resources and resources[props.currency] or 0
+
+	local displayStyles = ReactSpring.useSpring({
+		amount = amount,
+		config = {
+			duration = 0.5,
+			easing = ReactSpring.easings.easeOutQuad,
+		},
+	}, { amount })
 
 	return e(AutomaticFrame, {
 		instanceProps = {
@@ -48,7 +67,20 @@ local function CurrencyHolder(props: CurrencyHolderProps)
 				Enum.FontWeight.Bold,
 				Enum.FontStyle.Normal
 			),
-			Text = "1,000,000",
+			Text = displayStyles.amount:map(function(newCurrency: number?)
+				if not newCurrency then
+					return "0"
+				end
+				if formatter.current and typeof(newCurrency) == "number" then
+					--print(newCurrency)
+					local success, formattedNumber = pcall(function()
+						return formatter.current:Format(newCurrency) -- pcall because FormatNumber is a bit buggy
+					end)
+					return success and formattedNumber or newCurrency
+				else
+					return "0"
+				end
+			end),
 			TextColor3 = Color3.fromRGB(65, 65, 65),
 			TextSize = 16,
 			TextXAlignment = Enum.TextXAlignment.Left,

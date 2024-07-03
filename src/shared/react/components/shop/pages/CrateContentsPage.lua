@@ -6,15 +6,14 @@ local Components = ReplicatedStorage.react.components
 
 local AutomaticScrollingFrame = require(Components.frames.AutomaticScrollingFrame)
 local CrateItemTemplate = require(Components.shop.crates.CrateItemTemplate)
+local CrateUtils = require(ReplicatedStorage.utils.CrateUtils)
 local Crates = require(ReplicatedStorage.constants.Crates)
-local ItemUtils = require(ReplicatedStorage.utils.ItemUtils)
 local OptionButton = require(Components.buttons.OptionButton)
 local RarityUtils = require(ReplicatedStorage.utils.RarityUtils)
 local React = require(ReplicatedStorage.packages.React)
 local Types = require(ReplicatedStorage.constants.Types)
 
 local e = React.createElement
-
 type CrateContentsPageProps = Types.FrameProps & {
 	crateName: Types.Crate,
 	onBack: (crateToView: Types.Crate?) -> (),
@@ -25,23 +24,19 @@ local function CrateContentsPage(props: CrateContentsPageProps)
 	if props.crateName then
 		local crateInfo = Crates[props.crateName]
 
-		local crateItems = {}
-		for _, itemName in crateInfo.ItemContents do
-			local itemInfo = ItemUtils.GetItemInfoFromName(itemName)
-			table.insert(crateItems, itemInfo)
-		end
+		local crateItems = CrateUtils.GetCrateContents(props.crateName)
 
 		-- sort by increasing rarity
 		table.sort(crateItems, function(a, b)
-			local rarityA = RarityUtils.GetRarityProbability(a.Rarity)
-			local rarityB = RarityUtils.GetRarityProbability(b.Rarity)
+			local rarityA = RarityUtils.GetRarityProbability(a.Rarity :: Types.ItemRarity, crateInfo.Weights)
+			local rarityB = RarityUtils.GetRarityProbability(b.Rarity :: Types.ItemRarity, crateInfo.Weights)
 			return rarityA < rarityB
 		end)
 
 		for _, itemInfo in crateItems do
 			contentElements[itemInfo.Id] = e(CrateItemTemplate, {
 				icon = string.format("rbxassetid://%d", itemInfo.Image),
-				rarity = RarityUtils.GetRarityProbability(itemInfo.Rarity) * 100,
+				rarity = RarityUtils.GetRarityProbability(itemInfo.Rarity :: Types.ItemRarity, crateInfo.Weights) * 100,
 				itemName = itemInfo.Name,
 			})
 		end

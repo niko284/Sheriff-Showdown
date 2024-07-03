@@ -18,16 +18,16 @@ local useState = React.useState
 local useEffect = React.useEffect
 
 local function ResourceProvider(props)
-	local resources, setResources = useState({} :: Types.PlayerResources)
+	local resources, setResources = useState(nil :: Types.PlayerResources?)
 
 	useEffect(function()
-
-        if resources == nil then
-            local replicatedResources = ResourceController:GetReplicatedResources()
-            if replicatedResources then
-                setResources(replicatedResources)
-            end
-        end
+		if resources == nil then
+			local replicatedResources = ResourceController:GetReplicatedResources()
+			if replicatedResources then
+				print(replicatedResources)
+				setResources(replicatedResources)
+			end
+		end
 
 		local resourcesChanged = ResourceController.ResourcesChanged:Connect(function(newResources)
 			setResources(newResources)
@@ -36,7 +36,7 @@ local function ResourceProvider(props)
 		return function()
 			resourcesChanged:Disconnect()
 		end
-	end, {resources})
+	end, { resources })
 
 	return e(ResourceContext.Provider, {
 		value = resources,

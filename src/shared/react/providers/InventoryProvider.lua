@@ -29,10 +29,18 @@ local function InventoryProvider(props)
 		local connection = InventoryController.InventoryChanged:Connect(function(newInventory)
 			setInventory(newInventory)
 		end)
+		local itemAdded = InventoryController.ItemAdded:Connect(function(item)
+			local newInventory = table.clone(inventory)
+			local newStorage = table.clone(newInventory.Storage)
+			table.insert(newStorage, item)
+			newInventory.Storage = newStorage
+			setInventory(newInventory)
+		end)
 		return function()
 			connection:Disconnect()
+			itemAdded:Disconnect()
 		end
-	end, {inventory})
+	end, { inventory })
 
 	return e(InventoryContext.Provider, {
 		value = inventory,

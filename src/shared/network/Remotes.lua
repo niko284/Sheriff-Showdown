@@ -33,6 +33,7 @@ return Net.CreateDefinitions({
 	}),
 	Inventory = Net.Definitions.Namespace({
 		ItemAdded = Net.Definitions.ServerToClientEvent(),
+		ItemRemoved = Net.Definitions.ServerToClientEvent(),
 		LockItem = Net.Definitions.ServerAsyncFunction({
 			Net.Middleware.TypeChecking(t.string),
 			Deserializer({ UUIDSerde }),
@@ -53,10 +54,17 @@ return Net.CreateDefinitions({
 			Net.Middleware.TypeChecking(t.string, t.boolean),
 			Deserializer({ UUIDSerde }),
 		}),
+		OpenCrate = Net.Definitions.ServerAsyncFunction({
+			Net.Middleware.TypeChecking(t.string),
+			Deserializer({ UUIDSerde }),
+		}),
 	}),
 	Shop = Net.Definitions.Namespace({
 		SubmitCode = Net.Definitions.ServerAsyncFunction({
 			Net.Middleware.TypeChecking(t.string),
+		}),
+		PurchaseCrate = Net.Definitions.ServerAsyncFunction({
+			Net.Middleware.TypeChecking(t.string, t.numberMin(1)),
 		}),
 	}),
 	Settings = Net.Definitions.Namespace({

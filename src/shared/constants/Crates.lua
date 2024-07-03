@@ -29,6 +29,19 @@ return {
 			"Grayscale",
 			"Pixel",
 		},
+		PurchaseMethods = {
+			{
+				Type = "Coins",
+				Price = 100,
+			},
+		},
+		Weights = {
+			Basic = 50,
+			Rare = 25,
+			Epic = 15,
+			Legendary = 8,
+			Exotic = 2,
+		},
 	},
 	Classic = {
 		OpenAnimation = 16440704773,
@@ -51,6 +64,19 @@ return {
 			"Cowboy Pistol",
 			"Revolver",
 			"Colt 45",
+		},
+		PurchaseMethods = {
+			{
+				Type = "Coins",
+				Price = 100,
+			},
+		},
+		Weights = {
+			Basic = 50,
+			Rare = 25,
+			Epic = 15,
+			Legendary = 8,
+			Exotic = 2,
 		},
 	},
 } :: { [Types.Crate]: Types.CrateInfo }
