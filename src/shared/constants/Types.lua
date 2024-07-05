@@ -1,5 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local Comm = require(ReplicatedStorage.packages.Comm)
 local Matter = require(ReplicatedStorage.packages.Matter)
 
 export type ItemRarity = "Basic" | "Rare" | "Epic" | "Legendary" | "Exotic"
@@ -16,6 +17,14 @@ export type ItemInfo = {
 	Default: (boolean | (Player) -> boolean)?,
 	TagWithSerial: boolean?,
 } & ItemGunData
+
+export type ItemTypeInfo = {
+	UniqueProps: { [string]: any }?,
+	CanEquip: boolean,
+	CanSell: boolean,
+	CanTrade: boolean,
+	EquippedAtOnce: (number | (ItemInfo) -> number)?,
+}
 
 type GunProps = {
 	Kills: number?,
@@ -51,6 +60,7 @@ export type DataSchema = {
 	Resources: PlayerResources,
 	CodesRedeemed: { string },
 	Settings: PlayerDataSettings,
+	ProcessingTrades: { ProcessingTrade },
 }
 
 -- >> Leaderboard Types
@@ -291,5 +301,26 @@ export type ShopContext = {
 	giftRecipient: Player?,
 	crateToView: Crate?,
 }
+
+export type Trade = {
+	Sender: Player,
+	Receiver: Player,
+	SenderOffer: { Item },
+	ReceiverOffer: { Item },
+	Accepted: { Player },
+	Confirmed: { Player },
+	UUID: string,
+	Status: string,
+	MaximumItems: number,
+	CooldownEnd: number?,
+}
+
+export type ProcessingTrade = {
+	Giving: { Item },
+	Receiving: { Item },
+	TradeUUID: string,
+}
+
+export type ServerRemoteProperty = typeof(Comm.ServerComm.new(Instance.new("Folder")):CreateProperty(nil, "string"))
 
 return nil

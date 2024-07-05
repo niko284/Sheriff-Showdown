@@ -9,6 +9,7 @@ local Packages = ReplicatedStorage.packages
 
 local Lapis = require(ServerPackages.Lapis)
 local Migrations = require(script.Migrations)
+local Promise = require(Packages.Promise)
 local Signal = require(Packages.Signal)
 local t = require(Packages.t)
 
@@ -35,8 +36,13 @@ local PlayerDataCollection = Lapis.createCollection(collectionName, {
 	migrations = Migrations,
 })
 
-local PlayerDataService =
-	{ Name = "PlayerDataService", Documents = {}, DocumentLoaded = Signal.new(), BeforeDocumentCloseCallbacks = {} }
+local PlayerDataService = {
+	Name = "PlayerDataService",
+	Documents = {},
+	DocumentLoaded = Signal.new(),
+	BeforeDocumentCloseCallbacks = {},
+	DataSessionLock = {} :: { [Player]: boolean },
+}
 
 function PlayerDataService:OnStart()
 	for _, Player in Players:GetPlayers() do
@@ -73,13 +79,27 @@ function PlayerDataService:LoadDocument(Player: Player)
 		end)
 end
 
+function PlayerDataService:IsSessionLocked(Player: Player): boolean
+	return PlayerDataService.DataSessionLock[Player] == true
+end
+
+function PlayerDataService:LockSession(Player: Player)
+	PlayerDataService.DataSessionLock[Player] = true
+	return Promise.resolve()
+end
+
+function PlayerDataService:UnlockSession(Player: Player)
+	PlayerDataService.DataSessionLock[Player] = nil
+	return Promise.resolve()
+end
+
 function PlayerDataService:GetDocument(Player: Player)
 	return PlayerDataService.Documents[Player]
 end
 
 function PlayerDataService:CloseDocument(Player: Player)
 	local document = PlayerDataService.Documents[Player]
-	if document ~= nil then
+	if document ~= nil and PlayerDataService:IsSessionLocked(Player) == false then
 		PlayerDataService.Documents[Player] = nil
 		document:close():catch(warn)
 	end

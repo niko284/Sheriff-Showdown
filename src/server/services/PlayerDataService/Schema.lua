@@ -21,4 +21,5 @@ return {
 	CodesRedeemed = {}, -- string[]
 	Statistics = {},
 	Settings = {},
+	ProcessingTrades = {},
 } :: Types.DataSchema
