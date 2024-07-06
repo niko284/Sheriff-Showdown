@@ -206,7 +206,7 @@ export type CurrencyData = {
 	Color: Color3,
 }
 
-export type Interface = "Shop" | "Inventory" | "GiftingSelection" | "Settings" | "Voting"
+export type Interface = "Shop" | "Inventory" | "GiftingSelection" | "Settings" | "Voting" | "Trading" | "ActiveTrade"
 
 export type ProductInfo = {
 	Name: string,
@@ -322,5 +322,18 @@ export type ProcessingTrade = {
 }
 
 export type ServerRemoteProperty = typeof(Comm.ServerComm.new(Instance.new("Folder")):CreateProperty(nil, "string"))
+
+-- >> Notification Types
+
+export type Notification = {
+	Title: string,
+	Description: string,
+	UUID: string,
+	Duration: number,
+	ClickToDismiss: boolean?,
+	Children: { any }?,
+	OnFade: (() -> ())?,
+	OnDismiss: (() -> ())?,
+}
 
 return nil

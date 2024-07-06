@@ -14,6 +14,7 @@ type SideButtonData = {
 	Image: string,
 	Gradient: ColorSequence,
 	LayoutOrder: number,
+	Opacity: number?,
 }
 type SideButtonHUDProps = {
 	buttons: { [Types.Interface]: SideButtonData },
@@ -30,6 +31,7 @@ local function SideButtonHUD(props: SideButtonHUDProps)
 			zIndex = sideButton.LayoutOrder,
 			size = UDim2.fromOffset(78, 78),
 			gradient = sideButton.Gradient,
+			opacity = sideButton.Opacity,
 		})
 	end
 

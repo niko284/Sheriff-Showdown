@@ -23,6 +23,7 @@ type SideButtonProps = Types.FrameProps & {
 	gradient: ColorSequence,
 	icon: string,
 	buttonPath: Types.Interface,
+	opacity: number?,
 }
 
 local function SideButton(props: SideButtonProps)
@@ -97,6 +98,7 @@ local function SideButton(props: SideButtonProps)
 	}, {
 		gradient = e("UIGradient", {
 			Color = props.gradient,
+			Transparency = props.opacity and NumberSequence.new(props.opacity) or nil,
 		}),
 
 		scale = e("UIScale", {

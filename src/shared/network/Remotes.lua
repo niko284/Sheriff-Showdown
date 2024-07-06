@@ -67,6 +67,44 @@ return Net.CreateDefinitions({
 			Net.Middleware.TypeChecking(t.string, t.numberMin(1)),
 		}),
 	}),
+
+	Trading = Net.Definitions.Namespace({
+		TradeCompleted = Net.Definitions.ServerToClientEvent(),
+		TradeReceived = Net.Definitions.ServerToClientEvent(),
+		TradeProcessed = Net.Definitions.ServerToClientEvent(),
+		SendTradeToPlayer = Net.Definitions.ServerAsyncFunction({
+			Net.Middleware.TypeChecking(t.instanceIsA("Player")),
+		}),
+		AcceptTradeRequest = Net.Definitions.ServerAsyncFunction({
+			Net.Middleware.TypeChecking(t.string),
+			Deserializer({ UUIDSerde }),
+		}),
+		DeclineTradeRequest = Net.Definitions.ServerAsyncFunction({
+			Net.Middleware.TypeChecking(t.string),
+			Deserializer({ UUIDSerde }),
+		}),
+		AddItemToTrade = Net.Definitions.ServerAsyncFunction({
+			Net.Middleware.TypeChecking(t.string, t.string),
+			Deserializer({ UUIDSerde, UUIDSerde }),
+		}),
+		RemoveItemFromTrade = Net.Definitions.ServerAsyncFunction({
+			Net.Middleware.TypeChecking(t.string, t.string),
+			Deserializer({ UUIDSerde, UUIDSerde }),
+		}),
+		AcceptTrade = Net.Definitions.ServerAsyncFunction({
+			Net.Middleware.TypeChecking(t.string),
+			Deserializer({ UUIDSerde }),
+		}),
+		DeclineTrade = Net.Definitions.ServerAsyncFunction({
+			Net.Middleware.TypeChecking(t.string),
+			Deserializer({ UUIDSerde }),
+		}),
+		ConfirmTrade = Net.Definitions.ServerAsyncFunction({
+			Net.Middleware.TypeChecking(t.string),
+			Deserializer({ UUIDSerde }),
+		}),
+	}),
+
 	Settings = Net.Definitions.Namespace({
 		ChangeSetting = Net.Definitions.ServerAsyncFunction({
 			Net.Middleware.TypeChecking(

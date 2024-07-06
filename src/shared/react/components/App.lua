@@ -7,22 +7,24 @@ local Contexts = ReplicatedStorage.react.contexts
 local Providers = ReplicatedStorage.react.providers
 
 local AutoUIScale = require(Components.other.AutoUIScale)
-local ConfirmationPrompt = require(Components.other.ConfirmationPrompt)
 local ContextStack = require(ReplicatedStorage.utils.ContextStack)
 local CurrentInterfaceProvider = require(Providers.CurrentInterfaceProvider)
 local DistractionViewport = require(Components.round.DistractionViewport)
 local GiftingSelectionList = require(Components.shop.GiftingSelectionList)
 local Inventory = require(Components.inventory.Inventory)
 local InventoryProvider = require(Providers.InventoryProvider)
-local ResourceProvider = require(Providers.ResourceProvider)
 local Playerlist = require(Components.playerlist.Playerlist)
 local React = require(ReplicatedStorage.packages.React)
+local ResourceProvider = require(Providers.ResourceProvider)
 local ScaleContext = require(Contexts.ScaleContext)
 local Settings = require(Components.settings.Settings)
 local SettingsProvider = require(Providers.SettingsProvider)
 local Shop = require(Components.shop.Shop)
 local ShopProvider = require(Providers.ShopProvider)
 local SideButtonHUD = require(Components.other.SideButtonHUD)
+local TradeProvider = require(Providers.TradeProvider)
+local Trading = require(Components.trading.Trading)
+local TradingPlayerList = require(Components.trading.TradingPlayerList)
 local Voting = require(Components.voting.Voting)
 
 local e = React.createElement
@@ -44,6 +46,12 @@ local SIDE_BUTTONS = {
 		LayoutOrder = 3,
 		Gradient = ColorSequence.new(Color3.fromRGB(43, 43, 43), Color3.fromRGB(20, 20, 20)),
 	},
+	Trading = {
+		Image = "rbxassetid://18355952247",
+		LayoutOrder = 4,
+		Gradient = ColorSequence.new(Color3.fromRGB(54, 185, 255)),
+		Opacity = 0.11,
+	},
 }
 
 local function App()
@@ -60,6 +68,7 @@ local function App()
 			e(CurrentInterfaceProvider),
 			e(SettingsProvider),
 			e(ResourceProvider),
+			e(TradeProvider),
 		},
 	}, {
 		App = e("ScreenGui", {
@@ -77,6 +86,7 @@ local function App()
 			}),
 			distractionViewport = e(DistractionViewport),
 			playerList = e(Playerlist),
+			tradingList = e(TradingPlayerList),
 			shopProvider = e(ContextStack, {
 				providers = {
 					e(ShopProvider),
@@ -90,6 +100,7 @@ local function App()
 			}),
 			voting = e(Voting),
 			inventory = e(Inventory),
+			trading = e(Trading),
 			settings = e(Settings),
 			--confirmationPrompt = e(ConfirmationPrompt),
 		}),

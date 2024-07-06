@@ -32,6 +32,11 @@ local PlayerDataCollection = Lapis.createCollection(collectionName, {
 		Statistics = t.interface({}),
 		Settings = t.interface({}),
 		CodesRedeemed = t.array(t.string),
+		ProcessingTrades = t.array(t.strictInterface({
+			Giving = t.array(t.any),
+			Receiving = t.array(t.any),
+			TradeUUID = t.string,
+		})),
 	}),
 	migrations = Migrations,
 })
