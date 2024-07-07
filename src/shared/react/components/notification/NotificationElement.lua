@@ -1,34 +1,88 @@
 --!strict
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
+local DependencyArray = require(ReplicatedStorage.utils.DependencyArray)
 local React = require(ReplicatedStorage.packages.React)
+local ReactSpring = require(ReplicatedStorage.packages.ReactSpring)
 local Types = require(ReplicatedStorage.constants.Types)
 
 local e = React.createElement
+local useRef = React.useRef
+local useBinding = React.useBinding
+local useEffect = React.useEffect
+local useCallback = React.useCallback
 
-type NotificationElementProps = Types.FrameProps & {
-	duration: number,
-	id: string,
-	removeNotification: (string) -> (),
-	creationTime: number,
-	padding: UDim,
-	onFade: () -> (),
-	isActive: boolean,
-	options: { any },
-	title: string,
-	clickToDismiss: boolean,
-	onDismiss: () -> (),
-	description: string,
-	size: UDim2,
-}
+type NotificationElementProps = Types.FrameProps & Types.NotificationElementPropsGeneric & { size: UDim2, children: any }
 
 local function NotificationElement(props: NotificationElementProps)
+	local _timeLeft, setTimeLeft = useBinding(props.duration)
+	local clickClosed = useRef(false)
+
+	local styles, api = ReactSpring.useSpring(function()
+		return {
+			size = props.size and UDim2.fromOffset(props.size.X.Offset, 0),
+			backgroundColor = Color3.fromRGB(25, 25, 25),
+			config = { duration = 0.15 },
+		}
+	end, { props.size })
+
+	local closeNotification = useCallback(function()
+		api.start({
+			size = UDim2.fromOffset(props.size.X.Offset, -props.padding.Offset),
+			config = { duration = 0.15 },
+		}):andThen(function()
+			props.removeNotification(props.id)
+		end)
+	end, { props.removeNotification, props.id } :: { any })
+
+	useEffect(
+		function()
+			local timerDuration = nil
+			if props.isActive and clickClosed.current == false then
+				-- Open the notification
+				api.start({
+					size = props.size,
+					config = { duration = 0.25 },
+				})
+				timerDuration = RunService.RenderStepped:Connect(function()
+					local timeRemaining = (props.creationTime + props.duration) - os.clock()
+					setTimeLeft(timeRemaining)
+					if timeRemaining <= 0 and clickClosed.current == false then
+						closeNotification()
+						if props.onFade then
+							props.onFade()
+						end
+						timerDuration:Disconnect()
+					end
+				end)
+			else
+				closeNotification()
+			end
+			return function()
+				if timerDuration and timerDuration.Connected then
+					timerDuration:Disconnect()
+				end
+			end
+		end,
+		DependencyArray(
+			props.isActive,
+			setTimeLeft,
+			props.onFade,
+			closeNotification,
+			props.creationTime,
+			props.duration,
+			props.size,
+			clickClosed
+		) :: { any }
+	)
+
 	return e("ImageLabel", {
 		Image = "rbxassetid://18356322141",
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		BackgroundTransparency = 1,
-		Size = UDim2.fromScale(0.158, 0.21),
+		Size = styles.size,
 	}, {
 		topbar = e("ImageLabel", {
 			Image = "rbxassetid://18356322260",
@@ -47,7 +101,7 @@ local function NotificationElement(props: NotificationElementProps)
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-				Text = props.notificationTitle,
+				Text = props.title,
 				TextColor3 = Color3.fromRGB(255, 255, 255),
 				TextSize = 19,
 				TextXAlignment = Enum.TextXAlignment.Left,
@@ -57,33 +111,38 @@ local function NotificationElement(props: NotificationElementProps)
 			}),
 		}),
 
+		children = e(React.Fragment, nil, props.children),
+
+		notificationButton = props.clickToDismiss == true and e("ImageButton", {
+			BackgroundTransparency = 1,
+			Image = "",
+			Size = UDim2.fromScale(1, 1),
+			ZIndex = 5,
+			[React.Event.Activated] = function()
+				clickClosed.current = true -- Avoid this notification returning to the pool if our component re-renders.
+				if props.onDismiss then
+					props.onDismiss()
+				end
+				closeNotification()
+			end,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.5),
+		}),
+
 		notificationDescription = e("TextLabel", {
 			FontFace = Font.new(
 				"rbxasset://fonts/families/GothamSSm.json",
 				Enum.FontWeight.SemiBold,
 				Enum.FontStyle.Normal
 			),
-			Text = props.notificationDescription,
-			TextColor3 = Color3.fromRGB(93, 207, 227),
+			Text = props.description,
+			TextColor3 = Color3.fromRGB(255, 255, 255),
 			TextSize = 12,
 			TextWrapped = true,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			BackgroundTransparency = 1,
 			Position = UDim2.fromScale(0.267, 0.396),
 			Size = UDim2.fromScale(0.545, 0.119),
-		}),
-
-		iconBackground = e("ImageLabel", {
-			Image = "rbxassetid://18356322538",
-			BackgroundTransparency = 1,
-			Position = UDim2.fromScale(0.0627, 0.361),
-			Size = UDim2.fromScale(0.162, 0.216),
-		}, {
-			notifIcon = e("ImageLabel", {
-				Image = props.notificationIcon,
-				BackgroundTransparency = 1,
-				Size = UDim2.fromScale(1, 1),
-			}),
 		}),
 
 		separator = e("ImageLabel", {

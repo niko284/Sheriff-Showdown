@@ -44,7 +44,7 @@ local TradeProcessed = TradingRemotes:Get("TradeProcessed") :: Net.ServerSenderE
 
 local MAX_PENDING_TRADES = 50
 local LOCK_RETRY_ATTEMPTS = 5
-local TRADING_LEVEL_REQUIREMENT = 15
+local TRADING_LEVEL_REQUIREMENT = 1
 
 local TradingService = {
 	Name = "TradingService",
@@ -52,7 +52,7 @@ local TradingService = {
 	Trades = {} :: { [string]: Types.Trade },
 }
 
-function TradingService:Init()
+function TradingService:OnInit()
 	SendTradeToPlayer:SetCallback(function(Player: Player, Receiver: Player)
 		return self:SendTradeToPlayerRequest(Player, Receiver)
 	end)
@@ -79,7 +79,7 @@ function TradingService:Init()
 	end)
 end
 
-function TradingService:Start()
+function TradingService:OnStart()
 	-- #todo: handle players leaving the game mid trade.
 	PlayerDataService.DocumentLoaded:Connect(function(Player: Player, PlayerDocument)
 		-- Let's process any pending trades for the player.
@@ -161,6 +161,17 @@ function TradingService:GetPendingTradesForPlayer(Receiver: Player): { [string]:
 	return Sift.Dictionary.filter(self.Trades, function(Trade: Types.Trade)
 		return Trade.Receiver == Receiver and Trade.Status == "Pending"
 	end)
+end
+
+function TradingService:TradeAlreadySent(Sender: Player, Receiver: Player): boolean
+	local tradeAlreadySent = false
+	for _, Trade in TradingService.Trades do
+		if Trade.Sender == Sender and Trade.Receiver == Receiver and Trade.Status == "Pending" then
+			tradeAlreadySent = true
+			break
+		end
+	end
+	return tradeAlreadySent
 end
 
 function TradingService:AddItemToTrade(ItemUUID: string, TradeUUID: string, Player: Player): Types.NetworkResponse
@@ -726,6 +737,14 @@ function TradingService:SendTradeToPlayerRequest(Sender: Player, Receiver: Playe
 			Message = "You cannot send a trade to yourself!",
 		}
 	end
+
+	if TradingService:TradeAlreadySent(Sender, Receiver) then
+		return {
+			Success = false,
+			Message = "Trade already sent!",
+		}
+	end
+
 	-- Check if the receiver has trade requests enabled in their settings.
 	local receiverSettings = SettingsService:GetSettings(Receiver)
 	if not receiverSettings then

@@ -2,6 +2,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Comm = require(ReplicatedStorage.packages.Comm)
 local Matter = require(ReplicatedStorage.packages.Matter)
+local React = require(ReplicatedStorage.packages.React)
 
 export type ItemRarity = "Basic" | "Rare" | "Epic" | "Legendary" | "Exotic"
 export type ItemType = "Gun" | "Crate"
@@ -302,6 +303,7 @@ export type ShopContext = {
 	crateToView: Crate?,
 }
 
+export type TradeStatus = "Confirming" | "Pending" | "Started" | "Completed"
 export type Trade = {
 	Sender: Player,
 	Receiver: Player,
@@ -310,7 +312,7 @@ export type Trade = {
 	Accepted: { Player },
 	Confirmed: { Player },
 	UUID: string,
-	Status: string,
+	Status: TradeStatus,
 	MaximumItems: number,
 	CooldownEnd: number?,
 }
@@ -330,10 +332,24 @@ export type Notification = {
 	Description: string,
 	UUID: string,
 	Duration: number,
+	Component: React.ComponentType<any>,
+	Props: { [string]: any }?,
 	ClickToDismiss: boolean?,
-	Children: { any }?,
 	OnFade: (() -> ())?,
 	OnDismiss: (() -> ())?,
+}
+export type NotificationElementPropsGeneric = {
+	creationTime: number,
+	padding: UDim,
+	removeNotification: (string) -> (),
+	onFade: () -> (),
+	onDismiss: () -> (),
+	title: string,
+	id: string,
+	duration: number,
+	clickToDismiss: boolean,
+	description: string,
+	isActive: boolean,
 }
 
 return nil

@@ -1,10 +1,14 @@
 --!strict
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Components = ReplicatedStorage.react.components
 local Contexts = ReplicatedStorage.react.contexts
 local Providers = ReplicatedStorage.react.providers
+local LocalPlayer = Players.LocalPlayer
+
+local Controllers = LocalPlayer.PlayerScripts.controllers
 
 local AutoUIScale = require(Components.other.AutoUIScale)
 local ContextStack = require(ReplicatedStorage.utils.ContextStack)
@@ -13,6 +17,8 @@ local DistractionViewport = require(Components.round.DistractionViewport)
 local GiftingSelectionList = require(Components.shop.GiftingSelectionList)
 local Inventory = require(Components.inventory.Inventory)
 local InventoryProvider = require(Providers.InventoryProvider)
+local NotificationController = require(Controllers.NotificationController)
+local NotificationManager = require(Components.notification.NotificationManager)
 local Playerlist = require(Components.playerlist.Playerlist)
 local React = require(ReplicatedStorage.packages.React)
 local ResourceProvider = require(Providers.ResourceProvider)
@@ -87,6 +93,15 @@ local function App()
 			distractionViewport = e(DistractionViewport),
 			playerList = e(Playerlist),
 			tradingList = e(TradingPlayerList),
+			globalNotifications = e(NotificationManager, {
+				componentSize = UDim2.fromOffset(345, 81),
+				position = UDim2.fromScale(0.99, 0.985),
+				anchorPoint = Vector2.new(1, 1),
+				notificationAdded = NotificationController.GlobalNotificationAdded,
+				notificationRemoved = NotificationController.GlobalNotificationRemoved,
+				padding = UDim.new(0, 7),
+				maxNotifications = 8,
+			}),
 			shopProvider = e(ContextStack, {
 				providers = {
 					e(ShopProvider),

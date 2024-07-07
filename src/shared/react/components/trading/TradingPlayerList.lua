@@ -30,7 +30,7 @@ local function TradingPlayerList(_props: TradingPlayerListProps)
 	local sendTradeToPlayer = useCallback(function(_rbx: TextButton, player: Player)
 		SendTradeToPlayer:CallServerAsync(player)
 			:andThen(function(response: Types.NetworkResponse)
-				-- @TODO: Implement trade UI
+				print(response)
 				if response.Success == true then
 				else
 				end

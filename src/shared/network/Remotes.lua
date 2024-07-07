@@ -68,6 +68,11 @@ return Net.CreateDefinitions({
 		}),
 	}),
 
+	Notifications = Net.Definitions.Namespace({
+		AddNotification = Net.Definitions.ServerToClientEvent(),
+		RemoveNotification = Net.Definitions.ServerToClientEvent(),
+	}),
+
 	Trading = Net.Definitions.Namespace({
 		TradeCompleted = Net.Definitions.ServerToClientEvent(),
 		TradeReceived = Net.Definitions.ServerToClientEvent(),

@@ -17,6 +17,10 @@ function StringUtils.ContainsOnlySpaces(String: string): ...string?
 	return String:match("^%s*$")
 end
 
+function StringUtils.GetReadingTime(str: string): number
+	return math.max(1, math.min(10, #str / 10))
+end
+
 function StringUtils.MatchesSearch(Word: string, SearchPattern: string): boolean
 	if StringUtils.ContainsOnlySpaces(SearchPattern) then
 		return true

@@ -17,6 +17,8 @@ local React = require(Packages.React)
 local Sift = require(Packages.Sift)
 local Types = require(Constants.Types)
 
+local Dictionary = Sift.Dictionary
+
 local e = React.createElement
 local useState = React.useState
 local useEffect = React.useEffect
@@ -25,8 +27,6 @@ local useCallback = React.useCallback
 type NotificationManagerProps = Types.FrameProps & {
 	padding: UDim,
 	maxNotifications: number,
-	component: React.ComponentType<any>,
-	componentSize: UDim2,
 	notificationAdded: any,
 	notificationRemoved: any,
 }
@@ -35,7 +35,7 @@ type NotificationInternal = {
 	title: string,
 	duration: number,
 	description: string,
-	children: { any }?,
+	component: React.ComponentType<any>,
 	onDismiss: () -> ()?,
 	clickToDismiss: boolean,
 	onFade: () -> ()?,
@@ -52,20 +52,26 @@ local function NotificationManager(props: NotificationManagerProps)
 	local addNotification = useCallback(function(notification: Types.Notification)
 		setNotifications(function(oldNotifications)
 			local newNotifications = table.clone(oldNotifications)
-			table.insert(newNotifications, 1, {
-				key = notification.UUID,
-				id = notification.UUID,
-				title = notification.Title,
-				duration = notification.Duration,
-				description = notification.Description,
-				children = notification.Children,
-				onDismiss = notification.OnDismiss,
-				clickToDismiss = if notification.ClickToDismiss ~= nil then notification.ClickToDismiss else React.None,
-				onFade = notification.OnFade,
-				padding = props.padding,
-				creationTime = os.clock(),
-				isActive = true,
-			})
+			table.insert(
+				newNotifications,
+				1,
+				Dictionary.merge(notification.Props, {
+					component = notification.Component,
+					key = notification.UUID,
+					id = notification.UUID,
+					title = notification.Title,
+					duration = notification.Duration,
+					description = notification.Description,
+					onDismiss = notification.OnDismiss,
+					clickToDismiss = if notification.ClickToDismiss ~= nil
+						then notification.ClickToDismiss
+						else React.None,
+					onFade = notification.OnFade,
+					padding = props.padding,
+					creationTime = os.clock(),
+					isActive = true,
+				})
+			)
 			return newNotifications
 		end)
 	end, { setNotifications, props.padding } :: { any })
@@ -109,12 +115,12 @@ local function NotificationManager(props: NotificationManagerProps)
 		table.insert(
 			notificationElements,
 			e(
-				props.component,
+				notification.component,
 				Sift.Dictionary.merge(notification, {
-					size = props.componentSize,
 					isActive = isActive,
 					removeNotification = removeNotification,
-				}, notification.children)
+					padding = props.padding,
+				})
 			)
 		)
 	end
