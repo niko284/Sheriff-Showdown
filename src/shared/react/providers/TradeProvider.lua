@@ -30,8 +30,13 @@ local function TradeProvider(props)
 			end
 		)
 
+		local tradeStateChangedConnection = TradingController.TradeStateChanged:Connect(function(newTradeState)
+			setTradeState(newTradeState)
+		end)
+
 		return function()
 			activeTradeChangedConnection:Disconnect()
+			tradeStateChangedConnection:Disconnect()
 		end
 	end, {})
 

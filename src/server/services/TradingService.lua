@@ -146,7 +146,7 @@ function TradingService:CreateTrade(Sender: Player, Receiver: Player)
 		Confirmed = {}, -- Keep track of who confirmed the trade
 		UUID = TradeUUID,
 		Status = "Pending",
-		MaximumItems = 6,
+		MaximumItems = 4,
 	}
 	-- We add the trade to the trades table with a unique identifier as its key.
 	self.Trades[TradeUUID] = Trade
@@ -275,6 +275,7 @@ function TradingService:AddItemToTrade(ItemUUID: string, TradeUUID: string, Play
 	table.insert(PlayerOffer, item)
 	local otherPlayer = Trade.Sender == Player and Trade.Receiver or Trade.Sender
 	self.ActiveTrade:SetFor(otherPlayer, TradeSerde.Serialize(Trade))
+	self.ActiveTrade:SetFor(Player, TradeSerde.Serialize(Trade)) -- note: can remove this and use client side state to update the UI.
 	return {
 		Success = true,
 		Message = "Item added to trade.",

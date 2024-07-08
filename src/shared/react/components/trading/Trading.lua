@@ -14,6 +14,8 @@ local AutomaticScrollingFrame = require(Components.frames.AutomaticScrollingFram
 local InterfaceController = require(Controllers.InterfaceController)
 local React = require(ReplicatedStorage.packages.React)
 local TradeContext = require(Contexts.TradeContext)
+local TradeItemTemplate = require(Components.trading.TradeItemTemplate)
+local Types = require(ReplicatedStorage.constants.Types)
 local animateCurrentInterface = require(Hooks.animateCurrentInterface)
 
 local e = React.createElement
@@ -35,6 +37,75 @@ local function Trading(_props: TradingProps)
 		end
 	end, { tradeState })
 
+	local currentTrade = tradeState.currentTrade
+	local otherPlayer = nil
+	local myOffer = nil :: { Types.Item }?
+	local otherOffer = nil :: { Types.Item }?
+
+	if currentTrade then
+		otherPlayer = currentTrade.Receiver == LocalPlayer and currentTrade.Sender or currentTrade.Receiver
+		myOffer = currentTrade.Sender == LocalPlayer and currentTrade.SenderOffer or currentTrade.ReceiverOffer
+		otherOffer = currentTrade.Sender == LocalPlayer and currentTrade.ReceiverOffer or currentTrade.SenderOffer
+	end
+
+	local myTradeItemElements = {}
+	local theirTradeItemElements = {}
+
+	if currentTrade and myOffer and otherOffer then
+		-- Create elements for the already existing items in the trade
+		for _, item in ipairs(myOffer) do
+			table.insert(
+				myTradeItemElements,
+				e(TradeItemTemplate, {
+					item = item,
+					canAddItem = true,
+					key = item.UUID,
+				})
+			)
+		end
+		for _, item in ipairs(otherOffer) do
+			table.insert(
+				theirTradeItemElements,
+				e(TradeItemTemplate, {
+					item = item,
+					canAddItem = false,
+					key = item.UUID,
+				})
+			)
+		end
+
+		-- Fill in the rest of the slots with placeholders
+		local myRemainingSlots = currentTrade.MaximumItems - #myOffer
+		for i = 1, myRemainingSlots do
+			table.insert(
+				myTradeItemElements,
+				e(
+					TradeItemTemplate,
+					{
+						canAddItem = true,
+						item = nil,
+						key = tostring(#myOffer + i),
+					} :: any
+				)
+			)
+		end
+
+		local theirRemainingSlots = currentTrade.MaximumItems - #otherOffer
+		for i = 1, theirRemainingSlots do
+			table.insert(
+				theirTradeItemElements,
+				e(
+					TradeItemTemplate,
+					{
+						canAddItem = false,
+						item = nil,
+						key = tostring(#otherOffer + i),
+					} :: any
+				)
+			)
+		end
+	end
+
 	return e("ImageLabel", {
 		Image = "rbxassetid://18349341250",
 		AnchorPoint = Vector2.new(0.5, 0.5),
@@ -48,7 +119,7 @@ local function Trading(_props: TradingProps)
 				Enum.FontWeight.Bold,
 				Enum.FontStyle.Normal
 			),
-			Text = "Trading With Username",
+			Text = currentTrade and string.format("Trading with %s", otherPlayer.Name) or "Trading",
 			TextColor3 = Color3.fromRGB(255, 255, 255),
 			TextSize = 22,
 			TextXAlignment = Enum.TextXAlignment.Left,
@@ -126,7 +197,7 @@ local function Trading(_props: TradingProps)
 				Enum.FontWeight.Bold,
 				Enum.FontStyle.Normal
 			),
-			Text = "Username’s Items",
+			Text = string.format("%s's Items", otherPlayer and otherPlayer.Name or "Player"),
 			TextColor3 = Color3.fromRGB(255, 255, 255),
 			TextSize = 16,
 			TextXAlignment = Enum.TextXAlignment.Left,
@@ -200,7 +271,7 @@ local function Trading(_props: TradingProps)
 			Size = UDim2.fromOffset(797, 3),
 		}),
 
-		itemList = e(AutomaticScrollingFrame, {
+		theirOfferList = e(AutomaticScrollingFrame, {
 			scrollBarThickness = 8,
 			active = true,
 			backgroundTransparency = 1,
@@ -217,9 +288,11 @@ local function Trading(_props: TradingProps)
 				CellSize = UDim2.fromOffset(126, 126),
 				SortOrder = Enum.SortOrder.LayoutOrder,
 			}),
+
+			theirItems = e(React.Fragment, nil, theirTradeItemElements),
 		}),
 
-		itemList1 = e(AutomaticScrollingFrame, {
+		myOfferList = e(AutomaticScrollingFrame, {
 			scrollBarThickness = 8,
 			active = true,
 			backgroundTransparency = 1,
@@ -236,6 +309,8 @@ local function Trading(_props: TradingProps)
 				PaddingLeft = UDim.new(0, 3),
 				PaddingTop = UDim.new(0, 3),
 			}),
+
+			myItems = e(React.Fragment, nil, myTradeItemElements),
 		}),
 	})
 end

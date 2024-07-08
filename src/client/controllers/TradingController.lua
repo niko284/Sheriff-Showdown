@@ -26,6 +26,7 @@ local ActiveTradeProperty = ClientComm:GetProperty("ActiveTrade")
 local TradingController = {
 	Name = "TradingController",
 	ActiveTradeChanged = Signal.new() :: Signal.Signal<Types.Trade?>,
+	TradeStateChanged = Signal.new(),
 }
 
 function TradingController:OnInit()
@@ -44,6 +45,7 @@ function TradingController:OnInit()
 			Component = TradeRequestNotification,
 			Props = {
 				playerId = Trade.Sender.UserId,
+				tradeUUID = Trade.UUID,
 			},
 			Duration = 5,
 		}

@@ -17,12 +17,14 @@ local InventoryContext = require(Contexts.InventoryContext)
 local InventoryUtils = require(Utils.InventoryUtils)
 local ItemDisplay = require(Components.inventory.ItemDisplay)
 local ItemTemplate = require(Components.items.Item)
+local ItemTypes = require(ReplicatedStorage.constants.ItemTypes)
 local ItemUtils = require(Utils.ItemUtils)
 local OptionButton = require(Components.buttons.OptionButton)
 local React = require(ReplicatedStorage.packages.React)
 local Searchbar = require(Components.other.Searchbar)
 local Separator = require(Components.other.Separator)
 local StringUtils = require(Utils.StringUtils)
+local TradeContext = require(Contexts.TradeContext)
 local Types = require(ReplicatedStorage.constants.Types)
 local animateCurrentInterface = require(Hooks.animateCurrentInterface)
 local createNextOrder = require(Hooks.createNextOrder)
@@ -36,6 +38,8 @@ type InventoryProps = {}
 
 local function Inventory(_props: InventoryProps)
 	local inventory: Types.PlayerInventory? = useContext(InventoryContext)
+	local tradeState = useContext(TradeContext)
+
 	local nextOrder = createNextOrder()
 
 	local selectedUUID, setSelectedUUID = useState(nil)
@@ -45,6 +49,7 @@ local function Inventory(_props: InventoryProps)
 	local _shouldRender, styles =
 		animateCurrentInterface("Inventory", UDim2.fromScale(0.5, 0.5), UDim2.fromScale(0.5, 2))
 
+	local isTradeMode = tradeState and tradeState.isInInventory == true or false
 	local selectedItem = inventory and selectedUUID and InventoryUtils.GetItemOfUUID(inventory, selectedUUID)
 
 	local selectedItemInfo: Types.ItemInfo? = if selectedItem then ItemUtils.GetItemInfoFromId(selectedItem.Id) else nil
@@ -55,6 +60,10 @@ local function Inventory(_props: InventoryProps)
 		for _, item in inventory.Equipped do
 			local itemInfo = ItemUtils.GetItemInfoFromId(item.Id)
 			if not StringUtils.MatchesSearch(itemInfo.Name, searchQuery) then
+				continue
+			end
+			local itemTypeInfo = ItemTypes[itemInfo.Type]
+			if isTradeMode and (itemTypeInfo.CanTrade == false or item.Locked == true) then
 				continue
 			end
 			itemElements[item.UUID] = e(ItemTemplate, {
@@ -76,6 +85,10 @@ local function Inventory(_props: InventoryProps)
 		for _, item in inventory.Storage do
 			local itemInfo = ItemUtils.GetItemInfoFromId(item.Id)
 			if not StringUtils.MatchesSearch(itemInfo.Name, searchQuery) then
+				continue
+			end
+			local itemTypeInfo = ItemTypes[itemInfo.Type]
+			if isTradeMode and (itemTypeInfo.CanTrade == false or item.Locked == true) then
 				continue
 			end
 			itemElements[item.UUID] = e(ItemTemplate, {
@@ -218,6 +231,7 @@ local function Inventory(_props: InventoryProps)
 			itemUUID = selectedItem.UUID,
 			rarity = selectedItemInfo.Rarity,
 			image = string.format("rbxassetid://%d", selectedItemInfo.Image),
+			isTradeMode = isTradeMode,
 		}),
 
 		scrolling = e(AutomaticScrollingFrame, {

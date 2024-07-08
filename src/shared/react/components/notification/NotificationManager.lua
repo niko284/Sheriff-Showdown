@@ -118,7 +118,7 @@ local function NotificationManager(props: NotificationManagerProps)
 				notification.component,
 				Sift.Dictionary.merge(notification, {
 					isActive = isActive,
-					removeNotification = removeNotification,
+					removeNotification = disableNotification,
 					padding = props.padding,
 				})
 			)

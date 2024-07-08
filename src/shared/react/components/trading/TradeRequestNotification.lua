@@ -6,22 +6,39 @@ local Components = ReplicatedStorage.react.components
 local Hooks = ReplicatedStorage.react.hooks
 
 local Button = require(Components.buttons.Button)
+local Net = require(ReplicatedStorage.packages.Net)
 local NotificationElement = require(Components.notification.NotificationElement)
 local React = require(ReplicatedStorage.packages.React)
+local Remotes = require(ReplicatedStorage.network.Remotes)
 local Types = require(ReplicatedStorage.constants.Types)
+local UUIDSerde = require(ReplicatedStorage.network.serde.UUIDSerde)
 local usePlayerThumbnail = require(Hooks.usePlayerThumbnail)
+
+local TradingNamespace = Remotes.Client:GetNamespace("Trading")
+local AcceptTradeRequest = TradingNamespace:Get("AcceptTradeRequest") :: Net.ClientAsyncCaller
 
 local useCallback = React.useCallback
 local e = React.createElement
 
 type TradeRequestNotificationProps = {
 	playerId: number,
+	tradeUUID: string,
 } & Types.NotificationElementPropsGeneric
 
 local function TradeRequestNotification(props: TradeRequestNotificationProps)
 	local icon = usePlayerThumbnail(props.playerId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48)
 
-	local acceptTradeRequest = useCallback(function() end, {})
+	local acceptTradeRequest = useCallback(function()
+		props.removeNotification(props.id)
+		local serializedTradeUUID = UUIDSerde.Serialize(props.tradeUUID)
+		AcceptTradeRequest:CallServerAsync(serializedTradeUUID)
+			:andThen(function(response: Types.NetworkResponse)
+				--print(response)
+			end)
+			:catch(function(err)
+				warn(tostring(err))
+			end)
+	end, { props.removeNotification, props.id, props.tradeUUID } :: { any })
 	local declineTradeRequest = useCallback(function() end, {})
 
 	return e(NotificationElement, {

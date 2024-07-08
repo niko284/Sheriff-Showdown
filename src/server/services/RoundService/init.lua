@@ -310,7 +310,7 @@ function RoundService:LoadMap(MapName: string)
 	end
 	local mapModel = MAPS_FOLDER:FindFirstChild(map.Name)
 	if mapModel == nil then
-		error("Map " .. map .. " does not exist!")
+		error("Map " .. MapName .. " does not exist!")
 		return
 	end
 

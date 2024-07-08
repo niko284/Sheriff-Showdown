@@ -8,6 +8,7 @@ local Components = ReplicatedStorage.react.components
 local Utils = ReplicatedStorage.utils
 local Constants = ReplicatedStorage.constants
 local PlayerScripts = LocalPlayer.PlayerScripts
+local Contexts = ReplicatedStorage.react.contexts
 local Serde = ReplicatedStorage.network.serde
 
 local AutomaticScrollingFrame = require(Components.frames.AutomaticScrollingFrame)
@@ -22,6 +23,7 @@ local Net = require(ReplicatedStorage.packages.Net)
 local Rarities = require(ReplicatedStorage.constants.Rarities)
 local React = require(ReplicatedStorage.packages.React)
 local Remotes = require(ReplicatedStorage.network.Remotes)
+local TradeContext = require(Contexts.TradeContext)
 local Types = require(ReplicatedStorage.constants.Types)
 local UUIDSerde = require(Serde.UUIDSerde)
 
@@ -47,6 +49,7 @@ type ItemDisplayProps = Types.FrameProps & {
 	rarity: Types.ItemRarity?,
 	image: string,
 	killCount: number?,
+	isTradeMode: boolean,
 }
 
 local function ItemDisplay(props: ItemDisplayProps)
@@ -59,6 +62,20 @@ local function ItemDisplay(props: ItemDisplayProps)
 	local itemTypeInfo = ItemTypes[itemInfo.Type]
 
 	local inventory: Types.PlayerInventory? = useContext(InventoryContext)
+	local tradeState = useContext(TradeContext)
+	local currentTrade = tradeState.currentTrade
+
+	local isItemInTrade = false
+	if currentTrade then
+		local myOffer: { Types.Item } = LocalPlayer == currentTrade.Sender and currentTrade.SenderOffer
+			or currentTrade.ReceiverOffer
+		for _, item in ipairs(myOffer) do
+			if item.UUID == props.itemUUID then
+				isItemInTrade = true
+				break
+			end
+		end
+	end
 
 	local isEquipped = inventory and InventoryUtils.IsEquipped(inventory, props.itemUUID)
 
@@ -333,7 +350,7 @@ local function ItemDisplay(props: ItemDisplayProps)
 				PaddingLeft = UDim.new(0, 3),
 			}),
 
-			equip = itemTypeInfo.CanEquip and e(Button, {
+			equipUnequip = itemTypeInfo.CanEquip and props.isTradeMode == false and e(Button, {
 				fontFace = Font.new(
 					"rbxasset://fonts/families/GothamSSm.json",
 					Enum.FontWeight.Bold,
@@ -359,7 +376,33 @@ local function ItemDisplay(props: ItemDisplayProps)
 				onActivated = not isEquipped and equipItem or unequipItem,
 			}),
 
-			openCrate = itemInfo.Type == "Crate" and e(Button, {
+			addRemoveFromTrade = props.isTradeMode == true and e(Button, {
+				anchorPoint = Vector2.new(0.5, 0.5),
+				fontFace = Font.new(
+					"rbxasset://fonts/families/GothamSSm.json",
+					Enum.FontWeight.Bold,
+					Enum.FontStyle.Normal
+				),
+				text = isItemInTrade and "Remove" or "Add",
+				textColor3 = isItemInTrade and Color3.fromRGB(0, 0, 0) or Color3.fromRGB(0, 0, 0),
+				textSize = 16,
+				strokeThickness = 1.5,
+				layoutOrder = 2,
+				applyStrokeMode = Enum.ApplyStrokeMode.Border,
+				strokeColor = Color3.fromRGB(255, 255, 255),
+				cornerRadius = UDim.new(0, 5),
+				gradient = isItemInTrade and ColorSequence.new({
+					ColorSequenceKeypoint.new(0, Color3.fromRGB(115, 114, 114)),
+					ColorSequenceKeypoint.new(1, Color3.fromRGB(74, 74, 74)),
+				}) or ColorSequence.new({
+					ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 150, 255)),
+					ColorSequenceKeypoint.new(1, Color3.fromRGB(21, 85, 150)),
+				}),
+				gradientRotation = -90,
+				onActivated = function() end,
+			}),
+
+			openCrate = itemInfo.Type == "Crate" and props.isTradeMode == false and e(Button, {
 				anchorPoint = Vector2.new(0.5, 0.5),
 				fontFace = Font.new(
 					"rbxasset://fonts/families/GothamSSm.json",
@@ -382,7 +425,7 @@ local function ItemDisplay(props: ItemDisplayProps)
 				onActivated = openCrate,
 			}),
 
-			viewCrateContents = itemInfo.Type == "Crate" and e(Button, {
+			viewCrateContents = itemInfo.Type == "Crate" and props.isTradeMode == false and e(Button, {
 				anchorPoint = Vector2.new(0.5, 0.5),
 				fontFace = Font.new(
 					"rbxasset://fonts/families/GothamSSm.json",
@@ -407,7 +450,7 @@ local function ItemDisplay(props: ItemDisplayProps)
 				end,
 			}),
 
-			lock = e(Button, {
+			lock = props.isTradeMode == false and e(Button, {
 				anchorPoint = Vector2.new(0.5, 0.5),
 				fontFace = Font.new(
 					"rbxasset://fonts/families/GothamSSm.json",
@@ -433,7 +476,7 @@ local function ItemDisplay(props: ItemDisplayProps)
 				onActivated = props.isLocked and unlockItem or lockItem,
 			}),
 
-			favorite = e(Button, {
+			favorite = props.isTradeMode == false and e(Button, {
 				anchorPoint = Vector2.new(0.5, 0.5),
 				fontFace = Font.new(
 					"rbxasset://fonts/families/GothamSSm.json",
