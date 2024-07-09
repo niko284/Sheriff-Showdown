@@ -10,18 +10,28 @@ local LocalPlayer = Players.LocalPlayer
 local PlayerScripts = LocalPlayer.PlayerScripts
 local Controllers = PlayerScripts.controllers
 
+local AcceptIndicator = require(Components.trading.AcceptIndicator)
 local AutomaticScrollingFrame = require(Components.frames.AutomaticScrollingFrame)
+local Button = require(Components.buttons.Button)
 local InterfaceController = require(Controllers.InterfaceController)
+local Net = require(ReplicatedStorage.packages.Net)
 local React = require(ReplicatedStorage.packages.React)
+local Remotes = require(ReplicatedStorage.network.Remotes)
 local TradeContext = require(Contexts.TradeContext)
 local TradeItemTemplate = require(Components.trading.TradeItemTemplate)
 local Types = require(ReplicatedStorage.constants.Types)
+local UUIDSerde = require(ReplicatedStorage.network.serde.UUIDSerde)
 local animateCurrentInterface = require(Hooks.animateCurrentInterface)
 local createNextOrder = require(Hooks.createNextOrder)
+
+local TradingNamespace = Remotes.Client:GetNamespace("Trading")
+local AcceptTrade = TradingNamespace:Get("AcceptTrade") :: Net.ClientAsyncCaller
+local DeclineTrade = TradingNamespace:Get("DeclineTrade") :: Net.ClientAsyncCaller
 
 local e = React.createElement
 local useContext = React.useContext
 local useRef = React.useRef
+local useCallback = React.useCallback
 local useEffect = React.useEffect
 
 type TradingProps = {}
@@ -35,6 +45,37 @@ local function Trading(_props: TradingProps)
 
 	local tradeState = useContext(TradeContext)
 
+	local acceptTrade = useCallback(function()
+		if not tradeState.currentTrade then
+			return
+		end
+
+		local serializedTradeUUID = UUIDSerde.Serialize(tradeState.currentTrade.UUID)
+
+		AcceptTrade:CallServerAsync(serializedTradeUUID)
+			:andThen(function(response: Types.NetworkResponse)
+				print(response)
+			end)
+			:catch(function(err)
+				warn(tostring(err))
+			end)
+	end, { tradeState })
+	local declineTrade = useCallback(function()
+		if not tradeState.currentTrade then
+			return
+		end
+
+		local serializedTradeUUID = UUIDSerde.Serialize(tradeState.currentTrade.UUID)
+
+		DeclineTrade:CallServerAsync(serializedTradeUUID)
+			:andThen(function(response: Types.NetworkResponse)
+				print(response)
+			end)
+			:catch(function(err)
+				warn(tostring(err))
+			end)
+	end, { tradeState })
+
 	local currentTrade = tradeState.currentTrade
 	local otherPlayer = nil
 	local myOffer = nil :: { Types.Item }?
@@ -45,6 +86,9 @@ local function Trading(_props: TradingProps)
 		myOffer = currentTrade.Sender == LocalPlayer and currentTrade.SenderOffer or currentTrade.ReceiverOffer
 		otherOffer = currentTrade.Sender == LocalPlayer and currentTrade.ReceiverOffer or currentTrade.SenderOffer
 	end
+
+	local otherAccepted = currentTrade and table.find(currentTrade.Accepted, otherPlayer) or false
+	local clientAccepted = currentTrade and table.find(currentTrade.Accepted, LocalPlayer) or false
 
 	local myTradeItemElements = {}
 	local theirTradeItemElements = {}
@@ -219,26 +263,38 @@ local function Trading(_props: TradingProps)
 			Size = UDim2.fromOffset(149, 12),
 		}),
 
-		denyButton = e("ImageLabel", {
-			Image = "rbxassetid://18349354114",
-			BackgroundTransparency = 1,
-			Position = UDim2.fromOffset(537, 121),
-			Size = UDim2.fromOffset(137, 44),
-		}, {
-			deny = e("TextLabel", {
-				FontFace = Font.new(
-					"rbxasset://fonts/families/GothamSSm.json",
-					Enum.FontWeight.Bold,
-					Enum.FontStyle.Normal
-				),
-				Text = "Deny",
-				TextColor3 = Color3.fromRGB(54, 0, 12),
-				TextSize = 16,
-				TextXAlignment = Enum.TextXAlignment.Left,
-				BackgroundTransparency = 1,
-				Position = UDim2.fromOffset(48, 16),
-				Size = UDim2.fromOffset(43, 15),
+		decline = e(Button, {
+			fontFace = Font.new(
+				"rbxasset://fonts/families/GothamSSm.json",
+				Enum.FontWeight.Bold,
+				Enum.FontStyle.Normal
+			),
+			text = "Decline",
+			textColor3 = Color3.fromRGB(53, 0, 12),
+			textSize = 16,
+			position = UDim2.fromScale(0.714, 0.235),
+			anchorPoint = Vector2.new(0.5, 0.5),
+			size = UDim2.fromOffset(137, 44),
+			cornerRadius = UDim.new(0, 5),
+			gradient = ColorSequence.new({
+				ColorSequenceKeypoint.new(0, Color3.fromRGB(252, 68, 118)),
+				ColorSequenceKeypoint.new(1, Color3.fromRGB(203, 35, 67)),
 			}),
+			strokeThickness = 1.5,
+			strokeColor = Color3.fromRGB(255, 255, 255),
+			applyStrokeMode = Enum.ApplyStrokeMode.Border,
+			gradientRotation = -90,
+			onActivated = declineTrade,
+		}),
+
+		clientAcceptIndicator = clientAccepted and e(AcceptIndicator, {
+			text = "You have accepted",
+			position = UDim2.fromOffset(27, 534),
+		}),
+
+		otherAcceptIndicator = otherAccepted and e(AcceptIndicator, {
+			text = string.format("%s has accepted", otherPlayer and otherPlayer.Name or "Player"),
+			position = UDim2.fromOffset(564, 534),
 		}),
 
 		flowArrow2 = e("ImageLabel", {
@@ -248,26 +304,29 @@ local function Trading(_props: TradingProps)
 			Size = UDim2.fromOffset(32, 32),
 		}),
 
-		acceptButton = e("ImageLabel", {
-			Image = "rbxassetid://18349354480",
-			BackgroundTransparency = 1,
-			Position = UDim2.fromOffset(681, 121),
-			Size = UDim2.fromOffset(137, 44),
-		}, {
-			accept = e("TextLabel", {
-				FontFace = Font.new(
-					"rbxasset://fonts/families/GothamSSm.json",
-					Enum.FontWeight.Bold,
-					Enum.FontStyle.Normal
-				),
-				Text = "Accept",
-				TextColor3 = Color3.fromRGB(0, 54, 25),
-				TextSize = 16,
-				TextXAlignment = Enum.TextXAlignment.Left,
-				BackgroundTransparency = 1,
-				Position = UDim2.fromOffset(41, 16),
-				Size = UDim2.fromOffset(59, 15),
+		accept = e(Button, {
+			fontFace = Font.new(
+				"rbxasset://fonts/families/GothamSSm.json",
+				Enum.FontWeight.Bold,
+				Enum.FontStyle.Normal
+			),
+			text = "Accept",
+			textColor3 = Color3.fromRGB(0, 54, 25),
+			anchorPoint = Vector2.new(0.5, 0.5),
+			textSize = 16,
+			size = UDim2.fromOffset(137, 44),
+			position = UDim2.fromScale(0.884, 0.235),
+			strokeThickness = 1.5,
+			layoutOrder = 1,
+			applyStrokeMode = Enum.ApplyStrokeMode.Border,
+			strokeColor = Color3.fromRGB(255, 255, 255),
+			cornerRadius = UDim.new(0, 5),
+			gradient = ColorSequence.new({
+				ColorSequenceKeypoint.new(0, Color3.fromRGB(68, 252, 153)),
+				ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 203, 112)),
 			}),
+			gradientRotation = -90,
+			onActivated = acceptTrade,
 		}),
 
 		flowArrow1 = e("ImageLabel", {

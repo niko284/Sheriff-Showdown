@@ -324,8 +324,8 @@ function TradingService:RemoveItemFromTrade(ItemUUID: string, TradeUUID: string,
 				table.clear(Trade.Accepted)
 			end
 			table.remove(PlayerOffer, Index)
-			local otherPlayer = Trade.Sender == Player and Trade.Receiver or Trade.Sender
-			self.ActiveTrade:SetFor(otherPlayer, TradeSerde.Serialize(Trade))
+			--local otherPlayer = Trade.Sender == Player and Trade.Receiver or Trade.Sender
+			self.ActiveTrade:SetForList({ Trade.Sender, Trade.Receiver }, TradeSerde.Serialize(Trade)) -- @note: can also use client-side state for the person removing the item.
 			return {
 				Success = true,
 				Message = "Item removed from trade.",
@@ -453,8 +453,7 @@ function TradingService:AcceptTrade(TradeUUID: string, Player: Player): Types.Ne
 	if #Trade.Accepted == 2 then -- If both players accepted the trade, it's time to confirm.
 		Trade.Status = "Confirming"
 	end
-	local otherPlayer = Trade.Sender == Player and Trade.Receiver or Trade.Sender
-	self.ActiveTrade:SetFor(otherPlayer, TradeSerde.Serialize(Trade))
+	self.ActiveTrade:SetForList({ Trade.Sender, Trade.Receiver }, Trade)
 	return {
 		Success = true,
 		Message = "Trade accepted",
@@ -701,8 +700,7 @@ function TradingService:DeclineTrade(TradeUUID: string, Player: Player): Types.N
 		}
 	end
 	self.Trades[TradeUUID] = nil
-	local otherPlayer = Trade.Sender == Player and Trade.Receiver or Trade.Sender
-	self.ActiveTrade:SetFor(otherPlayer, nil)
+	self.ActiveTrade:SetForList({ Trade.Sender, Trade.Receiver }, nil)
 	return {
 		Success = true,
 		Message = "Trade declined",
