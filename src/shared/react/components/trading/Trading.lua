@@ -17,9 +17,11 @@ local TradeContext = require(Contexts.TradeContext)
 local TradeItemTemplate = require(Components.trading.TradeItemTemplate)
 local Types = require(ReplicatedStorage.constants.Types)
 local animateCurrentInterface = require(Hooks.animateCurrentInterface)
+local createNextOrder = require(Hooks.createNextOrder)
 
 local e = React.createElement
 local useContext = React.useContext
+local useRef = React.useRef
 local useEffect = React.useEffect
 
 type TradingProps = {}
@@ -27,15 +29,11 @@ type TradingProps = {}
 local function Trading(_props: TradingProps)
 	local _shouldRender, styles =
 		animateCurrentInterface("ActiveTrade", UDim2.fromScale(0.5, 0.5), UDim2.fromScale(0.5, 2))
+	local nextOrder = createNextOrder()
+
+	local currentTradeUUID = useRef(nil :: string?)
 
 	local tradeState = useContext(TradeContext)
-
-	useEffect(function()
-		local currentTrade = tradeState.currentTrade
-		if currentTrade then
-			InterfaceController.InterfaceChanged:Fire("ActiveTrade")
-		end
-	end, { tradeState })
 
 	local currentTrade = tradeState.currentTrade
 	local otherPlayer = nil
@@ -60,6 +58,7 @@ local function Trading(_props: TradingProps)
 					item = item,
 					canAddItem = true,
 					key = item.UUID,
+					layoutOrder = nextOrder(),
 				})
 			)
 		end
@@ -70,6 +69,7 @@ local function Trading(_props: TradingProps)
 					item = item,
 					canAddItem = false,
 					key = item.UUID,
+					layoutOrder = nextOrder(),
 				})
 			)
 		end
@@ -85,6 +85,7 @@ local function Trading(_props: TradingProps)
 						canAddItem = true,
 						item = nil,
 						key = tostring(#myOffer + i),
+						layoutOrder = nextOrder(),
 					} :: any
 				)
 			)
@@ -100,11 +101,23 @@ local function Trading(_props: TradingProps)
 						canAddItem = false,
 						item = nil,
 						key = tostring(#otherOffer + i),
+						layoutOrder = nextOrder(),
 					} :: any
 				)
 			)
 		end
 	end
+
+	useEffect(function()
+		local currTradeUUID = currentTrade and currentTrade.UUID
+
+		if currentTradeUUID.current ~= currTradeUUID and currTradeUUID ~= nil then
+			-- new trade, open the trading interface
+			InterfaceController.InterfaceChanged:Fire("ActiveTrade")
+		end
+
+		currentTradeUUID.current = currTradeUUID
+	end, { tradeState })
 
 	return e("ImageLabel", {
 		Image = "rbxassetid://18349341250",

@@ -49,7 +49,6 @@ function TradingController:OnInit()
 			},
 			Duration = 5,
 		}
-
 		NotificationController:AddNotification(tradeRequestNotification)
 	end)
 end

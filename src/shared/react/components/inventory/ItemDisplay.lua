@@ -28,12 +28,16 @@ local Types = require(ReplicatedStorage.constants.Types)
 local UUIDSerde = require(Serde.UUIDSerde)
 
 local InventoryNamespace = Remotes.Client:GetNamespace("Inventory")
+local TradingNamespace = Remotes.Client:GetNamespace("Trading")
+
 local LockItem = InventoryNamespace:Get("LockItem") :: Net.ClientAsyncCaller
 local UnlockItem = InventoryNamespace:Get("UnlockItem") :: Net.ClientAsyncCaller
 local EquipItem = InventoryNamespace:Get("EquipItem") :: Net.ClientAsyncCaller
 local UnequipItem = InventoryNamespace:Get("UnequipItem") :: Net.ClientAsyncCaller
 local ToggleItemFavorite = InventoryNamespace:Get("ToggleItemFavorite") :: Net.ClientAsyncCaller
 local OpenCrate = InventoryNamespace:Get("OpenCrate") :: Net.ClientAsyncCaller
+local AddItemToTrade = TradingNamespace:Get("AddItemToTrade") :: Net.ClientAsyncCaller
+local RemoveItemFromTrade = TradingNamespace:Get("RemoveItemFromTrade") :: Net.ClientAsyncCaller
 
 local e = React.createElement
 local useCallback = React.useCallback
@@ -202,6 +206,46 @@ local function ItemDisplay(props: ItemDisplayProps)
 				warn(tostring(err))
 			end)
 	end, { props.itemUUID, inventory } :: { any })
+
+	local addItemToTrade = useCallback(function()
+		if not currentTrade then
+			return
+		end
+		local serializedItemUUID = UUIDSerde.Serialize(props.itemUUID)
+		local serializedTradeUUID = UUIDSerde.Serialize(currentTrade.UUID)
+
+		InterfaceController.InterfaceChanged:Fire("ActiveTrade")
+
+		AddItemToTrade:CallServerAsync(serializedTradeUUID, serializedItemUUID)
+			:andThen(function(response: Types.NetworkResponse)
+				if response.Success == false then
+					warn(response.Message)
+				end
+			end)
+			:catch(function(err)
+				warn(tostring(err))
+			end)
+	end, { props.itemUUID, tradeState } :: { any })
+
+	local removeItemFromTrade = useCallback(function()
+		if not currentTrade then
+			return
+		end
+		local serializedItemUUID = UUIDSerde.Serialize(props.itemUUID)
+		local serializedTradeUUID = UUIDSerde.Serialize(currentTrade.UUID)
+
+		InterfaceController.InterfaceChanged:Fire("ActiveTrade")
+
+		RemoveItemFromTrade:CallServerAsync(serializedTradeUUID, serializedItemUUID)
+			:andThen(function(response: Types.NetworkResponse)
+				if response.Success == false then
+					warn(response.Message)
+				end
+			end)
+			:catch(function(err)
+				warn(tostring(err))
+			end)
+	end, { props.itemUUID, tradeState } :: { any })
 
 	return e("ImageLabel", {
 		Image = "rbxassetid://17886556400",
@@ -399,7 +443,13 @@ local function ItemDisplay(props: ItemDisplayProps)
 					ColorSequenceKeypoint.new(1, Color3.fromRGB(21, 85, 150)),
 				}),
 				gradientRotation = -90,
-				onActivated = function() end,
+				onActivated = function()
+					if isItemInTrade then
+						removeItemFromTrade()
+					else
+						addItemToTrade()
+					end
+				end,
 			}),
 
 			openCrate = itemInfo.Type == "Crate" and props.isTradeMode == false and e(Button, {

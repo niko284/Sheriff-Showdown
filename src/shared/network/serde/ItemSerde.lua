@@ -20,10 +20,12 @@ local itemStruct = t.strictInterface({
 	Id = t.numberPositive,
 	UUID = t.string,
 	Locked = t.boolean,
+	Favorited = t.boolean,
 	Serial = t.optional(t.numberPositive),
 	Level = t.optional(t.numberPositive),
 	StatisticMultiplier = t.optional(t.numberPositive),
 	Cosmetified = t.optional(t.boolean),
+	Kills = t.optional(t.numberMin(0)),
 })
 
 -- // Serde Layer \\
