@@ -2,6 +2,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Hooks = ReplicatedStorage.react.hooks
 local Components = ReplicatedStorage.react.components
@@ -13,12 +14,16 @@ local Controllers = PlayerScripts.controllers
 local AcceptIndicator = require(Components.trading.AcceptIndicator)
 local AutomaticScrollingFrame = require(Components.frames.AutomaticScrollingFrame)
 local Button = require(Components.buttons.Button)
+local ConfirmationPrompt = require(Components.other.ConfirmationPrompt)
 local InterfaceController = require(Controllers.InterfaceController)
 local Net = require(ReplicatedStorage.packages.Net)
+local PlayerIcon = require(Components.other.PlayerIcon)
+local RadialLoading = require(Components.other.RadialLoading)
 local React = require(ReplicatedStorage.packages.React)
 local Remotes = require(ReplicatedStorage.network.Remotes)
 local TradeContext = require(Contexts.TradeContext)
 local TradeItemTemplate = require(Components.trading.TradeItemTemplate)
+local TradingController = require(Controllers.TradingController)
 local Types = require(ReplicatedStorage.constants.Types)
 local UUIDSerde = require(ReplicatedStorage.network.serde.UUIDSerde)
 local animateCurrentInterface = require(Hooks.animateCurrentInterface)
@@ -27,11 +32,14 @@ local createNextOrder = require(Hooks.createNextOrder)
 local TradingNamespace = Remotes.Client:GetNamespace("Trading")
 local AcceptTrade = TradingNamespace:Get("AcceptTrade") :: Net.ClientAsyncCaller
 local DeclineTrade = TradingNamespace:Get("DeclineTrade") :: Net.ClientAsyncCaller
+local ConfirmTrade = TradingNamespace:Get("ConfirmTrade") :: Net.ClientAsyncCaller
+local TradeProcessed = TradingNamespace:Get("TradeProcessed") :: Net.ClientListenerEvent
 
 local e = React.createElement
 local useContext = React.useContext
 local useRef = React.useRef
 local useCallback = React.useCallback
+local useState = React.useState
 local useEffect = React.useEffect
 
 type TradingProps = {}
@@ -44,6 +52,40 @@ local function Trading(_props: TradingProps)
 	local currentTradeUUID = useRef(nil :: string?)
 
 	local tradeState = useContext(TradeContext)
+
+	local timeLeft, setTimeLeft = useState(0)
+
+	local confirmTrade = useCallback(function()
+		if not tradeState.currentTrade then
+			return
+		end
+
+		local serializedTradeUUID = UUIDSerde.Serialize(tradeState.currentTrade.UUID)
+
+		-- show loading state since confirming trade might take a while
+		local newTradeState = table.clone(tradeState)
+		local newCurrentTrade = table.clone(newTradeState.currentTrade :: Types.Trade)
+
+		table.insert(newCurrentTrade.Confirmed, LocalPlayer)
+		newTradeState.currentTrade = newCurrentTrade
+
+		if #newCurrentTrade.Confirmed == 2 then
+			newCurrentTrade.Status = "Completed"
+		end
+
+		TradingController.TradeStateChanged:Fire(newTradeState)
+
+		ConfirmTrade:CallServerAsync(serializedTradeUUID)
+			:andThen(function(response: Types.NetworkResponse)
+				if response.Success == false then
+					TradingController.TradeStateChanged:Fire(tradeState) -- rollback
+					warn(response.Message)
+				end
+			end)
+			:catch(function(err)
+				warn(tostring(err))
+			end)
+	end, { tradeState })
 
 	local acceptTrade = useCallback(function()
 		if not tradeState.currentTrade then
@@ -90,6 +132,10 @@ local function Trading(_props: TradingProps)
 	local otherAccepted = currentTrade and table.find(currentTrade.Accepted, otherPlayer) or false
 	local clientAccepted = currentTrade and table.find(currentTrade.Accepted, LocalPlayer) or false
 
+	local isConfirmStage = currentTrade and currentTrade.Status == "Confirming" or false
+	local tradeCompleted = currentTrade and currentTrade.Status == "Completed" or false
+	local wasConfirmed = currentTrade and table.find(currentTrade.Confirmed, LocalPlayer) or false
+
 	local myTradeItemElements = {}
 	local theirTradeItemElements = {}
 
@@ -100,7 +146,8 @@ local function Trading(_props: TradingProps)
 				myTradeItemElements,
 				e(TradeItemTemplate, {
 					item = item,
-					canAddItem = true,
+					canAddItem = currentTrade.Status == "Started"
+						and (not currentTrade.CooldownEnd or currentTrade.CooldownEnd <= os.time()),
 					key = item.UUID,
 					layoutOrder = nextOrder(),
 				})
@@ -158,9 +205,38 @@ local function Trading(_props: TradingProps)
 		if currentTradeUUID.current ~= currTradeUUID and currTradeUUID ~= nil then
 			-- new trade, open the trading interface
 			InterfaceController.InterfaceChanged:Fire("ActiveTrade")
+
+			local newTradeState = table.clone(tradeState)
+			newTradeState.showTradeSideButton = true
+			TradingController.TradeStateChanged:Fire(newTradeState)
+		end
+
+		local tradeProcessedConnection = TradeProcessed:Connect(function(_tradeUUID: string)
+			local newTradeState = table.clone(tradeState)
+			newTradeState.showTradeSideButton = false
+			TradingController.TradeStateChanged:Fire(newTradeState)
+			InterfaceController.InterfaceChanged:Fire("TradeProcessed")
+		end)
+
+		local cooldownConnection = nil
+		if currentTrade and currentTrade.CooldownEnd and currentTrade.CooldownEnd > os.time() then
+			cooldownConnection = RunService.Heartbeat:Connect(function()
+				local newTimeLeft = currentTrade.CooldownEnd - os.time()
+				if newTimeLeft <= 0 then
+					cooldownConnection:Disconnect()
+				end
+				setTimeLeft(math.round(newTimeLeft))
+			end)
 		end
 
 		currentTradeUUID.current = currTradeUUID
+
+		return function()
+			if cooldownConnection then
+				cooldownConnection:Disconnect()
+			end
+			tradeProcessedConnection:Disconnect()
+		end
 	end, { tradeState })
 
 	return e("ImageLabel", {
@@ -183,6 +259,15 @@ local function Trading(_props: TradingProps)
 			BackgroundTransparency = 1,
 			Position = UDim2.fromOffset(27, 132),
 			Size = UDim2.fromOffset(276, 21),
+		}),
+
+		confirming = isConfirmStage and e(ConfirmationPrompt, {
+			title = "Confirm Trade",
+			description = "Are you sure you want to accept this trade?",
+			acceptText = wasConfirmed and "Confirmed" or "Confirm",
+			cancelText = "Decline",
+			onAccept = confirmTrade,
+			onCancel = declineTrade,
 		}),
 
 		topbar = e("ImageLabel", {
@@ -263,7 +348,7 @@ local function Trading(_props: TradingProps)
 			Size = UDim2.fromOffset(149, 12),
 		}),
 
-		decline = e(Button, {
+		decline = not tradeCompleted and not isConfirmStage and e(Button, {
 			fontFace = Font.new(
 				"rbxasset://fonts/families/GothamSSm.json",
 				Enum.FontWeight.Bold,
@@ -297,14 +382,28 @@ local function Trading(_props: TradingProps)
 			position = UDim2.fromOffset(564, 534),
 		}),
 
-		flowArrow2 = e("ImageLabel", {
+		flowArrow2 = timeLeft <= 0 and e("ImageLabel", {
 			Image = "rbxassetid://18349354330",
 			BackgroundTransparency = 1,
 			Position = UDim2.fromOffset(408, 385),
 			Size = UDim2.fromOffset(32, 32),
 		}),
 
-		accept = e(Button, {
+		cooldownText = timeLeft > 0 and e("TextLabel", {
+			FontFace = Font.new(
+				"rbxasset://fonts/families/GothamSSm.json",
+				Enum.FontWeight.Bold,
+				Enum.FontStyle.Normal
+			),
+			Text = tostring(timeLeft),
+			TextColor3 = Color3.fromRGB(255, 255, 255),
+			TextSize = 46,
+			BackgroundTransparency = 1,
+			Position = UDim2.fromOffset(407, 298),
+			Size = UDim2.fromOffset(34, 38),
+		}),
+
+		accept = clientAccepted == false and e(Button, {
 			fontFace = Font.new(
 				"rbxasset://fonts/families/GothamSSm.json",
 				Enum.FontWeight.Bold,
@@ -329,11 +428,87 @@ local function Trading(_props: TradingProps)
 			onActivated = acceptTrade,
 		}),
 
-		flowArrow1 = e("ImageLabel", {
+		flowArrow1 = timeLeft <= 0 and e("ImageLabel", {
 			Image = "rbxassetid://18349366976",
 			BackgroundTransparency = 1,
 			Position = UDim2.fromOffset(408, 345),
 			Size = UDim2.fromOffset(32, 32),
+		}),
+
+		tradeProcessing = tradeCompleted and e("ImageLabel", {
+			BackgroundColor3 = Color3.fromRGB(25, 25, 25),
+			BackgroundTransparency = 0,
+			Size = UDim2.fromScale(1, 1),
+		}, {
+			description = e("TextLabel", {
+				Font = Enum.Font.FredokaOne,
+				Text = string.format("Trade accepted by %s", otherPlayer.Name),
+				TextColor3 = Color3.fromRGB(255, 255, 255),
+				TextScaled = true,
+				TextSize = 14,
+				TextWrapped = true,
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+				BackgroundTransparency = 1,
+				Position = UDim2.fromScale(0.5, 0.51),
+				Size = UDim2.fromScale(0.8, 0.06),
+			}, {
+				gradient = e("UIGradient", {
+					Color = ColorSequence.new({
+						ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 56)),
+						ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 223, 0)),
+					}),
+					Rotation = 90,
+				}),
+				stroke = e("UIStroke", {
+					Color = Color3.fromRGB(27, 16, 18),
+					Thickness = 3,
+				}),
+			}),
+			gradient = e("UIGradient", {
+				Rotation = -90,
+				Transparency = NumberSequence.new({
+					NumberSequenceKeypoint.new(0, 0.312),
+					NumberSequenceKeypoint.new(1, 0.294),
+				}),
+			}),
+			description2 = e("TextLabel", {
+				Font = Enum.Font.FredokaOne,
+				Text = "Your trade is processing",
+				TextColor3 = Color3.fromRGB(255, 255, 255),
+				TextScaled = true,
+				TextSize = 14,
+				TextWrapped = true,
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+				BackgroundTransparency = 1,
+				Position = UDim2.fromScale(0.5, 0.58),
+				Size = UDim2.fromScale(0.8, 0.04),
+			}),
+			radialLoading = e(RadialLoading, {
+				dots = 6,
+				dotSize = UDim2.fromScale(0.02, 0.02),
+				dotColor = Color3.fromRGB(255, 255, 255),
+				radius = 40,
+				spacing = 20,
+				timeToCycle = 1,
+				position = UDim2.fromScale(0.5, 0.75),
+				size = UDim2.fromOffset(500, 500),
+			}),
+			playerIcon = e(PlayerIcon, {
+				player = otherPlayer,
+				scaleType = Enum.ScaleType.Fit,
+				anchorPoint = Vector2.new(0.5, 0.5),
+				backgroundTransparency = 1,
+				position = UDim2.fromScale(0.5, 0.38),
+				size = UDim2.fromScale(0.1, 0.1),
+				sizeConstraint = Enum.SizeConstraint.RelativeXX,
+				thumbnailSize = Enum.ThumbnailSize.Size352x352,
+			}, {
+				uICorner8 = e("UICorner", {
+					CornerRadius = UDim.new(0.5, 0),
+				}),
+			}),
 		}),
 
 		separator = e("ImageLabel", {
@@ -356,7 +531,7 @@ local function Trading(_props: TradingProps)
 			}),
 
 			gridLayout = e("UIGridLayout", {
-				CellPadding = UDim2.fromOffset(7, 7),
+				CellPadding = UDim2.fromOffset(6, 6),
 				CellSize = UDim2.fromOffset(126, 126),
 				SortOrder = Enum.SortOrder.LayoutOrder,
 			}),

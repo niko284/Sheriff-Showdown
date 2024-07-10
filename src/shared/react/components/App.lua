@@ -29,6 +29,7 @@ local Shop = require(Components.shop.Shop)
 local ShopProvider = require(Providers.ShopProvider)
 local SideButtonHUD = require(Components.other.SideButtonHUD)
 local TradeProvider = require(Providers.TradeProvider)
+local TradeResults = require(Components.trading.TradeResults)
 local Trading = require(Components.trading.Trading)
 local TradingPlayerList = require(Components.trading.TradingPlayerList)
 local Voting = require(Components.voting.Voting)
@@ -90,6 +91,7 @@ local function App()
 					setScale(newScale)
 				end,
 			}),
+			tradeResults = e(TradeResults),
 			distractionViewport = e(DistractionViewport),
 			playerList = e(Playerlist),
 			tradingList = e(TradingPlayerList),

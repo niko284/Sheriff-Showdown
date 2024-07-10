@@ -15,6 +15,7 @@ type ConfirmationPromptProps = Types.FrameProps & {
 	description: string,
 	title: string,
 	acceptText: string?,
+	cancelText: string?,
 	onAccept: () -> (),
 	onCancel: () -> (),
 }
@@ -98,7 +99,7 @@ local function ConfirmationPrompt(props: ConfirmationPromptProps)
 				Enum.FontWeight.Bold,
 				Enum.FontStyle.Normal
 			),
-			text = "Cancel",
+			text = props.cancelText or "Cancel",
 			textColor3 = Color3.fromRGB(53, 0, 12),
 			textSize = 16,
 			position = UDim2.fromOffset(25, 191),

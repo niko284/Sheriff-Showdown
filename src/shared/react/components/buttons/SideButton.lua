@@ -24,6 +24,7 @@ type SideButtonProps = Types.FrameProps & {
 	icon: string,
 	buttonPath: Types.Interface,
 	opacity: number?,
+	tooltipName: string?,
 }
 
 local function SideButton(props: SideButtonProps)
@@ -106,7 +107,7 @@ local function SideButton(props: SideButtonProps)
 		}),
 
 		hover = isHovered and e(Tooltip, {
-			name = props.buttonPath :: string,
+			name = props.tooltipName or props.buttonPath :: string,
 			size = UDim2.fromOffset(77, 26),
 			startPosition = UDim2.fromScale(0.5, 0.4),
 			endPosition = UDim2.fromScale(0.51, 0.05),

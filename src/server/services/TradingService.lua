@@ -30,7 +30,6 @@ local UUIDSerde = require(Serde.UUIDSerde)
 
 local TradeData = DataStoreService:GetDataStore("AnimeDungeonsTradeDataOfficial1")
 local TradingRemotes = Remotes.Server:GetNamespace("Trading")
-local TradeCompleted = TradingRemotes:Get("TradeCompleted") :: Net.ServerSenderEvent
 local TradeReceived = TradingRemotes:Get("TradeReceived") :: Net.ServerSenderEvent
 local SendTradeToPlayer = TradingRemotes:Get("SendTradeToPlayer") :: Net.ServerAsyncCallback
 local AcceptTradeRequest = TradingRemotes:Get("AcceptTradeRequest") :: Net.ServerAsyncCallback
@@ -453,7 +452,7 @@ function TradingService:AcceptTrade(TradeUUID: string, Player: Player): Types.Ne
 	if #Trade.Accepted == 2 then -- If both players accepted the trade, it's time to confirm.
 		Trade.Status = "Confirming"
 	end
-	self.ActiveTrade:SetForList({ Trade.Sender, Trade.Receiver }, Trade)
+	self.ActiveTrade:SetForList({ Trade.Sender, Trade.Receiver }, TradeSerde.Serialize(Trade))
 	return {
 		Success = true,
 		Message = "Trade accepted",
@@ -492,8 +491,8 @@ function TradingService:ConfirmTrade(TradeUUID: string, Player: Player): Types.N
 	if #Trade.Confirmed == 2 then
 		-- Both players confirmed the trade, it is complete.
 		Trade.Status = "Completed"
-		TradeCompleted:SendToPlayer(otherPlayer, Player)
-		self.ActiveTrade:SetFor(otherPlayer, nil)
+		self.ActiveTrade:SetFor(otherPlayer, TradeSerde.Serialize(Trade))
+		print("COMPLETING TRADES")
 		self:CompleteTrade(TradeUUID)
 			:finally(function()
 				-- Unlock our session locks.
@@ -502,6 +501,7 @@ function TradingService:ConfirmTrade(TradeUUID: string, Player: Player): Types.N
 				-- If our players left the game, let's release the profiles.
 				local tradeSenderProfile = PlayerDataService:GetDocument(Trade.Sender)
 				local tradeReceiverProfile = PlayerDataService:GetDocument(Trade.Receiver)
+				print("PROCESSED")
 				if tradeSenderProfile and Trade.Sender:IsDescendantOf(Players) == false then
 					PlayerDataService:CloseDocument(Trade.Sender)
 				else
@@ -522,7 +522,7 @@ function TradingService:ConfirmTrade(TradeUUID: string, Player: Player): Types.N
 			Message = "Trade confirmed!",
 		}
 	end
-	(self.ActiveTrade :: Types.ServerRemoteProperty):SetFor(otherPlayer, TradeSerde.Serialize(Trade))
+	self.ActiveTrade:SetFor(otherPlayer, TradeSerde.Serialize(Trade))
 	return {
 		Success = true,
 		Message = "Trade confirmed!",
@@ -548,6 +548,7 @@ function TradingService:CompleteTrade(TradeUUID: string)
 		TradeUUID = TradeUUID,
 	}
 	self.Trades[TradeUUID] = nil -- Wipe trade from trades
+	print("All promising")
 	return Promise
 		.all({
 			PlayerDataService:LockSession(Trade.Receiver),
@@ -570,7 +571,7 @@ function TradingService:CompleteTrade(TradeUUID: string)
 end
 
 function TradingService:GrantProcessingTrades(Player: Player, TradeUUIDs: { string })
-	return Promise.new(function(_resolve: (...any) -> nil, reject: (...any) -> nil)
+	return Promise.new(function(resolve: (...any) -> nil, reject: (...any) -> nil)
 		local PlayerDocument = PlayerDataService:GetDocument(Player)
 		if not PlayerDocument then
 			reject("Player profile not found")
@@ -581,6 +582,7 @@ function TradingService:GrantProcessingTrades(Player: Player, TradeUUIDs: { stri
 
 		local ProcessingTradesNew = table.clone(PlayerData.ProcessingTrades)
 
+		print("Granting processing")
 		-- Give the player their items for each trade.
 
 		for _i, uuid in TradeUUIDs do
@@ -623,11 +625,18 @@ function TradingService:GrantProcessingTrades(Player: Player, TradeUUIDs: { stri
 			ProcessingTrades = ProcessingTradesNew,
 		}))
 
-		return PlayerDocument:save()
+		local saveOk = PlayerDocument:save():await()
+
+		if saveOk then
+			resolve()
+		else
+			reject("Failed to save player document")
+		end
 	end)
 end
 
 function TradingService:IndicateTradeComplete(TradeUUID: string)
+	print("indicating completion")
 	return Promise.new(function(resolve, reject)
 		local Success, Message = pcall(function()
 			TradeData:SetAsync(TradeUUID, true) -- Indicate that both players saved the trade in their data.
@@ -658,13 +667,15 @@ function TradingService:AddProcessingTrade(Player: Player, TradeUUID: string, Pr
 		return Promise.reject("Player document not found")
 	end
 
-	return Promise.new(function(_resolve: (boolean, {}?) -> nil, _reject: (Message: string) -> nil)
+	return Promise.new(function(resolve: (boolean, {}?) -> nil, reject: (Message: string) -> nil)
 		local PlayerData = PlayerDocument:read()
 
 		-- Add the trade to the player's pending trades, if it's not already there.
 
 		local processingTradesList = PlayerData.ProcessingTrades
 		local isNotProcessing = TradingService:FindProcessingTrade(processingTradesList, TradeUUID) == nil
+
+		print("adding processing trade")
 
 		if isNotProcessing then
 			processingTradesList = Sift.Array.push(processingTradesList, ProcessingTrade)
@@ -675,7 +686,13 @@ function TradingService:AddProcessingTrade(Player: Player, TradeUUID: string, Pr
 			}))
 		end
 
-		return PlayerDocument:save()
+		local saveOk = PlayerDocument:save():await()
+
+		if saveOk then
+			resolve(true)
+		else
+			reject("Failed to save player document")
+		end
 	end)
 end
 

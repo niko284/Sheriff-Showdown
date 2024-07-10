@@ -24,6 +24,7 @@ type ItemProps = Types.FrameProps & {
 	itemSerial: number?,
 	gradient: Color3?,
 	killCount: number?,
+	hideOptions: boolean?, -- show or hide the favorite and lock options
 }
 
 local function Item(props: ItemProps)
@@ -46,6 +47,7 @@ local function Item(props: ItemProps)
 		BackgroundColor3 = Color3.fromRGB(72, 72, 72),
 		BorderSizePixel = 0,
 		LayoutOrder = props.layoutOrder,
+		Size = props.size,
 	}, {
 		killCount = props.killCount and e("Frame", {
 			BackgroundTransparency = 1,
@@ -104,7 +106,7 @@ local function Item(props: ItemProps)
 			}),
 		}),
 
-		options = e("ImageLabel", {
+		options = props.hideOptions ~= true and e("ImageLabel", {
 			Image = "rbxassetid://17886582104",
 			BackgroundTransparency = 1,
 			Position = UDim2.fromScale(0.548, 0.0685),

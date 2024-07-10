@@ -121,7 +121,7 @@ local function TradeItemTemplate(props: TradeItemTemplateProps)
 
 		stroke = e("UIStroke", {
 			Color = Color3.fromRGB(255, 255, 255),
-			Thickness = 0.5,
+			Thickness = 1,
 		}),
 	})
 end
