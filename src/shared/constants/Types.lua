@@ -17,6 +17,7 @@ export type ItemInfo = {
 	Image: number,
 	Default: (boolean | (Player) -> boolean)?,
 	TagWithSerial: boolean?,
+	CanTrade: boolean?, -- some guns can't be traded even if they're of an item type that can be traded (like your default gun)
 } & ItemGunData
 
 export type ItemTypeInfo = {
@@ -207,7 +208,15 @@ export type CurrencyData = {
 	Color: Color3,
 }
 
-export type Interface = "Shop" | "Inventory" | "GiftingSelection" | "Settings" | "Voting" | "Trading" | "ActiveTrade" | "TradeProcessed"
+export type Interface =
+	"Shop"
+	| "Inventory"
+	| "GiftingSelection"
+	| "Settings"
+	| "Voting"
+	| "Trading"
+	| "ActiveTrade"
+	| "TradeProcessed"
 
 export type ProductInfo = {
 	Name: string,
@@ -342,6 +351,7 @@ export type NotificationElementPropsGeneric = {
 	creationTime: number,
 	padding: UDim,
 	removeNotification: (string) -> (),
+	closeNotification: (string) -> (),
 	onFade: () -> (),
 	onDismiss: () -> (),
 	title: string,

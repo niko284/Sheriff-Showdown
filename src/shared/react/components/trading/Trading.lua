@@ -15,7 +15,11 @@ local AcceptIndicator = require(Components.trading.AcceptIndicator)
 local AutomaticScrollingFrame = require(Components.frames.AutomaticScrollingFrame)
 local Button = require(Components.buttons.Button)
 local ConfirmationPrompt = require(Components.other.ConfirmationPrompt)
+local CurrentInterfaceContext = require(Contexts.CurrentInterfaceContext)
 local InterfaceController = require(Controllers.InterfaceController)
+local InventoryContext = require(Contexts.InventoryContext)
+local InventoryController = require(Controllers.InventoryController)
+local InventoryUtils = require(ReplicatedStorage.utils.InventoryUtils)
 local Net = require(ReplicatedStorage.packages.Net)
 local PlayerIcon = require(Components.other.PlayerIcon)
 local RadialLoading = require(Components.other.RadialLoading)
@@ -52,6 +56,8 @@ local function Trading(_props: TradingProps)
 	local currentTradeUUID = useRef(nil :: string?)
 
 	local tradeState = useContext(TradeContext)
+	local currentInterface = useContext(CurrentInterfaceContext)
+	local inventory = useContext(InventoryContext)
 
 	local timeLeft, setTimeLeft = useState(0)
 
@@ -96,7 +102,9 @@ local function Trading(_props: TradingProps)
 
 		AcceptTrade:CallServerAsync(serializedTradeUUID)
 			:andThen(function(response: Types.NetworkResponse)
-				print(response)
+				if response.Success == false then
+					warn(response.Message)
+				end
 			end)
 			:catch(function(err)
 				warn(tostring(err))
@@ -146,8 +154,7 @@ local function Trading(_props: TradingProps)
 				myTradeItemElements,
 				e(TradeItemTemplate, {
 					item = item,
-					canAddItem = currentTrade.Status == "Started"
-						and (not currentTrade.CooldownEnd or currentTrade.CooldownEnd <= os.time()),
+					canAddItem = currentTrade.Status == "Started",
 					key = item.UUID,
 					layoutOrder = nextOrder(),
 				})
@@ -209,12 +216,30 @@ local function Trading(_props: TradingProps)
 			local newTradeState = table.clone(tradeState)
 			newTradeState.showTradeSideButton = true
 			TradingController.TradeStateChanged:Fire(newTradeState)
+		elseif currTradeUUID == nil then
+			-- no trade, close the active trade interface if it's open
+			if currentInterface.current == "ActiveTrade" then
+				InterfaceController.InterfaceChanged:Fire(nil)
+				local newTradeState = table.clone(tradeState)
+				newTradeState.showTradeSideButton = false
+				TradingController.TradeStateChanged:Fire(newTradeState)
+			end
 		end
 
 		local tradeProcessedConnection = TradeProcessed:Connect(function(_tradeUUID: string)
 			local newTradeState = table.clone(tradeState)
 			newTradeState.showTradeSideButton = false
 			TradingController.TradeStateChanged:Fire(newTradeState)
+
+			if inventory then
+				local trade = tradeState.currentTrade :: Types.Trade
+				local itemsLost = trade.Sender == LocalPlayer and trade.SenderOffer or trade.ReceiverOffer
+				local itemsGained = trade.Sender == LocalPlayer and trade.ReceiverOffer or trade.SenderOffer
+				local newInventory =
+					InventoryUtils.AddItems(InventoryUtils.RemoveItems(inventory, itemsLost), itemsGained)
+				InventoryController.InventoryChanged:Fire(newInventory)
+			end
+
 			InterfaceController.InterfaceChanged:Fire("TradeProcessed")
 		end)
 
@@ -237,7 +262,7 @@ local function Trading(_props: TradingProps)
 			end
 			tradeProcessedConnection:Disconnect()
 		end
-	end, { tradeState })
+	end, { tradeState, currentInterface, inventory } :: { any })
 
 	return e("ImageLabel", {
 		Image = "rbxassetid://18349341250",

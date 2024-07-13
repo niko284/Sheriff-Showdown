@@ -37,7 +37,7 @@ local function GamepassSlideshow(props: GamepassSlideshowProps)
 				icon = string.format("rbxassetid://%d", productInfo.IconImageAssetId),
 				slideName = productInfo.Name,
 				price = productInfo.PriceInRobux,
-				description = string.format("Buy %s for %d Robux", productInfo.Name, productInfo.PriceInRobux),
+				description = string.format("Buy %s for %d Robux", productInfo.Name, productInfo.PriceInRobux or 0),
 			})
 		end
 	end

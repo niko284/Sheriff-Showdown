@@ -15,4 +15,7 @@ return {
 	function(old)
 		return Freeze.Dictionary.set(old, "Settings", {})
 	end,
+	function(old)
+		return Freeze.Dictionary.set(old, "ProcessingTrades", {})
+	end,
 }

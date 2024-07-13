@@ -244,7 +244,7 @@ function TradingService:AddItemToTrade(ItemUUID: string, TradeUUID: string, Play
 	local itemInfo = ItemUtils.GetItemInfoFromId(item.Id) :: Types.ItemInfo
 	local itemTypeInfo = ItemTypes[itemInfo.Type] :: Types.ItemTypeInfo
 	-- Check if the item is allowed to be traded.
-	if itemTypeInfo.CanTrade == false then
+	if itemTypeInfo.CanTrade == false or itemInfo.CanTrade == false then
 		return {
 			Success = false,
 			Message = "Item cannot be traded.",
@@ -441,7 +441,7 @@ function TradingService:AcceptTrade(TradeUUID: string, Player: Player): Types.Ne
 			Message = "Trade already accepted",
 		}
 	end
-	if Trade.CooldownEnd and Trade.CooldownEnd > math.floor(workspace:GetServerTimeNow()) then
+	if Trade.CooldownEnd and Trade.CooldownEnd > os.time() then
 		return {
 			Success = false,
 			Message = "Trade is on cooldown",
@@ -610,11 +610,11 @@ function TradingService:GrantProcessingTrades(Player: Player, TradeUUIDs: { stri
 			local receiving = processingTrade.Receiving
 
 			for _, item in giving do
-				InventoryService:RemoveItem(Player, item)
+				InventoryService:RemoveItem(Player, item, false)
 			end
 
 			for _, item in receiving do
-				InventoryService:AddItem(Player, item)
+				InventoryService:AddItem(Player, item, false)
 			end
 
 			table.remove(ProcessingTradesNew, index) -- after giving the player their items, we remove the trade from their processing trades.

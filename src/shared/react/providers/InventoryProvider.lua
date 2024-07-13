@@ -34,11 +34,46 @@ local function InventoryProvider(props)
 			local newStorage = table.clone(newInventory.Storage)
 			table.insert(newStorage, item)
 			newInventory.Storage = newStorage
+			print(newInventory.Storage)
+			setInventory(newInventory)
+		end)
+		local itemRemoved = InventoryController.ItemRemoved:Connect(function(item)
+			local newInventory = table.clone(inventory)
+
+			local storageOrEquipped = nil
+			for _, itemStorage in newInventory.Storage do
+				if itemStorage.UUID == item.UUID then
+					storageOrEquipped = "Storage"
+					break
+				end
+			end
+
+			if storageOrEquipped == nil then
+				for _, itemEquipped in newInventory.Equipped do
+					if itemEquipped.UUID == item.UUID then
+						storageOrEquipped = "Equipped"
+						break
+					end
+				end
+			end
+
+			if storageOrEquipped then
+				local newStorage = table.clone(newInventory[storageOrEquipped])
+				for i, itemStorage in ipairs(newStorage) do
+					if itemStorage.UUID == item.UUID then
+						table.remove(newStorage, i)
+						break
+					end
+				end
+				newInventory[storageOrEquipped] = newStorage
+			end
+
 			setInventory(newInventory)
 		end)
 		return function()
 			connection:Disconnect()
 			itemAdded:Disconnect()
+			itemRemoved:Disconnect()
 		end
 	end, { inventory })
 

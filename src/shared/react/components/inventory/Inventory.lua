@@ -11,9 +11,12 @@ local Hooks = ReplicatedStorage.react.hooks
 local Controllers = LocalPlayer.PlayerScripts.controllers
 
 local AutomaticScrollingFrame = require(Components.frames.AutomaticScrollingFrame)
+local Button = require(Components.buttons.Button)
 local CloseButton = require(Components.buttons.CloseButton)
+local Dropdown = require(Components.frames.Dropdown)
 local InterfaceController = require(Controllers.InterfaceController)
 local InventoryContext = require(Contexts.InventoryContext)
+local InventoryController = require(Controllers.InventoryController)
 local InventoryUtils = require(Utils.InventoryUtils)
 local ItemDisplay = require(Components.inventory.ItemDisplay)
 local ItemTemplate = require(Components.items.Item)
@@ -25,6 +28,7 @@ local Searchbar = require(Components.other.Searchbar)
 local Separator = require(Components.other.Separator)
 local StringUtils = require(Utils.StringUtils)
 local TradeContext = require(Contexts.TradeContext)
+local TradeUtils = require(Utils.TradeUtils)
 local Types = require(ReplicatedStorage.constants.Types)
 local animateCurrentInterface = require(Hooks.animateCurrentInterface)
 local createNextOrder = require(Hooks.createNextOrder)
@@ -45,25 +49,43 @@ local function Inventory(_props: InventoryProps)
 	local selectedUUID, setSelectedUUID = useState(nil)
 	local searchQuery, setSearchQuery = useState("")
 	local expandedGrid, setExpandedGrid = useState(false)
+	local sortOption, setSortOption = useState(function()
+		return InventoryController.SortOptions[1]
+	end)
 
 	local _shouldRender, styles =
 		animateCurrentInterface("Inventory", UDim2.fromScale(0.5, 0.5), UDim2.fromScale(0.5, 2))
 
-	local isTradeMode = tradeState and tradeState.isInInventory == true or false
+	local isTradeMode = tradeState and tradeState.currentTrade ~= nil
 	local selectedItem = inventory and selectedUUID and InventoryUtils.GetItemOfUUID(inventory, selectedUUID)
 
 	local selectedItemInfo: Types.ItemInfo? = if selectedItem then ItemUtils.GetItemInfoFromId(selectedItem.Id) else nil
 
+	local equippedItems = table.clone(inventory and inventory.Equipped or {})
+	local storageItems = table.clone(inventory and inventory.Storage or {})
+
+	-- sort the items based on the selected sort option
+	table.sort(equippedItems, InventoryController.Sorters[sortOption])
+	table.sort(storageItems, InventoryController.Sorters[sortOption])
+
 	local itemElements = {}
 	if inventory then
 		-- show the equipped items first
-		for _, item in inventory.Equipped do
+		for _, item in equippedItems do
 			local itemInfo = ItemUtils.GetItemInfoFromId(item.Id)
 			if not StringUtils.MatchesSearch(itemInfo.Name, searchQuery) then
 				continue
 			end
 			local itemTypeInfo = ItemTypes[itemInfo.Type]
-			if isTradeMode and (itemTypeInfo.CanTrade == false or item.Locked == true) then
+			if
+				isTradeMode
+				and (
+					itemTypeInfo.CanTrade == false
+					or item.Locked == true
+					or itemInfo.CanTrade == false
+					or TradeUtils.IsItemInTrade(tradeState.currentTrade :: Types.Trade, item)
+				)
+			then
 				continue
 			end
 			itemElements[item.UUID] = e(ItemTemplate, {
@@ -82,13 +104,21 @@ local function Inventory(_props: InventoryProps)
 		end
 
 		-- then show the storage items
-		for _, item in inventory.Storage do
+		for _, item in storageItems do
 			local itemInfo = ItemUtils.GetItemInfoFromId(item.Id)
 			if not StringUtils.MatchesSearch(itemInfo.Name, searchQuery) then
 				continue
 			end
 			local itemTypeInfo = ItemTypes[itemInfo.Type]
-			if isTradeMode and (itemTypeInfo.CanTrade == false or item.Locked == true) then
+			if
+				isTradeMode
+				and (
+					itemTypeInfo.CanTrade == false
+					or item.Locked == true
+					or itemInfo.CanTrade == false
+					or TradeUtils.IsItemInTrade(tradeState.currentTrade :: Types.Trade, item)
+				)
+			then
 				continue
 			end
 			itemElements[item.UUID] = e(ItemTemplate, {
@@ -266,6 +296,21 @@ local function Inventory(_props: InventoryProps)
 					return not expandedGrid
 				end)
 			end,
+		}),
+
+		sortDropdown = e(Dropdown, {
+			buttonSizeX = 122, -- size in pixels
+			buttonSizeY = 36,
+			paddingTop = 5,
+			selectionElement = Button,
+			selections = InventoryController.SortOptions,
+			anchorPoint = Vector2.new(0.5, 0),
+			onSelection = function(selection: string)
+				setSortOption(selection)
+			end,
+			currentSelection = sortOption,
+			position = UDim2.fromScale(0.832, 0.195),
+			onToggle = function() end,
 		}),
 	})
 end

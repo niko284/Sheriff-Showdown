@@ -29,23 +29,26 @@ local function TradeRequestNotification(props: TradeRequestNotificationProps)
 	local icon = usePlayerThumbnail(props.playerId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48)
 
 	local acceptTradeRequest = useCallback(function()
-		props.removeNotification(props.id)
+		props.closeNotification(props.id)
 		local serializedTradeUUID = UUIDSerde.Serialize(props.tradeUUID)
 		AcceptTradeRequest:CallServerAsync(serializedTradeUUID)
 			:andThen(function(response: Types.NetworkResponse)
-				--print(response)
+				if response.Success == false then
+					warn(response.Message)
+				end
 			end)
 			:catch(function(err)
 				warn(tostring(err))
 			end)
-	end, { props.removeNotification, props.id, props.tradeUUID } :: { any })
+	end, { props.closeNotification, props.id, props.tradeUUID } :: { any })
 	local declineTradeRequest = useCallback(function() end, {})
 
 	return e(NotificationElement, {
 		title = props.title,
 		description = props.description,
 		removeNotification = props.removeNotification,
-		onFade = props.onFade,
+		closeNotification = props.closeNotification,
+		onFade = declineTradeRequest,
 		creationTime = props.creationTime,
 		onDismiss = props.onDismiss,
 		id = props.id,

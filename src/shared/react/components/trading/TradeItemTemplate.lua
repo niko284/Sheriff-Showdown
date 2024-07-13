@@ -60,9 +60,6 @@ local function TradeItemTemplate(props: TradeItemTemplateProps)
 	end, { props.item, tradeState } :: { any })
 
 	local openTradeInventory = useCallback(function()
-		local newTradeState = table.clone(tradeState)
-		newTradeState.isInInventory = true
-		TradingController.TradeStateChanged:Fire(newTradeState)
 		InterfaceController.InterfaceChanged:Fire("Inventory")
 	end, { tradeState } :: { any })
 

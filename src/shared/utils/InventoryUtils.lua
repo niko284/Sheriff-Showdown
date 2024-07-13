@@ -224,6 +224,57 @@ function InventoryUtils.GetItemsOfType(
 	return filteredItems
 end
 
+function InventoryUtils.RemoveItems(Inventory: Types.PlayerInventory, Items: { Types.Item })
+	local newInventory = table.clone(Inventory)
+	local newStorage = table.clone(newInventory.Storage)
+	local newEquipped = table.clone(newInventory.Equipped)
+
+	for _, Item in ipairs(Items) do
+		local indexToRemove = nil
+		local storageOrEquipped = nil
+
+		for index, item in ipairs(newStorage) do
+			if item.UUID == Item.UUID then
+				indexToRemove = index
+				storageOrEquipped = newStorage
+				break
+			end
+		end
+
+		if not indexToRemove then
+			for index, item in ipairs(newEquipped) do
+				if item.UUID == Item.UUID then
+					indexToRemove = index
+					storageOrEquipped = newEquipped
+					break
+				end
+			end
+		end
+
+		if indexToRemove then
+			table.remove(storageOrEquipped, indexToRemove)
+		end
+	end
+
+	newInventory.Storage = newStorage
+	newInventory.Equipped = newEquipped
+
+	return newInventory
+end
+
+function InventoryUtils.AddItems(Inventory: Types.PlayerInventory, Items: { Types.Item })
+	local newInventory = table.clone(Inventory)
+	local newStorage = table.clone(newInventory.Storage)
+
+	for _, Item in ipairs(Items) do
+		table.insert(newStorage, Item)
+	end
+
+	newInventory.Storage = newStorage
+
+	return newInventory
+end
+
 function InventoryUtils.IsEquipped(Inventory: Types.PlayerInventory, ItemUUID: string): boolean
 	for _, Item in ipairs(Inventory.Equipped) do
 		if Item.UUID == ItemUUID then

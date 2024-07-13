@@ -152,7 +152,7 @@ local function Voting(_props: VotingProps)
 
 			closeButton = e(CloseButton, {
 				position = UDim2.fromOffset(793, 35),
-				size = UDim2.fromOffset(19, 19),
+				size = UDim2.fromOffset(42, 42),
 				zIndex = 2,
 				onActivated = function()
 					InterfaceController.InterfaceChanged:Fire(nil)

@@ -21,10 +21,10 @@ return {
 		Name = "River",
 		Image = 16860487532,
 	},
-	{
+	--[[{
 		Name = "Office",
 		Image = 16882548991,
-	},
+	},--]]
 	{
 		Name = "Bridge",
 		Image = 17335342026,

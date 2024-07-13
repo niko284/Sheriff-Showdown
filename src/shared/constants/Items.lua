@@ -13,6 +13,7 @@ local Items: { Types.ItemInfo } = {
 			BulletSpeed = 100,
 			BulletSoundId = 130113322,
 		},
+		Default = true,
 	},
 	{
 		Id = 2,
@@ -24,6 +25,7 @@ local Items: { Types.ItemInfo } = {
 			BulletSoundId = 1905367471,
 		},
 		Default = true,
+		CanTrade = false, -- some guns can't be traded even if they're of an item type that can be traded (like your default gun)
 	},
 	{
 		Id = 3,
@@ -31,6 +33,7 @@ local Items: { Types.ItemInfo } = {
 		Type = "Gun",
 		Rarity = "Exotic",
 		Image = 16410415588,
+		Default = true,
 	},
 	{
 		Id = 4,
@@ -41,6 +44,7 @@ local Items: { Types.ItemInfo } = {
 		GunStatisticalData = {
 			BulletSoundId = 30324676,
 		},
+		Default = true,
 	},
 	{
 		Id = 5,
@@ -55,6 +59,7 @@ local Items: { Types.ItemInfo } = {
 		Name = "Luger",
 		Type = "Gun",
 		Style = "OneHandedDefault",
+		Default = true,
 		Image = 16413371255,
 		Rarity = "Basic",
 	},
@@ -77,6 +82,7 @@ local Items: { Types.ItemInfo } = {
 		Style = "OneHandedDefault",
 		Rarity = "Legendary",
 		Image = 16413168391,
+		Default = true,
 		Featured = true,
 	},
 	{
@@ -92,6 +98,7 @@ local Items: { Types.ItemInfo } = {
 		Name = "Line",
 		Type = "Gun",
 		Style = "OneHandedDefault",
+		Default = true,
 		Rarity = "Epic",
 		Image = 16413207175,
 	},

@@ -109,6 +109,8 @@ local function TradeResults(_props: TradeResultsProps)
 				HorizontalAlignment = Enum.HorizontalAlignment.Center,
 				SortOrder = Enum.SortOrder.LayoutOrder,
 				VerticalAlignment = Enum.VerticalAlignment.Center,
+				FillDirection = Enum.FillDirection.Horizontal,
+				Padding = UDim.new(0, 10),
 			}),
 
 			items = e(React.Fragment, nil, receivedItemElements :: any),
@@ -187,8 +189,8 @@ local function TradeResults(_props: TradeResultsProps)
 			onActivated = function()
 				InterfaceController.InterfaceChanged:Fire(nil)
 				local newTradeState = table.clone(tradeState)
-				tradeState.showTradeSideButton = false
-				tradeState.currentTrade = nil
+				newTradeState.showTradeSideButton = false
+				newTradeState.currentTrade = nil
 				TradingController.TradeStateChanged:Fire(newTradeState)
 			end,
 		}),

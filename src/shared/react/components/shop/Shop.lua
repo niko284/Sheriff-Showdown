@@ -91,7 +91,7 @@ local function Shop(_props: ShopProps)
 			layoutOrder = categoryInfo.LayoutOrder,
 			applyStrokeMode = Enum.ApplyStrokeMode.Border,
 			strokeColor = Color3.fromRGB(255, 255, 255),
-			strokeThickness = 0.5,
+			strokeThickness = 1,
 			size = UDim2.fromOffset(105, 42),
 			gradientRotation = -90,
 			onActivated = function()

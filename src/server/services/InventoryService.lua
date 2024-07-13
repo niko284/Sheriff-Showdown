@@ -44,7 +44,6 @@ function InventoryService:OnInit()
 		local data = Document:read()
 
 		if data.Inventory then
-			print("Setting for")
 			PlayerInventoryProperty:SetFor(Player, data.Inventory)
 		end
 	end)
@@ -90,7 +89,7 @@ function InventoryService:GrantDefaults(Player: Player, Document: Lapis.Document
 			local isDefault = if typeof(ItemInfo.Default) == "function"
 				then ItemInfo.Default(Player)
 				else ItemInfo.Default
-			if isDefault == false then
+			if isDefault ~= true then
 				continue
 			end
 			ItemService:GenerateItem(ItemInfo.Id)

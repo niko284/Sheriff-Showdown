@@ -42,6 +42,7 @@ local function OptionButton(props: OptionButtonProps)
 		stroke = e("UIStroke", {
 			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 			Color = Color3.fromRGB(255, 255, 255),
+			Thickness = 1.1,
 		}),
 
 		image = e("ImageLabel", {
