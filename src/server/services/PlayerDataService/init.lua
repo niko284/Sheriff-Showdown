@@ -37,6 +37,19 @@ local PlayerDataCollection = Lapis.createCollection(collectionName, {
 			Receiving = t.array(t.any),
 			TradeUUID = t.string,
 		})),
+		Achievements = t.strictInterface({
+			LastDailyRotation = t.number,
+			ActiveAchievements = t.array(t.strictInterface({
+				Id = t.numberPositive,
+				TimesClaimed = t.numberMin(0),
+				UUID = t.string,
+				Claimed = t.boolean,
+				Requirements = t.array(t.strictInterface({
+					Progress = t.numberMin(0),
+					Goal = t.numberMin(1), -- don't want to divide by 0
+				})),
+			})),
+		}),
 	}),
 	migrations = Migrations,
 })

@@ -18,4 +18,10 @@ return {
 	function(old)
 		return Freeze.Dictionary.set(old, "ProcessingTrades", {})
 	end,
+	function(old)
+		return Freeze.Dictionary.set(old, "Achievements", {
+			LastDailyRotation = -1,
+			ActiveAchievements = {},
+		})
+	end,
 }

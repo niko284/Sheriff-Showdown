@@ -18,6 +18,10 @@ return {
 		Level = 1,
 		Experience = 0,
 	},
+	Achievements = {
+		LastDailyRotation = -1,
+		ActiveAchievements = {},
+	},
 	CodesRedeemed = {}, -- string[]
 	Statistics = {},
 	Settings = {},

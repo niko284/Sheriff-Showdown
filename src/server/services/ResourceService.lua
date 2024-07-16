@@ -35,6 +35,14 @@ function ResourceService:SetResource(Player: Player, Resource: string, Value: an
 	PlayerResourcesProperty:SetFor(Player, newData.Resources)
 end
 
+function ResourceService:IncrementResource(Player: Player, Resource: string, Amount: number): ()
+	local document = PlayerDataService:GetDocument(Player)
+	local newData = table.clone(document:read())
+	newData.Resources = Sift.Dictionary.set(newData.Resources, Resource, (newData.Resources[Resource] or 0) + Amount)
+	document:write(newData)
+	PlayerResourcesProperty:SetFor(Player, newData.Resources)
+end
+
 function ResourceService:GetResource(Player: Player, Resource: string): any
 	local document = PlayerDataService:GetDocument(Player)
 	local data = document:read()

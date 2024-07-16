@@ -57,12 +57,20 @@ export type PlayerResources = {
 	Level: number,
 	Experience: number,
 }
+export type PlayerStatistics = {}
+export type PlayerAchievements = {
+	LastDailyRotation: number,
+	ActiveAchievements: { Achievement },
+}
+
 export type DataSchema = {
 	Inventory: PlayerInventory,
 	Resources: PlayerResources,
 	CodesRedeemed: { string },
 	Settings: PlayerDataSettings,
 	ProcessingTrades: { ProcessingTrade },
+	Statistics: PlayerStatistics,
+	Achievements: PlayerAchievements,
 }
 
 -- >> Leaderboard Types
@@ -217,6 +225,7 @@ export type Interface =
 	| "Trading"
 	| "ActiveTrade"
 	| "TradeProcessed"
+	| "Achievements"
 
 export type ProductInfo = {
 	Name: string,
@@ -360,6 +369,50 @@ export type NotificationElementPropsGeneric = {
 	clickToDismiss: boolean,
 	description: string,
 	isActive: boolean,
+}
+
+export type AchievementReward = {
+	Type: "Currency" | "Item" | "Badge",
+	Currency: Currency,
+	BadgeId: number,
+	Amount: number | (claimCount: number) -> number,
+}
+
+export type AchievementType = "Progressive" | "Daily" | "Event"
+export type AchievementRequirementAction = "Resource" | "Statistic" | "Custom"
+
+export type AchievementRequirementInfo = {
+	BaseName: string,
+	Action: AchievementRequirementAction,
+	Resource: string?,
+	Statistic: string?,
+	Increment: number? | ((number) -> number)?,
+	UseDelta: number?, -- do we take the difference between the current value and the previous value as our increment?
+	Progress: number?,
+	Goal: number,
+	Maximum: number?,
+	ResetProgressOnIncrement: boolean?,
+	StrokeColor: Color3?,
+}
+export type AchievementInfo = {
+	Id: number,
+	Type: AchievementType,
+	ExpirationTime: number?,
+	Requirements: { AchievementRequirementInfo },
+	Rewards: { AchievementReward },
+	Deprecated: boolean?,
+}
+
+export type AchievementRequirement = {
+	Progress: number, -- How much progress we have made towards our goal?
+	Goal: number, -- How much progress we need to make to complete our goal?
+}
+export type Achievement = {
+	Id: number,
+	TimesClaimed: number,
+	UUID: string,
+	Claimed: boolean, -- Was our achievement claimed?
+	Requirements: { AchievementRequirement }, -- Our requirements
 }
 
 return nil
