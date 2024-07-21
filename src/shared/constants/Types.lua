@@ -374,7 +374,7 @@ export type NotificationElementPropsGeneric = {
 export type AchievementReward = {
 	Type: "Currency" | "Item" | "Badge",
 	Currency: Currency,
-	BadgeId: number,
+	BadgeId: number?, -- only used if we're giving a badge as a reward
 	Amount: number | (claimCount: number) -> number,
 }
 
@@ -387,7 +387,7 @@ export type AchievementRequirementInfo = {
 	Resource: string?,
 	Statistic: string?,
 	Increment: number? | ((number) -> number)?,
-	UseDelta: number?, -- do we take the difference between the current value and the previous value as our increment?
+	UseDelta: boolean?, -- do we take the difference between the current value and the previous value as our increment?
 	Progress: number?,
 	Goal: number,
 	Maximum: number?,
@@ -396,7 +396,7 @@ export type AchievementRequirementInfo = {
 }
 export type AchievementInfo = {
 	Id: number,
-	Type: AchievementType,
+	Type: string,
 	ExpirationTime: number?,
 	Requirements: { AchievementRequirementInfo },
 	Rewards: { AchievementReward },

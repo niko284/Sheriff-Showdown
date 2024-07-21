@@ -23,7 +23,9 @@ return {
 		ActiveAchievements = {},
 	},
 	CodesRedeemed = {}, -- string[]
-	Statistics = {},
+	Statistics = {
+		TotalWins = 0,
+	},
 	Settings = {},
 	ProcessingTrades = {},
 } :: Types.DataSchema

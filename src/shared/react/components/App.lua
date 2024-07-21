@@ -10,6 +10,8 @@ local LocalPlayer = Players.LocalPlayer
 
 local Controllers = LocalPlayer.PlayerScripts.controllers
 
+local Achievements = require(Components.achievements.Achievements)
+local AchievementsProvider = require(Providers.AchievementsProvider)
 local AutoUIScale = require(Components.other.AutoUIScale)
 local ContextStack = require(ReplicatedStorage.utils.ContextStack)
 local CurrentInterfaceProvider = require(Providers.CurrentInterfaceProvider)
@@ -55,9 +57,14 @@ local SIDE_BUTTONS = {
 	},
 	Trading = {
 		Image = "rbxassetid://18355952247",
-		LayoutOrder = 4,
+		LayoutOrder = 5,
 		Gradient = ColorSequence.new(Color3.fromRGB(54, 185, 255)),
 		Opacity = 0.11,
+	},
+	Achievements = {
+		Image = "rbxassetid://18592966271",
+		LayoutOrder = 4,
+		Gradient = ColorSequence.new(Color3.fromRGB(255, 223, 46)),
 	},
 }
 
@@ -74,6 +81,7 @@ local function App()
 			e(InventoryProvider),
 			e(CurrentInterfaceProvider),
 			e(SettingsProvider),
+			e(AchievementsProvider),
 			e(ResourceProvider),
 			e(TradeProvider),
 		},
@@ -95,6 +103,7 @@ local function App()
 			distractionViewport = e(DistractionViewport),
 			playerList = e(Playerlist),
 			tradingList = e(TradingPlayerList),
+			achievements = e(Achievements),
 			globalNotifications = e(NotificationManager, {
 				componentSize = UDim2.fromOffset(345, 81),
 				position = UDim2.fromScale(0.99, 0.985),

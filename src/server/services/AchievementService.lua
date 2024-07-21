@@ -46,7 +46,7 @@ local AchievementService = {
 
 -- // Functions \\
 
-function AchievementService:Init()
+function AchievementService:OnInit()
 	-- Let's tag each achievement with it's respective ID.
 	-- selene: allow(undefined_variable)
 	for _, Achievement in Achievements do
@@ -65,7 +65,7 @@ function AchievementService:Init()
 	end)
 end
 
-function AchievementService:Start()
+function AchievementService:OnStart()
 	PlayerDataService.DocumentLoaded:Connect(function(Player: Player, PlayerDocument)
 		-- Fill in progressive achievements.
 		for _, AchievementInfo: Types.AchievementInfo in AchievementService.Achievements do
@@ -92,8 +92,6 @@ function AchievementService:Start()
 								return {
 									Progress = AchievementService:GetCurrentProgress(Player, Requirement),
 									Goal = Requirement.Goal,
-									Completed = AchievementService:GetCurrentProgress(Player, Requirement)
-										>= Requirement.Goal,
 								}
 							end),
 							TimesClaimed = 0,
@@ -186,6 +184,7 @@ function AchievementService:Start()
 			end
 		end
 
+		print(playerAchievements)
 		PlayerDocument:write(Freeze.Dictionary.setIn(PlayerDocument:read(), { "Achievements" }, playerAchievements))
 
 		-- Update progress for all achievements.
@@ -496,7 +495,6 @@ function AchievementService:GenerateRandomAchievements(
 					return {
 						Progress = AchievementService:GetCurrentProgress(Player, Requirement),
 						Goal = Requirement.Goal,
-						Completed = AchievementService:GetCurrentProgress(Player, Requirement) >= Requirement.Goal,
 					}
 				end
 			),

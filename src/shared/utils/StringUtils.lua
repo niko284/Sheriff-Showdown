@@ -40,4 +40,32 @@ function StringUtils.MatchesSearch(Word: string, SearchPattern: string): boolean
 	return patternLength > 0 and strLength > 0 and (patternIndex - 1) == patternLength
 end
 
+function StringUtils.RichTextToNormal(RichTextString: string): string?
+	return RichTextString:match("<.*>(.*)<.*>")
+end
+
+function StringUtils.SecondsToDHMS(Seconds: number): string
+	local Days = math.floor(Seconds / 86400)
+	local Hours = math.floor((Seconds % 86400) / 3600)
+	local Minutes = math.floor(((Seconds % 86400) % 3600) / 60)
+	local secs = math.floor(((Seconds % 86400) % 3600) % 60)
+	return string.format("%02d:%02d:%02d:%02d", Days, Hours, Minutes, secs)
+end
+
+function StringUtils.SecondsToHMS(Seconds: number): string
+	local Hours = math.floor(Seconds / 3600)
+	local Minutes = math.floor((Seconds % 3600) / 60)
+	local secs = math.floor((Seconds % 3600) % 60)
+	return string.format("%02d:%02d:%02d", Hours, Minutes, secs)
+end
+
+function StringUtils.MapSecondsToStringTime(Seconds: number): string
+	local DaysInSeconds = Seconds / 86400
+	if DaysInSeconds >= 1 then
+		return StringUtils.SecondsToDHMS(Seconds)
+	else
+		return StringUtils.SecondsToHMS(Seconds)
+	end
+end
+
 return StringUtils

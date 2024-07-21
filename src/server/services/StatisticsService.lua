@@ -30,10 +30,15 @@ local StatisticsService = {
 
 -- // Functions \\
 
-function StatisticsService:Init()
+function StatisticsService:OnInit()
 	for StatisticName, _ in pairs(ProfileSchema.Statistics) do
 		StatisticsService.StatisticSignals[StatisticName] = Signal.new()
 	end
+
+	table.insert(PlayerDataService.BeforeDocumentCloseCallbacks, function(Player: Player)
+		StatisticsService:SavePlayTime(Player)
+	end)
+
 	PlayerDataService.DocumentLoaded:Connect(function(Player: Player, PlayerDocument)
 		local playerData = PlayerDocument:read()
 
@@ -42,10 +47,6 @@ function StatisticsService:Init()
 		for StatisticName, _ in pairs(ProfileSchema.Statistics) do
 			StatisticsService.StatisticSignals[StatisticName]:Fire(Player, Statistics[StatisticName])
 		end
-
-		PlayerDocument:beforeClose(function()
-			StatisticsService:SavePlayTime(Player)
-		end)
 
 		StatisticsService.PlayerStatistics:SetFor(Player, Statistics) -- Set the statistics for the player on initial join
 	end)
@@ -129,8 +130,8 @@ function StatisticsService:IncrementStatistic(
 	shouldSendNetworkEvent: boolean?
 )
 	local PlayerStatistics = StatisticsService:GetStatistics(Player)
-	local oldValue = PlayerStatistics[StatisticName]
-	local newValue = (PlayerStatistics[StatisticName] :: number) + Increment
+	local oldValue: number? = PlayerStatistics[StatisticName]
+	local newValue = (oldValue or 0) + Increment
 
 	local playerDocument = PlayerDataService:GetDocument(Player)
 	local playerData = playerDocument:read()

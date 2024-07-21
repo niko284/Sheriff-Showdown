@@ -12,20 +12,47 @@ local Hooks = ReplicatedStorage.react.hooks
 local AchievementController = require(PlayerScripts.controllers.AchievementController)
 local AchievementDisplay = require(Components.achievements.AchievementDisplay)
 local AchievementTemplate = require(Components.achievements.AchievementTemplate)
+local AchievementUtils = require(ReplicatedStorage.utils.AchievementUtils)
 local AchievementsContext = require(Contexts.AchievementsContext)
+local AutomaticScrollingFrame = require(Components.frames.AutomaticScrollingFrame)
+local Button = require(Components.buttons.Button)
 local CloseButton = require(Components.buttons.CloseButton)
+local InterfaceController = require(PlayerScripts.controllers.InterfaceController)
 local React = require(ReplicatedStorage.packages.React)
+local StringUtils = require(ReplicatedStorage.utils.StringUtils)
+local Timer = require(ReplicatedStorage.packages.Timer)
 local animateCurrentInterface = require(Hooks.animateCurrentInterface)
 
 local useContext = React.useContext
 local e = React.createElement
 local useCallback = React.useCallback
+local useBinding = React.useBinding
 local useState = React.useState
+local useEffect = React.useEffect
+
+type AchievementCategory = "Daily" | "Main" | "Event"
+type AchievementCategoryData = {
+	LayoutOrder: number,
+}
+
+local ACHIEVEMENT_CATEGORIES = {
+	Daily = {
+		LayoutOrder = 1,
+	},
+	Main = {
+		LayoutOrder = 2,
+	},
+	Event = {
+		LayoutOrder = 3,
+	},
+} :: { [AchievementCategory]: AchievementCategoryData }
 
 type AchievementProps = {}
 
-local function Achievements(props: AchievementProps)
+local function Achievements(_props: AchievementProps)
 	local achievementsState = useContext(AchievementsContext)
+	local currentCategory, setCurrentCategory = useState("Daily" :: AchievementCategory)
+	local timeTillRotation, setTimeTillRotation = useBinding(0)
 
 	local selectedAchievementUUID, setSelectedAchievementUUID = useState(nil :: string?)
 	local _shouldRender, styles =
@@ -35,9 +62,13 @@ local function Achievements(props: AchievementProps)
 		setSelectedAchievementUUID(uuid)
 	end, {})
 
-	local achievementElements = {}
+	local achievementElements = {} :: { [string]: any }
 
 	for _, achievement in achievementsState.ActiveAchievements do
+		local achievementInfo = AchievementUtils.GetAchievementInfoFromId(achievement.Id)
+		if not achievementInfo or achievementInfo.Type ~= currentCategory then
+			continue
+		end
 		local requirement = achievement.Requirements[1] -- we only support one requirement for now
 		achievementElements[achievement.UUID] = e(AchievementTemplate, {
 			goal = requirement.Goal,
@@ -47,6 +78,67 @@ local function Achievements(props: AchievementProps)
 			onActivated = changeSelectedAchievement,
 		})
 	end
+
+	local selectedAchievement = selectedAchievementUUID
+		and AchievementUtils.GetAchievementByUUID(achievementsState.ActiveAchievements, selectedAchievementUUID)
+
+	local categoryButtonElements = {} :: { [string]: any }
+	for categoryName, categoryInfo in pairs(ACHIEVEMENT_CATEGORIES) do
+		categoryButtonElements[categoryName] = e(Button, {
+			text = categoryName,
+			textColor3 = if currentCategory == categoryName
+				then Color3.fromRGB(255, 255, 255)
+				else Color3.fromRGB(30, 30, 30),
+			gradient = if currentCategory == categoryName
+				then ColorSequence.new({
+					ColorSequenceKeypoint.new(0, Color3.fromRGB(134, 134, 134)),
+					ColorSequenceKeypoint.new(0.0328, Color3.fromRGB(172, 172, 172)),
+					ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255)),
+				})
+				else ColorSequence.new(Color3.fromRGB(255, 255, 255)),
+			backgroundColor3 = if currentCategory == categoryName
+				then Color3.fromRGB(72, 72, 72)
+				else Color3.fromRGB(255, 255, 255),
+			cornerRadius = UDim.new(0, 5),
+			textSize = 16,
+			fontFace = Font.new(
+				"rbxasset://fonts/families/GothamSSm.json",
+				Enum.FontWeight.Bold,
+				Enum.FontStyle.Normal
+			),
+			layoutOrder = categoryInfo.LayoutOrder,
+			applyStrokeMode = Enum.ApplyStrokeMode.Border,
+			strokeColor = Color3.fromRGB(255, 255, 255),
+			strokeThickness = 1,
+			size = UDim2.fromOffset(105, 42),
+			gradientRotation = -90,
+			onActivated = function()
+				setCurrentCategory(categoryName)
+			end,
+		})
+	end
+
+	useEffect(function()
+		local rotationTimer = nil
+		if achievementsState and achievementsState.LastDailyRotation then
+			rotationTimer = Timer.new(1)
+			rotationTimer.Tick:Connect(function()
+				local timeLeft = achievementsState.LastDailyRotation + 86400 - os.time()
+				if timeLeft > 0 then
+					setTimeTillRotation(timeLeft)
+				else
+					rotationTimer:Destroy()
+					rotationTimer = nil
+				end
+			end)
+			rotationTimer:StartNow()
+		end
+		return function()
+			if rotationTimer then
+				rotationTimer:Destroy()
+			end
+		end
+	end, { achievementsState })
 
 	return e("ImageLabel", {
 		Image = "rbxassetid://18442700149",
@@ -95,18 +187,12 @@ local function Achievements(props: AchievementProps)
 				Size = UDim2.fromOffset(27, 27),
 			}),
 
-			closeButton = e("ImageLabel", {
-				Image = "rbxassetid://18442724763",
-				BackgroundTransparency = 1,
-				Position = UDim2.fromOffset(781, 23),
-				Size = UDim2.fromOffset(43, 43),
-			}, {
-				closeIcon = e("ImageLabel", {
-					Image = "rbxassetid://18442724970",
-					BackgroundTransparency = 1,
-					Position = UDim2.fromOffset(12, 12),
-					Size = UDim2.fromOffset(19, 19),
-				}),
+			close = e(CloseButton, {
+				size = UDim2.fromOffset(43, 43),
+				position = UDim2.fromScale(0.946, 0.517),
+				onActivated = function()
+					InterfaceController.InterfaceChanged:Fire(nil)
+				end,
 			}),
 		}),
 
@@ -151,7 +237,9 @@ local function Achievements(props: AchievementProps)
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-				Text = "12:53:14",
+				Text = timeTillRotation:map(function(timeTillRotate: number)
+					return StringUtils.MapSecondsToStringTime(timeTillRotate)
+				end),
 				TextColor3 = Color3.fromRGB(255, 255, 255),
 				TextSize = 16,
 				TextXAlignment = Enum.TextXAlignment.Left,
@@ -189,119 +277,42 @@ local function Achievements(props: AchievementProps)
 			Position = UDim2.fromScale(0.0259, 0.184),
 			Size = UDim2.fromOffset(421, 56),
 		}, {
-			dailyButton = e("ImageLabel", {
-				Image = "rbxassetid://18442725086",
-				BackgroundTransparency = 1,
-				Position = UDim2.fromOffset(22, 118),
-				Size = UDim2.fromOffset(106, 43),
-			}, {
-				daily = e("TextLabel", {
-					FontFace = Font.new(
-						"rbxasset://fonts/families/GothamSSm.json",
-						Enum.FontWeight.Bold,
-						Enum.FontStyle.Normal
-					),
-					Text = "Daily",
-					TextColor3 = Color3.fromRGB(255, 255, 255),
-					TextSize = 16,
-					TextXAlignment = Enum.TextXAlignment.Left,
-					BackgroundTransparency = 1,
-					Position = UDim2.fromOffset(34, 15),
-					Size = UDim2.fromOffset(42, 17),
-				}),
-			}),
-
-			uIListLayout = e("UIListLayout", {
+			listLayout = e("UIListLayout", {
 				Padding = UDim.new(0, 8),
 				FillDirection = Enum.FillDirection.Horizontal,
 				SortOrder = Enum.SortOrder.LayoutOrder,
 				VerticalAlignment = Enum.VerticalAlignment.Center,
 			}),
+
+			categoryButtonList = e(React.Fragment, nil, categoryButtonElements),
 		}),
 
-		scrolling = e("ScrollingFrame", {
-			ScrollBarThickness = 8,
-			Active = true,
-			BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-			BackgroundTransparency = 1,
-			BorderColor3 = Color3.fromRGB(0, 0, 0),
-			BorderSizePixel = 0,
-			Position = UDim2.fromScale(0.0259, 0.404),
-			Size = UDim2.fromOffset(534, 339),
+		scrolling = e(AutomaticScrollingFrame, {
+			scrollBarThickness = 8,
+			active = true,
+			backgroundTransparency = 1,
+			position = UDim2.fromScale(0.0259, 0.404),
+			size = UDim2.fromOffset(534, 339),
 		}, {
-			uIGridLayout = e("UIGridLayout", {
+			gridLayout = e("UIGridLayout", {
 				CellPadding = UDim2.fromOffset(15, 15),
 				CellSize = UDim2.fromOffset(155, 155),
 				SortOrder = Enum.SortOrder.LayoutOrder,
 			}),
 
-			uIPadding = e("UIPadding", {
+			padding = e("UIPadding", {
 				PaddingLeft = UDim.new(0, 5),
 				PaddingTop = UDim.new(0, 5),
 			}),
 
-			achievementTemplate = e("Frame", {
-				BackgroundColor3 = Color3.fromRGB(72, 72, 72),
-				BorderColor3 = Color3.fromRGB(0, 0, 0),
-				BorderSizePixel = 0,
-				Size = UDim2.fromOffset(100, 100),
-			}, {
-				uICorner = e("UICorner", {
-					CornerRadius = UDim.new(0, 5),
-				}),
-
-				description = e("TextLabel", {
-					FontFace = Font.new(
-						"rbxasset://fonts/families/GothamSSm.json",
-						Enum.FontWeight.Medium,
-						Enum.FontStyle.Normal
-					),
-					Text = "Description goes \rhere",
-					TextColor3 = Color3.fromRGB(255, 255, 255),
-					TextSize = 11,
-					TextXAlignment = Enum.TextXAlignment.Left,
-					BackgroundTransparency = 1,
-					Position = UDim2.fromScale(0.0979, 0.713),
-					Size = UDim2.fromScale(0.657, 0.161),
-				}),
-
-				name = e("TextLabel", {
-					FontFace = Font.new(
-						"rbxasset://fonts/families/GothamSSm.json",
-						Enum.FontWeight.Bold,
-						Enum.FontStyle.Normal
-					),
-					Text = "Name Of it",
-					TextColor3 = Color3.fromRGB(255, 255, 255),
-					TextSize = 13,
-					TextXAlignment = Enum.TextXAlignment.Left,
-					BackgroundTransparency = 1,
-					Position = UDim2.fromScale(0.0979, 0.587),
-					Size = UDim2.fromScale(0.51, 0.0839),
-				}),
-
-				progress = e("TextLabel", {
-					FontFace = Font.new(
-						"rbxasset://fonts/families/GothamSSm.json",
-						Enum.FontWeight.Bold,
-						Enum.FontStyle.Normal
-					),
-					Text = "0/100",
-					TextColor3 = Color3.fromRGB(255, 255, 255),
-					TextSize = 13,
-					TextXAlignment = Enum.TextXAlignment.Left,
-					BackgroundTransparency = 1,
-					Position = UDim2.fromScale(0.0909, 0.126),
-					Size = UDim2.fromScale(0.259, 0.0909),
-				}),
-
-				uIStroke = e("UIStroke", {
-					Color = Color3.fromRGB(255, 255, 255),
-				}),
-			}),
+			achievements = e(React.Fragment, nil, achievementElements),
 		}),
 
-		selectedDisplay = e(AchievementDisplay, {}),
+		selectedDisplay = selectedAchievement and e(AchievementDisplay, {
+			goal = selectedAchievement.Requirements[1].Goal,
+			progress = selectedAchievement.Requirements[1].Progress,
+			achievementName = AchievementController:GetRequirementName(selectedAchievement, 1),
+		}),
 	})
 end
 

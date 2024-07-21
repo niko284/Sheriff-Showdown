@@ -20,6 +20,14 @@ return Net.CreateDefinitions({
 		}),
 		VisualizeEffect = Net.Definitions.ServerToClientEvent(),
 	}),
+	Achievements = Net.Definitions.Namespace({
+		ClaimAchievement = Net.Definitions.ServerAsyncFunction({
+			Net.Middleware.TypeChecking(t.string),
+			Deserializer({ UUIDSerde }),
+		}),
+		GetAchievements = Net.Definitions.ServerAsyncFunction(),
+		AchievementsChanged = Net.Definitions.ServerToClientEvent(),
+	}),
 	Round = Net.Definitions.Namespace({
 		StartMatch = Net.Definitions.ServerToClientEvent(),
 		EndMatch = Net.Definitions.ServerToClientEvent(),
