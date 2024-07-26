@@ -45,7 +45,7 @@ local function DropdownTemplate(props: DropdownSettingProps)
 
 		stroke = e("UIStroke", {
 			Color = Color3.fromRGB(255, 255, 255),
-			Thickness = 0.5,
+			Thickness = 1,
 			Transparency = 0.67,
 		}),
 

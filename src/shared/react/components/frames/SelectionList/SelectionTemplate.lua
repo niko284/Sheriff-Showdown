@@ -28,7 +28,7 @@ local function SelectionTemplate(props: SelectionTemplateProps)
 	}, {
 		stroke = e("UIStroke", {
 			Color = Color3.fromRGB(84, 84, 84),
-			Thickness = 0.5,
+			Thickness = 1,
 		}),
 
 		corner = e("UICorner", {

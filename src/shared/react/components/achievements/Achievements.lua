@@ -21,6 +21,7 @@ local InterfaceController = require(PlayerScripts.controllers.InterfaceControlle
 local React = require(ReplicatedStorage.packages.React)
 local StringUtils = require(ReplicatedStorage.utils.StringUtils)
 local Timer = require(ReplicatedStorage.packages.Timer)
+local Types = require(ReplicatedStorage.constants.Types)
 local animateCurrentInterface = require(Hooks.animateCurrentInterface)
 
 local useContext = React.useContext
@@ -30,7 +31,7 @@ local useBinding = React.useBinding
 local useState = React.useState
 local useEffect = React.useEffect
 
-type AchievementCategory = "Daily" | "Main" | "Event"
+type AchievementCategory = "Daily" | "Progressive" | "Event"
 type AchievementCategoryData = {
 	LayoutOrder: number,
 }
@@ -39,7 +40,7 @@ local ACHIEVEMENT_CATEGORIES = {
 	Daily = {
 		LayoutOrder = 1,
 	},
-	Main = {
+	Progressive = {
 		LayoutOrder = 2,
 	},
 	Event = {
@@ -81,6 +82,8 @@ local function Achievements(_props: AchievementProps)
 
 	local selectedAchievement = selectedAchievementUUID
 		and AchievementUtils.GetAchievementByUUID(achievementsState.ActiveAchievements, selectedAchievementUUID)
+	local selectedAchievementInfo = selectedAchievement
+		and AchievementUtils.GetAchievementInfoFromId(selectedAchievement.Id)
 
 	local categoryButtonElements = {} :: { [string]: any }
 	for categoryName, categoryInfo in pairs(ACHIEVEMENT_CATEGORIES) do
@@ -113,6 +116,7 @@ local function Achievements(_props: AchievementProps)
 			size = UDim2.fromOffset(105, 42),
 			gradientRotation = -90,
 			onActivated = function()
+				setSelectedAchievementUUID(nil :: any)
 				setCurrentCategory(categoryName)
 			end,
 		})
@@ -312,6 +316,7 @@ local function Achievements(_props: AchievementProps)
 			goal = selectedAchievement.Requirements[1].Goal,
 			progress = selectedAchievement.Requirements[1].Progress,
 			achievementName = AchievementController:GetRequirementName(selectedAchievement, 1),
+			rewards = (selectedAchievementInfo :: Types.AchievementInfo).Rewards,
 		}),
 	})
 end

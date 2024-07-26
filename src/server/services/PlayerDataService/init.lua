@@ -39,7 +39,7 @@ local PlayerDataCollection = Lapis.createCollection(collectionName, {
 		})),
 		Achievements = t.strictInterface({
 			LastDailyRotation = t.number,
-			ActiveAchievements = t.array(t.strictInterface({
+			ActiveAchievements = t.array(t.interface({
 				Id = t.numberPositive,
 				TimesClaimed = t.numberMin(0),
 				UUID = t.string,

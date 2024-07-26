@@ -3,6 +3,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Comm = require(ReplicatedStorage.packages.Comm)
 local Matter = require(ReplicatedStorage.packages.Matter)
 local React = require(ReplicatedStorage.packages.React)
+local Signal = require(ReplicatedStorage.packages.Signal)
 
 export type ItemRarity = "Basic" | "Rare" | "Epic" | "Legendary" | "Exotic"
 export type ItemType = "Gun" | "Crate"
@@ -374,29 +375,44 @@ export type NotificationElementPropsGeneric = {
 export type AchievementReward = {
 	Type: "Currency" | "Item" | "Badge",
 	Currency: Currency,
+	ItemId: number?, -- only used if we're giving an item as a reward
 	BadgeId: number?, -- only used if we're giving a badge as a reward
 	Amount: number | (claimCount: number) -> number,
 }
 
 export type AchievementType = "Progressive" | "Daily" | "Event"
-export type AchievementRequirementAction = "Resource" | "Statistic" | "Custom"
+export type AchievementRequirementAction = "Resource" | "Statistic" | "Custom" | "Signal"
 
 export type AchievementRequirementInfo = {
 	BaseName: string,
+
 	Action: AchievementRequirementAction,
+	[AchievementRequirementAction]: string | (
+		Achievement
+	) -> string | {
+		SignalInstance: Signal.Signal<...any>,
+		Filter: (Achievement, Player, ...any) -> boolean,
+		Name: string,
+	},
 	Resource: string?,
 	Statistic: string?,
+
+	Signal: { SignalInstance: Signal.Signal<...any>, Filter: (...any) -> boolean, Name: string }?, -- repeat of the above, but so we can index .Signal directly.
+
 	Increment: number? | ((number) -> number)?,
+	ResetProgressOnIncrement: boolean?,
 	UseDelta: boolean?, -- do we take the difference between the current value and the previous value as our increment?
 	Progress: number?,
-	Goal: number,
+	Goal: number | (Achievement) -> number,
 	Maximum: number?,
-	ResetProgressOnIncrement: boolean?,
+
 	StrokeColor: Color3?,
 }
+
 export type AchievementInfo = {
 	Id: number,
 	Type: string,
+	GetUniqueProps: ((Player: Player, PlayerData: DataSchema) -> { [string]: any })?,
 	ExpirationTime: number?,
 	Requirements: { AchievementRequirementInfo },
 	Rewards: { AchievementReward },

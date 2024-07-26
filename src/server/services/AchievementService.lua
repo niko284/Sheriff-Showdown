@@ -14,7 +14,6 @@ local Packages = ReplicatedStorage.packages
 local Constants = ReplicatedStorage.constants
 local Services = ServerScriptService.services
 
-local Achievements = require(Constants.Achievements)
 local Freeze = require(Packages.Freeze)
 local Net = require(Packages.Net)
 local PlayerDataService = require(Services.PlayerDataService)
@@ -26,11 +25,11 @@ local StatisticsService = require(Services.StatisticsService)
 local Timer = require(Packages.Timer)
 local Types = require(Constants.Types)
 
-local AchievementsNamespace = Remotes.Server:GetNamespace("Achievements")
+local AchievementNamespace = Remotes.Server:GetNamespace("Achievements")
 
-local ClaimAchievement = AchievementsNamespace:Get("ClaimAchievement") :: Net.ServerAsyncCallback
-local AchievementsChanged = AchievementsNamespace:Get("AchievementsChanged") :: Net.ServerSenderEvent
-local GetAchievements = AchievementsNamespace:Get("GetAchievements") :: Net.ServerAsyncCallback
+local ClaimAchievement = AchievementNamespace:Get("ClaimAchievement") :: Net.ServerAsyncCallback
+local GetAchievements = AchievementNamespace:Get("GetAchievements") :: Net.ServerAsyncCallback
+local AchievementsChanged = AchievementNamespace:Get("AchievementsChanged") :: Net.ServerSenderEvent
 
 local DAILY_ACHIEVEMENT_COUNT = 5 -- Number of daily achievements to give a player.
 
@@ -49,24 +48,27 @@ local AchievementService = {
 function AchievementService:OnInit()
 	-- Let's tag each achievement with it's respective ID.
 	-- selene: allow(undefined_variable)
-	for _, Achievement in Achievements do
+	local AchievementModule = require(Constants.Achievements)
+	for _, Achievement in AchievementModule do
 		AchievementService.Achievements[Achievement.Id] = Achievement
 	end
+	GetAchievements:SetCallback(function(Player: Player)
+		local PlayerDocument = PlayerDataService:GetDocument(Player)
+		if PlayerDocument then
+			return PlayerDocument:read().Achievements
+		end
+		return nil
+	end)
 	ClaimAchievement:SetCallback(function(Player: Player, AchievementUUID: string)
 		return AchievementService:ClaimAchievementRequest(Player, AchievementUUID)
-	end)
-	GetAchievements:SetCallback(function(Player: Player)
-		local playerDocument = PlayerDataService:GetDocument(Player)
-		if not playerDocument then
-			return nil
-		else
-			return playerDocument:read().Achievements
-		end
 	end)
 end
 
 function AchievementService:OnStart()
-	PlayerDataService.DocumentLoaded:Connect(function(Player: Player, PlayerDocument)
+	PlayerDataService.DocumentLoaded:Connect(function(Player, PlayerDocument)
+		local newplayerAchievements = table.clone(PlayerDocument:read().Achievements)
+		local newActiveAchievements = table.clone(newplayerAchievements.ActiveAchievements)
+
 		-- Fill in progressive achievements.
 		for _, AchievementInfo: Types.AchievementInfo in AchievementService.Achievements do
 			-- If they don't have the progressive achievement, add it.
@@ -79,34 +81,13 @@ function AchievementService:OnStart()
 					continue
 				end
 
-				local data = PlayerDocument:read()
-				PlayerDocument:write(
-					Freeze.Dictionary.setIn(
-						data,
-						{ "Achievements", "ActiveAchievements" },
-						Freeze.List.push(data.Achievements.ActiveAchievements, {
-							Id = AchievementInfo.Id,
-							UUID = HttpService:GenerateGUID(false),
-							Claimed = false,
-							Requirements = Sift.Array.map(AchievementInfo.Requirements, function(Requirement)
-								return {
-									Progress = AchievementService:GetCurrentProgress(Player, Requirement),
-									Goal = Requirement.Goal,
-								}
-							end),
-							TimesClaimed = 0,
-						})
-					)
-				)
+				table.insert(newActiveAchievements, AchievementService:GenerateAchievement(Player, AchievementInfo))
 			elseif
 				AchievementInfo.Type == "Progressive"
 				and AchievementService:HasAchievement(Player, AchievementInfo.Id) == true
 			then
 				local numberOfSameAchievements = 0
-				local newAchievements = table.clone(PlayerDocument:read().Achievements)
-				local newActiveAchievements = table.clone(newAchievements.ActiveAchievements)
-
-				for _, ActiveAchievement in pairs(newActiveAchievements) do
+				for _, ActiveAchievement in newActiveAchievements do
 					if ActiveAchievement.Id == AchievementInfo.Id then
 						numberOfSameAchievements = numberOfSameAchievements + 1
 					end
@@ -114,7 +95,7 @@ function AchievementService:OnStart()
 				-- remove all but one of the same achievements
 				if numberOfSameAchievements > 1 then
 					repeat
-						for index, ActiveAchievement in pairs(newActiveAchievements) do
+						for index, ActiveAchievement in newActiveAchievements do
 							if ActiveAchievement.Id == AchievementInfo.Id then
 								table.remove(newActiveAchievements, index)
 								break
@@ -123,134 +104,162 @@ function AchievementService:OnStart()
 						numberOfSameAchievements = numberOfSameAchievements - 1
 					until numberOfSameAchievements == 1
 				end
-
-				newAchievements.ActiveAchievements = newActiveAchievements
-				PlayerDocument:write(
-					Freeze.Dictionary.setIn(PlayerDocument:read(), { "Achievements" }, newAchievements)
-				)
 			end
 		end
 
 		-- Remove any deprecated or expired achievements.
+		newActiveAchievements = Sift.Array.filter(newActiveAchievements, function(ActiveAchievement: Types.Achievement)
+			local achievementInfo = AchievementService:GetAchievementFromId(ActiveAchievement.Id)
 
-		local playerAchievements = PlayerDocument:read().Achievements
+			if not achievementInfo then
+				return false
+			end
 
-		PlayerDocument:write(
-			Freeze.Dictionary.setIn(
-				PlayerDocument:read(),
-				{ "Achievements", "ActiveAchievements" },
-				Freeze.List.filter(playerAchievements.ActiveAchievements, function(ActiveAchievement: Types.Achievement)
-					local achievementInfo = AchievementService:GetAchievementFromId(ActiveAchievement.Id)
+			if achievementInfo.ExpirationTime and os.time() >= achievementInfo.ExpirationTime then
+				return false
+			end
 
-					if not achievementInfo then
-						return false
-					end
+			return not achievementInfo.Deprecated
+		end)
 
-					if achievementInfo.ExpirationTime and os.time() >= achievementInfo.ExpirationTime then
-						return false
-					end
-
-					return not achievementInfo.Deprecated
-				end)
-			)
-		)
-
-		playerAchievements = table.clone(PlayerDocument:read().Achievements) -- update playerAchievements and unfreeze it.
-
-		if playerAchievements.LastDailyRotation == -1 then -- first time
-			playerAchievements.LastDailyRotation = os.time()
-			playerAchievements.ActiveAchievements = Sift.Array.concat(
-				playerAchievements.ActiveAchievements,
+		-- Fill in daily achievements, if needed.
+		if newplayerAchievements.LastDailyRotation == -1 then -- first time
+			newplayerAchievements.LastDailyRotation = os.time()
+			newActiveAchievements = Sift.Array.concat(
+				newActiveAchievements,
 				AchievementService:GenerateRandomAchievements(Player, DAILY_ACHIEVEMENT_COUNT, "Daily")
 			)
 		else
-			local timeSinceLastRotation = os.time() - playerAchievements.LastDailyRotation
+			local timeSinceLastRotation = os.time() - newplayerAchievements.LastDailyRotation
 			local timeElapsedHours = timeSinceLastRotation / 3600
 			if timeElapsedHours >= 24 then
 				-- 24 hours have passed, rotate the achievements.
-				playerAchievements.LastDailyRotation = os.time()
+				newplayerAchievements.LastDailyRotation = os.time()
 				local newAchievements =
 					AchievementService:GenerateRandomAchievements(Player, DAILY_ACHIEVEMENT_COUNT, "Daily")
-				playerAchievements.ActiveAchievements = Sift.Array.concat(
-					Sift.Array.filter(
-						playerAchievements.ActiveAchievements,
-						function(ActiveAchievement: Types.Achievement)
-							local achievementInfo = AchievementService:GetAchievementFromId(ActiveAchievement.Id)
-							return achievementInfo.Type ~= "Daily" -- Remove all daily achievements.
-						end
-					),
+				newActiveAchievements = Sift.Array.concat(
+					Sift.Array.filter(newActiveAchievements, function(ActiveAchievement: Types.Achievement)
+						local achievementInfo =
+							AchievementService:GetAchievementFromId(ActiveAchievement.Id) :: Types.AchievementInfo
+						return achievementInfo.Type ~= "Daily" and achievementInfo.Type ~= "NPC" -- Remove all daily/NPC achievements.
+					end),
 					newAchievements -- Add new daily achievements.
 				)
 			end
 		end
 
-		print(playerAchievements)
-		PlayerDocument:write(Freeze.Dictionary.setIn(PlayerDocument:read(), { "Achievements" }, playerAchievements))
+		newplayerAchievements.ActiveAchievements = newActiveAchievements
+		PlayerDocument:write(Freeze.Dictionary.set(PlayerDocument:read(), "Achievements", newplayerAchievements))
 
 		-- Update progress for all achievements.
-		for _, ActiveAchievement in playerAchievements.ActiveAchievements do
+		for _, ActiveAchievement in newActiveAchievements do
 			local achievementInfo =
 				AchievementService:GetAchievementFromId(ActiveAchievement.Id) :: Types.AchievementInfo
-			for requirementIndex, _requirement in ActiveAchievement.Requirements do
+			for requirementIndex, _requirement in pairs(ActiveAchievement.Requirements) do
 				local requirementInfo = achievementInfo.Requirements[requirementIndex]
-				AchievementService:RegisterAchievementProgress(
-					Player,
-					requirementInfo.Action,
-					requirementInfo.Statistic :: string
-				)
+				if requirementInfo.Statistic then
+					AchievementService:RegisterAchievementProgress(
+						Player,
+						requirementInfo.Action,
+						requirementInfo.Statistic
+					)
+				end
 			end
 		end
 
 		AchievementService.NewRewardTimers[Player.UserId :: any] =
-			AchievementService:ListenForDailyRotation(Player, playerAchievements.LastDailyRotation)
-		AchievementsChanged:SendToPlayer(Player, PlayerDocument:read().Achievements) -- Send client their achievements once their data loads in. We don't use playerAchievements here because it might've changed when updating progress.
+			AchievementService:ListenForDailyRotation(Player, PlayerDocument:read().Achievements.LastDailyRotation)
+		AchievementsChanged:SendToPlayer(Player, PlayerDocument:read().Achievements) -- Send client their achievements once their data loads in
 	end)
+
+	-- For statistic and resource action requirements, we need to listen for changes to the statistic/resource and update the achievement progress accordingly.
 	local Listening = {}
 	local StatisticListening = {}
-	local _ResourceListeners = Sift.Array.map(Achievements, function(achievement: Types.AchievementInfo)
-		for _, requirement in achievement.Requirements do
-			if
-				requirement.Action == "Resource"
-				and requirement.Resource
-				and not table.find(Listening, requirement.Resource)
-			then
-				return ResourceService:ObserveResourceChanged(
-					requirement.Resource,
-					function(Player: Player, _NewValue: number, OldValue: number?)
-						AchievementService:RegisterAchievementProgress(
-							Player,
-							"Resource",
-							requirement.Resource,
-							OldValue
-						)
-					end :: any
-				)
+	local _ResourceListeners = Sift.Dictionary.map(
+		AchievementService.Achievements,
+		function(achievement: Types.AchievementInfo)
+			for _, requirement in achievement.Requirements do
+				if
+					requirement.Action == "Resource"
+					and requirement.Resource
+					and not table.find(Listening, requirement.Resource)
+				then
+					table.insert(Listening, requirement.Resource)
+					return ResourceService:ObserveResourceChanged(
+						requirement.Resource,
+						function(Player: Player, _NewValue: number, OldValue: number?)
+							AchievementService:RegisterAchievementProgress(
+								Player,
+								"Resource",
+								requirement.Resource,
+								OldValue
+							)
+						end :: any
+					)
+				end
 			end
+			return Sift.None
 		end
-		return Sift.None
-	end)
-	local _StatisticListeners = Sift.Array.map(Achievements, function(achievement: Types.AchievementInfo)
-		for _, requirement in achievement.Requirements do
-			if
-				requirement.Action == "Statistic"
-				and requirement.Statistic
-				and not table.find(StatisticListening, requirement.Statistic)
-			then
-				return StatisticsService:ObserveStatisticChanged(
-					requirement.Statistic,
-					function(Player: Player, _NewValue: number, OldValue: number?)
-						AchievementService:RegisterAchievementProgress(
-							Player,
-							"Statistic",
-							requirement.Statistic,
-							OldValue
-						)
+	)
+	local _StatisticListeners = Sift.Dictionary.map(
+		AchievementService.Achievements,
+		function(achievement: Types.AchievementInfo)
+			for _, requirement in achievement.Requirements do
+				if
+					requirement.Action == "Statistic"
+					and requirement.Statistic
+					and not table.find(StatisticListening, requirement.Statistic)
+				then
+					table.insert(StatisticListening, requirement.Statistic)
+					return StatisticsService:ObserveStatisticChanged(
+						requirement.Statistic,
+						function(Player: Player, _NewValue: number, OldValue: number?)
+							AchievementService:RegisterAchievementProgress(
+								Player,
+								"Statistic",
+								requirement.Statistic,
+								OldValue
+							)
+						end
+					)
+				end
+			end
+			return Sift.None
+		end
+	)
+
+	-- For custom action requirements, other modules register the progress manually. Don't need to listen for anything.
+
+	-- For signal action requirements, we need to listen for the signal and update the achievement progress accordingly **only** if the signal passes the filter callback.
+
+	local signalNamesListening = {}
+	local _SignalListeners = Sift.Dictionary.map(
+		AchievementService.Achievements,
+		function(achievement: Types.AchievementInfo)
+			for _, requirement in achievement.Requirements do
+				if requirement.Action == "Signal" and requirement.Signal then
+					if not table.find(signalNamesListening, requirement.Signal.Name) then
+						table.insert(signalNamesListening, requirement.Signal.Name)
+					else
+						continue
 					end
-				)
+					return requirement.Signal.SignalInstance:Connect(
+						function(Player: Player, Increment: number, ...: any)
+							AchievementService:RegisterAchievementProgress(
+								Player,
+								"Signal",
+								requirement.Signal.Name,
+								nil,
+								Increment,
+								...
+							) -- assume 1 for now, we can change this later if we need to.
+						end
+					)
+				end
 			end
+			return Sift.None
 		end
-		return Sift.None
-	end)
+	)
 end
 
 function AchievementService:OnPlayerRemoving(Player: Player)
@@ -265,25 +274,21 @@ end
 function AchievementService:RotateDailyAchievements(Player: Player)
 	local playerDocument = PlayerDataService:GetDocument(Player)
 	if playerDocument then
-		local playerData = playerDocument:read()
-		local playerAchievements = table.clone(playerData.Achievements)
-
+		local playerAchievements = table.clone(playerDocument:read().Achievements)
 		playerAchievements.LastDailyRotation = os.time()
 		local newAchievements = AchievementService:GenerateRandomAchievements(Player, DAILY_ACHIEVEMENT_COUNT, "Daily")
-
 		playerAchievements.ActiveAchievements = Sift.Array.concat(
 			Sift.Array.filter(playerAchievements.ActiveAchievements, function(ActiveAchievement: Types.Achievement)
-				local achievementInfo = AchievementService:GetAchievementFromId(ActiveAchievement.Id)
+				local achievementInfo =
+					AchievementService:GetAchievementFromId(ActiveAchievement.Id) :: Types.AchievementInfo
 				return achievementInfo.Type ~= "Daily" -- Remove all daily achievements.
 			end),
 			newAchievements -- Add new daily achievements.
 		)
-
+		playerDocument:write(Freeze.Dictionary.set(playerDocument:read(), "Achievements", playerAchievements))
 		AchievementsChanged:SendToPlayer(Player, playerAchievements)
 		AchievementService.NewRewardTimers[Player.UserId] =
 			AchievementService:ListenForDailyRotation(Player, playerAchievements.LastDailyRotation)
-
-		playerDocument:write(Freeze.Dictionary.setIn(playerData, { "Achievements" }, playerAchievements))
 	end
 end
 
@@ -307,36 +312,51 @@ function AchievementService:RegisterAchievementProgress(
 	ActionType: Types.AchievementRequirementAction,
 	ActionTypeName: string,
 	OldValue: number?,
-	IncrementProgressBy: number?
+	IncrementProgressBy: number?,
+	...
 )
-	local playerDocument = PlayerDataService:GetDocument(Player)
-	local currentActiveAchievements = playerDocument:read().Achievements.ActiveAchievements
+	local playerAchievements = AchievementService:GetAchievements(Player) :: Types.PlayerAchievements
+	local currentActiveAchievements = table.clone(playerAchievements.ActiveAchievements)
+
+	local args = { ... } -- we do this in the outer scope so we can use it in the filter callback below. luau doesn't like it when we do it in the filter callback.
 
 	local associatedAchievements = Sift.Array.filter(currentActiveAchievements, function(achievement: Types.Achievement)
 		-- Check if any of the requirements are the statistic we're listening for.
 		local achievementInfo = AchievementService:GetAchievementFromId(achievement.Id) :: Types.AchievementInfo
-		return Sift.Array.some(
-			achievement.Requirements,
-			function(_requirement: Types.AchievementRequirement, index: number)
-				local requirementInfo = achievementInfo.Requirements[index]
-				local passesFilter = requirementInfo.Action == ActionType
-					and requirementInfo[ActionType] == ActionTypeName
-				return passesFilter
-			end
-		)
-	end)
 
-	for _, achievement in associatedAchievements do
-		-- Loop through each requirement, if it's the statistic we're listening for, update it.
-		for requirementIndex, requirement in achievement.Requirements do
-			-- if we don't have a new value for some reason, just continue.
+		local atLeastOneRequirementMatches = false
+
+		for index, requirement in pairs(achievement.Requirements) do
+			local requirementInfo = achievementInfo.Requirements[index]
+			local actionTypeName = requirementInfo[ActionType]
+			if typeof(actionTypeName) == "function" then
+				actionTypeName = (actionTypeName :: any)(achievement) -- For custom actions, we pass the achievement table to the function to get the action name.
+			elseif typeof(actionTypeName) == "table" then
+				actionTypeName = actionTypeName.Name -- For signals, we only care about the name.
+			end -- for resources & statistics, we already have the name (string) so we don't need to do anything.
+			local passesFilter = requirementInfo.Action == ActionType and actionTypeName == ActionTypeName
+
+			-- if this is a signal requirement, we need to check if the signal passes the filter callback.
+			if requirementInfo.Action == "Signal" and requirementInfo.Signal then
+				-- if args is empty, we don't want to continue.
+				if #args == 0 then
+					continue
+				end
+				passesFilter = requirementInfo.Signal.Filter(achievement, Player, unpack(args))
+			end
+
+			if passesFilter then
+				atLeastOneRequirementMatches = true
+			else -- if we don't pass the filter, we don't need to continue. (the rest of the loop updates progress for each requirement)
+				continue
+			end
 
 			local NewVal = nil
 			if ActionType == "Resource" then
 				NewVal = ResourceService:GetResource(Player, ActionTypeName) :: number
 			elseif ActionType == "Statistic" then
 				NewVal = StatisticsService:GetStatistic(Player, ActionTypeName) :: number
-			elseif ActionType == "Custom" and IncrementProgressBy then
+			elseif (ActionType == "Signal" or ActionType == "Custom") and IncrementProgressBy then
 				NewVal = requirement.Progress + IncrementProgressBy
 			end
 
@@ -344,22 +364,30 @@ function AchievementService:RegisterAchievementProgress(
 				continue
 			end
 
-			local achievementInfo = AchievementService:GetAchievementFromId(achievement.Id) :: Types.AchievementInfo
-			local requirementInfo = achievementInfo.Requirements[requirementIndex]
 			if requirementInfo.UseDelta and OldValue then
 				local delta = NewVal - OldValue
 				NewVal = requirement.Progress + delta -- For requirements specifying a delta, we add the delta to the current progress as our new value instead.
 			elseif requirementInfo.UseDelta and not OldValue then
 				continue -- We don't have an old value to compare to, so we can't register progress for this requirement.
 			end
-			AchievementService:UpdateRequirementProgress(Player, achievement.UUID, requirementIndex, NewVal)
+
+			local goal = if typeof(requirement.Goal) == "function"
+				then requirement.Goal(achievement)
+				else requirement.Goal
+			if goal and goal <= NewVal then
+				AchievementService:CompleteRequirement(Player, achievement.UUID, index, NewVal)
+			elseif goal and goal > NewVal then
+				AchievementService:UpdateRequirementProgress(Player, achievement.UUID, index, NewVal)
+			end
 		end
-	end
+
+		return atLeastOneRequirementMatches
+	end)
 
 	-- Send the partial state update to the client
-	-- @IMPORTANT: Our UpdateRequirementProgress function will clone achievement tables when updating them, so we can compare the old and new tables to see if anything changed.
+	-- @IMPORTANT: Our CompleteRequirement and UpdateRequirementProgress functions will clone achievement tables when updating them, so we can compare the old and new tables to see if anything changed.
 	local changedActiveAchievements = {}
-	local newActiveAchievements = playerDocument:read().Achievements.ActiveAchievements -- was updated above w/ UpdateRequirementProgress
+	local newAchievements = AchievementService:GetAchievements(Player) :: Types.PlayerAchievements
 
 	for _, achievement in associatedAchievements do
 		local oldAchievementIndex = Sift.Array.findWhere(
@@ -370,19 +398,22 @@ function AchievementService:RegisterAchievementProgress(
 		)
 		if oldAchievementIndex then
 			local newAchievementIndex = Sift.Array.findWhere(
-				newActiveAchievements,
+				newAchievements.ActiveAchievements,
 				function(_achievement: Types.Achievement)
 					return _achievement.UUID == achievement.UUID
 				end
 			)
 			if
 				newAchievementIndex
-				and newActiveAchievements[newAchievementIndex] ~= currentActiveAchievements[oldAchievementIndex]
+				and newAchievements.ActiveAchievements[newAchievementIndex]
+					~= currentActiveAchievements[oldAchievementIndex]
 			then
-				changedActiveAchievements[newAchievementIndex] = newActiveAchievements[newAchievementIndex]
+				changedActiveAchievements[newAchievementIndex] = newAchievements.ActiveAchievements[newAchievementIndex]
 			end
 		end
 	end
+
+	-- @IMPORTANT: We only send the achievements that changed to the client, so we don't send the entire state every time.
 
 	AchievementsChanged:SendToPlayer(Player, {
 		ActiveAchievements = changedActiveAchievements,
@@ -396,8 +427,7 @@ function AchievementService:UpdateRequirementProgress(
 	NewValue: number
 ): boolean
 	local playerDocument = PlayerDataService:GetDocument(Player)
-	local playerData = playerDocument:read()
-	local playerAchievements = playerData.Achievements
+	local playerAchievements = playerDocument:read().Achievements
 
 	for index, Achievement in playerAchievements.ActiveAchievements do
 		if Achievement.UUID == AchievementUUID then
@@ -410,9 +440,44 @@ function AchievementService:UpdateRequirementProgress(
 			newActiveAchievements[index] = newAchievement
 
 			playerDocument:write(
-				Freeze.Dictionary.setIn(playerData, { "Achievements", "ActiveAchievements" }, newActiveAchievements)
+				Freeze.Dictionary.setIn(
+					playerDocument:read(),
+					{ "Achievements", "ActiveAchievements" },
+					newActiveAchievements
+				)
 			)
 
+			return true
+		end
+	end
+	return false
+end
+
+function AchievementService:CompleteRequirement(
+	Player: Player,
+	AchievementUUID: string,
+	requirementIndex: number,
+	NewValue: number
+): boolean
+	local playerDocument = PlayerDataService:GetDocument(Player)
+	local playerAchievements = playerDocument:read().Achievements
+
+	for index, Achievement in playerAchievements.ActiveAchievements do
+		if Achievement.UUID == AchievementUUID then
+			local newActiveAchievements = table.clone(playerAchievements.ActiveAchievements)
+			local newAchievement = table.clone(Achievement)
+			local requirement = newAchievement.Requirements[requirementIndex]
+			requirement = table.clone(requirement)
+			requirement.Progress = NewValue
+			newAchievement.Requirements[requirementIndex] = requirement
+			newActiveAchievements[index] = newAchievement
+			playerDocument:write(
+				Freeze.Dictionary.setIn(
+					playerDocument:read(),
+					{ "Achievements", "ActiveAchievements" },
+					newActiveAchievements
+				)
+			)
 			return true
 		end
 	end
@@ -435,11 +500,7 @@ function AchievementService:GetCurrentProgress(Player: Player, Requirement: Type
 end
 
 function AchievementService:HasAchievement(Player: Player, AchievementId: number): boolean
-	local playerDocument = PlayerDataService:GetDocument(Player)
-	local playerData = playerDocument:read()
-
-	local playerAchievements = playerData.Achievements
-
+	local playerAchievements = AchievementService:GetAchievements(Player) :: Types.PlayerAchievements
 	for _, achievement in playerAchievements.ActiveAchievements do
 		if achievement.Id == AchievementId then
 			return true
@@ -463,13 +524,18 @@ function AchievementService:GenerateRandomAchievements(
 		end
 		local randomIndex = seed:NextInteger(1, #achievementList)
 		local randomAchievement = achievementList[randomIndex] :: Types.AchievementInfo
-		if (AchievementType and randomAchievement.Type ~= AchievementType) or randomAchievement.Deprecated then
+		if
+			randomAchievement and (AchievementType and randomAchievement.Type ~= AchievementType)
+			or (randomAchievement and randomAchievement.Deprecated)
+			or not randomAchievement
+		then
 			table.remove(achievementList, randomIndex)
 			repeat
 				randomIndex = seed:NextInteger(1, #achievementList)
 				randomAchievement = achievementList[randomIndex]
 				table.remove(achievementList, randomIndex)
 			until #achievementList == 0
+				or not randomAchievement
 				or (randomAchievement.Type == AchievementType and not randomAchievement.Deprecated)
 		end
 		if table.find(achievementList, randomAchievement) then
@@ -485,46 +551,68 @@ function AchievementService:GenerateRandomAchievements(
 			break
 		end
 
-		table.insert(randomAchievements, {
-			Id = randomAchievement.Id, -- we can use this to get information about the achievement
-			UUID = HttpService:GenerateGUID(false),
-			Claimed = false,
-			Requirements = Sift.Array.map(
-				randomAchievement.Requirements,
-				function(Requirement: Types.AchievementRequirementInfo)
-					return {
-						Progress = AchievementService:GetCurrentProgress(Player, Requirement),
-						Goal = Requirement.Goal,
-					}
-				end
-			),
-			TimesClaimed = 0,
-		})
+		table.insert(randomAchievements, AchievementService:GenerateAchievement(Player, randomAchievement))
 	end
 	return randomAchievements
 end
 
+function AchievementService:GenerateAchievement(
+	Player: Player,
+	AchievementInfo: Types.AchievementInfo
+): Types.Achievement
+	local uniqueProps = {}
+	if AchievementInfo.GetUniqueProps then
+		uniqueProps = AchievementInfo.GetUniqueProps(Player, PlayerDataService:GetDocument(Player):read())
+	end
+
+	local achievement: Types.Achievement = Sift.Dictionary.merge({
+		Id = AchievementInfo.Id, -- we can use this to get information about the achievement
+		UUID = HttpService:GenerateGUID(false),
+		Claimed = false,
+		Requirements = Sift.Array.map(
+			AchievementInfo.Requirements,
+			function(Requirement: Types.AchievementRequirementInfo)
+				return {
+					Progress = AchievementService:GetCurrentProgress(Player, Requirement),
+				}
+			end
+		),
+		TimesClaimed = 0,
+	}, uniqueProps)
+
+	-- go thru each requirement and add a goal field to it (we do this after so that we can pass our achievement table in if our goal is a function of the achievement)
+	for requirementIndex, requirement in pairs(achievement.Requirements) do
+		local requirementInfo = AchievementInfo.Requirements[requirementIndex]
+		if requirementInfo.Goal then
+			requirement.Goal = if typeof(requirementInfo.Goal) == "function"
+				then requirementInfo.Goal(achievement)
+				else requirementInfo.Goal
+		end
+	end
+
+	return achievement
+end
+
 function AchievementService:ClaimAchievement(Player: Player, Achievement: Types.Achievement): boolean
 	local playerDocument = PlayerDataService:GetDocument(Player)
-	local playerAchievements = playerDocument:read().Achievements
 
-	for index, achievement in playerAchievements.ActiveAchievements do
+	local playerAchievements = table.clone(playerDocument:read().Achievements)
+	local newActiveAchievements = table.clone(playerAchievements.ActiveAchievements)
+
+	for index, achievement in pairs(newActiveAchievements) do
 		if achievement.UUID == Achievement.UUID then
-			local newActiveAchievements = table.clone(playerAchievements.ActiveAchievements)
-			local newAchievement = table.clone(achievement) :: Types.Achievement
-
-			newActiveAchievements[index] = newAchievement
-
+			newActiveAchievements[index] = table.clone(achievement)
 			-- if it's progress based, we need to update our goal to the next one
-			local achievementInfo = AchievementService:GetAchievementFromId(newAchievement.Id) :: Types.AchievementInfo
-			if AchievementService:CanAchievementProgress(newAchievement) == true then -- Progress our achievement if we can. Otherwise, just claim it permanently.
-				for requirementIndex, requirement in newAchievement.Requirements do
+			local achievementInfo = AchievementService:GetAchievementFromId(achievement.Id) :: Types.AchievementInfo
+			if AchievementService:CanAchievementProgress(achievement) == true then -- Progress our achievement if we can. Otherwise, just claim it permanently.
+				for requirementIndex, requirement in pairs(achievement.Requirements) do
 					local requirementInfo = achievementInfo.Requirements[requirementIndex]
+					local goal = requirement.Goal
 					if requirementInfo.Increment then
 						local increment = if typeof(requirementInfo.Increment) == "function"
-							then requirementInfo.Increment(requirement.Goal)
+							then requirementInfo.Increment(goal)
 							else requirementInfo.Increment
-						requirement.Goal = requirement.Goal + increment
+						requirement.Goal = goal + increment
 						if requirementInfo.ResetProgressOnIncrement then
 							requirement.Progress = 0
 						end
@@ -532,19 +620,17 @@ function AchievementService:ClaimAchievement(Player: Player, Achievement: Types.
 				end
 			else
 				-- otherwise, just claim it permanently. we don't need to update anything.
-				newAchievement.Claimed = true
+				newActiveAchievements[index].Claimed = true
 			end
 
-			AchievementService:GrantAchievementReward(Player, newAchievement)
+			AchievementService:GrantAchievementReward(Player, achievement)
 
 			-- after granting reward above, update times claimed
-			if newAchievement.TimesClaimed then
-				newAchievement.TimesClaimed += 1
+			if newActiveAchievements[index].TimesClaimed then
+				newActiveAchievements[index].TimesClaimed += 1
 			else
-				newAchievement.TimesClaimed = 1
+				newActiveAchievements[index].TimesClaimed = 1
 			end
-
-			AchievementService.AchievementClaimed:Fire(Player, newAchievement)
 
 			playerDocument:write(
 				Freeze.Dictionary.setIn(
@@ -554,6 +640,7 @@ function AchievementService:ClaimAchievement(Player: Player, Achievement: Types.
 				)
 			)
 
+			AchievementService.AchievementClaimed:Fire(Player, achievement)
 			return true
 		end
 	end
@@ -563,14 +650,17 @@ end
 function AchievementService:CanAchievementProgress(Achievement: Types.Achievement): boolean
 	local AchievementInfo = AchievementService:GetAchievementFromId(Achievement.Id) :: Types.AchievementInfo
 	-- An achievement can progress if it has a requirement that is progressive. (contains the Increment property), and is not at a Maximum if it has one.
-	for i, requirement in Achievement.Requirements do
+	for i, _requirement in pairs(Achievement.Requirements) do
 		local requirementInfo = AchievementInfo.Requirements[i]
 		if requirementInfo.Increment then
 			if requirementInfo.Maximum then
+				local goal = if typeof(requirementInfo.Goal) == "function"
+					then requirementInfo.Goal(Achievement)
+					else requirementInfo.Goal
 				local increment = if typeof(requirementInfo.Increment) == "function"
-					then requirementInfo.Increment(requirement.Goal)
+					then requirementInfo.Increment(goal)
 					else requirementInfo.Increment
-				local newGoal = requirement.Goal + increment
+				local newGoal = goal + increment
 				if newGoal <= requirementInfo.Maximum then
 					return true
 				end
@@ -598,8 +688,9 @@ end
 
 function AchievementService:IsAchievementCompleted(Achievement: Types.Achievement): boolean
 	-- For an achievement to be completed, all of its requirements must be completed.
-	for _, requirement in Achievement.Requirements do
-		if requirement.Progress < requirement.Goal then
+	for _, requirement in pairs(Achievement.Requirements) do
+		local goal = if typeof(requirement.Goal) == "function" then requirement.Goal(Achievement) else requirement.Goal
+		if requirement.Progress < goal then
 			return false
 		end
 	end
@@ -608,13 +699,16 @@ end
 
 function AchievementService:ClaimAchievementRequest(Player: Player, AchievementUUID: string): Types.NetworkResponse
 	local playerDocument = PlayerDataService:GetDocument(Player)
+
 	if not playerDocument then
 		return {
 			Success = false,
 			Response = "Failed to get player document.",
 		}
 	end
+
 	local playerAchievements = playerDocument:read().Achievements
+
 	local achievementIndex = Sift.Array.findWhere(
 		playerAchievements.ActiveAchievements,
 		function(achievement: Types.Achievement)
@@ -655,7 +749,7 @@ function AchievementService:ClaimAchievementRequest(Player: Player, AchievementU
 	end
 end
 
-function AchievementService:GetAchievements(Player: Player)
+function AchievementService:GetAchievements(Player: Player): Types.PlayerAchievements?
 	local playerDocument = PlayerDataService:GetDocument(Player)
 	if not playerDocument then
 		return nil
@@ -675,7 +769,7 @@ function AchievementService:GetActiveAchievementsOfTypes(
 	local activeAchievements = playerAchievements.ActiveAchievements
 	local achievements = {}
 	for _, Achievement in activeAchievements do
-		local achievementInfo: Types.AchievementInfo = AchievementService:GetAchievementFromId(Achievement.Id)
+		local achievementInfo = AchievementService:GetAchievementFromId(Achievement.Id) :: Types.AchievementInfo
 		if table.find(achievementTypes, achievementInfo.Type) then
 			table.insert(achievements, Achievement)
 		end
@@ -683,8 +777,13 @@ function AchievementService:GetActiveAchievementsOfTypes(
 	return achievements
 end
 
-function AchievementService:GetAchievementFromId(AchievementId: number): Types.AchievementInfo
-	return AchievementService.Achievements[AchievementId]
+function AchievementService:GetAchievementFromId(AchievementId: number): Types.AchievementInfo?
+	for _, Achievement in pairs(AchievementService.Achievements) do
+		if Achievement.Id == AchievementId then
+			return Achievement
+		end
+	end
+	return nil
 end
 
 return AchievementService
