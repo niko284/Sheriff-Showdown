@@ -7,7 +7,7 @@ local Types = require(ReplicatedStorage.constants.Types)
 return {
 	{
 		Id = 1,
-		Type = "Daily",
+		Type = "Progressive",
 		Requirements = {
 			{
 				BaseName = "Get 10 Wins",
@@ -28,7 +28,7 @@ return {
 	},
 	{
 		Id = 2,
-		Type = "Daily",
+		Type = "Progressive",
 		Rewards = {
 			{
 				Type = "Currency",
@@ -58,7 +58,7 @@ return {
 	},
 	{
 		Id = 3,
-		Type = "Daily",
+		Type = "Progressive",
 		Rewards = {
 			{
 				Type = "Currency",
@@ -88,7 +88,7 @@ return {
 	},
 	{
 		Id = 4,
-		Type = "Daily",
+		Type = "Progressive",
 		Rewards = {
 			{
 				Type = "Currency",

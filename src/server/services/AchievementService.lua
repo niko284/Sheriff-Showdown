@@ -603,25 +603,6 @@ function AchievementService:ClaimAchievement(Player: Player, Achievement: Types.
 		if achievement.UUID == Achievement.UUID then
 			newActiveAchievements[index] = table.clone(achievement)
 			-- if it's progress based, we need to update our goal to the next one
-			local achievementInfo = AchievementService:GetAchievementFromId(achievement.Id) :: Types.AchievementInfo
-			if AchievementService:CanAchievementProgress(achievement) == true then -- Progress our achievement if we can. Otherwise, just claim it permanently.
-				for requirementIndex, requirement in pairs(achievement.Requirements) do
-					local requirementInfo = achievementInfo.Requirements[requirementIndex]
-					local goal = requirement.Goal
-					if requirementInfo.Increment then
-						local increment = if typeof(requirementInfo.Increment) == "function"
-							then requirementInfo.Increment(goal)
-							else requirementInfo.Increment
-						requirement.Goal = goal + increment
-						if requirementInfo.ResetProgressOnIncrement then
-							requirement.Progress = 0
-						end
-					end
-				end
-			else
-				-- otherwise, just claim it permanently. we don't need to update anything.
-				newActiveAchievements[index].Claimed = true
-			end
 
 			AchievementService:GrantAchievementReward(Player, achievement)
 
@@ -630,6 +611,32 @@ function AchievementService:ClaimAchievement(Player: Player, Achievement: Types.
 				newActiveAchievements[index].TimesClaimed += 1
 			else
 				newActiveAchievements[index].TimesClaimed = 1
+			end
+
+			local achievementInfo = AchievementService:GetAchievementFromId(achievement.Id) :: Types.AchievementInfo
+			if AchievementService:CanAchievementProgress(newActiveAchievements[index]) == true then -- Progress our achievement if we can. Otherwise, just claim it permanently.
+				for requirementIndex, requirement in pairs(achievement.Requirements) do
+					local requirementInfo = achievementInfo.Requirements[requirementIndex]
+					local newGoal = if typeof(requirementInfo.Goal) == "function"
+						then requirementInfo.Goal(newActiveAchievements[index])
+						else requirementInfo.Goal
+
+					if requirementInfo.Increment then
+						local increment = if typeof(requirementInfo.Increment) == "function"
+							then requirementInfo.Increment(requirement.Goal)
+							else requirementInfo.Increment
+						requirement.Goal += increment
+					else
+						requirement.Goal = newGoal
+					end
+
+					if requirementInfo.ResetProgressOnIncrement then
+						requirement.Progress = 0
+					end
+				end
+			else
+				-- otherwise, just claim it permanently. we don't need to update anything.
+				newActiveAchievements[index].Claimed = true
 			end
 
 			playerDocument:write(
@@ -650,23 +657,22 @@ end
 function AchievementService:CanAchievementProgress(Achievement: Types.Achievement): boolean
 	local AchievementInfo = AchievementService:GetAchievementFromId(Achievement.Id) :: Types.AchievementInfo
 	-- An achievement can progress if it has a requirement that is progressive. (contains the Increment property), and is not at a Maximum if it has one.
-	for i, _requirement in pairs(Achievement.Requirements) do
+	for i, requirement in pairs(Achievement.Requirements) do
 		local requirementInfo = AchievementInfo.Requirements[i]
+
+		local goal = if typeof(requirementInfo.Goal) == "function"
+			then requirementInfo.Goal(Achievement)
+			else requirementInfo.Goal
+
 		if requirementInfo.Increment then
-			if requirementInfo.Maximum then
-				local goal = if typeof(requirementInfo.Goal) == "function"
-					then requirementInfo.Goal(Achievement)
-					else requirementInfo.Goal
-				local increment = if typeof(requirementInfo.Increment) == "function"
-					then requirementInfo.Increment(goal)
-					else requirementInfo.Increment
-				local newGoal = goal + increment
-				if newGoal <= requirementInfo.Maximum then
-					return true
-				end
-			else
-				return true
-			end
+			local increment = if typeof(requirementInfo.Increment) == "function"
+				then requirementInfo.Increment(goal)
+				else requirementInfo.Increment
+			goal += increment
+		end
+
+		if (requirementInfo.Maximum and goal >= requirementInfo.Maximum) or (requirement.Goal == goal) then
+			return false
 		end
 	end
 	return false
@@ -688,9 +694,8 @@ end
 
 function AchievementService:IsAchievementCompleted(Achievement: Types.Achievement): boolean
 	-- For an achievement to be completed, all of its requirements must be completed.
-	for _, requirement in pairs(Achievement.Requirements) do
-		local goal = if typeof(requirement.Goal) == "function" then requirement.Goal(Achievement) else requirement.Goal
-		if requirement.Progress < goal then
+	for _, requirement in Achievement.Requirements do
+		if requirement.Progress < requirement.Goal then
 			return false
 		end
 	end
