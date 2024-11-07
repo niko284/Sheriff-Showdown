@@ -1,5 +1,6 @@
 --!strict
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
@@ -8,7 +9,7 @@ local Types = require(ReplicatedStorage.constants.Types)
 local function AllOnSameTeam(RoundInstance: Types.Round): boolean
 	local RoundService = require(ServerScriptService.services.RoundService) :: any
 
-	local Players = RoundInstance.Players
+	local plrsInMatch = RoundInstance.Players
 
 	for _, Match in pairs(RoundInstance.Matches) do
 		for _, Team in pairs(Match.Teams) do
@@ -16,7 +17,7 @@ local function AllOnSameTeam(RoundInstance: Types.Round): boolean
 
 			local allInTeam = true
 
-			for _, Player in pairs(Players) do
+			for _, Player in pairs(plrsInMatch) do
 				if not table.find(TeamEntities, RoundService:GetEntityIdFromPlayer(Player)) then
 					allInTeam = false
 					break
@@ -52,6 +53,18 @@ return {
 			-- the game is over when the player pool consists of only people that were in the same team last round.
 			return AllOnSameTeam(RoundInstance)
 		end,
+	},
+	{
+		Name = "Free For All",
+		TeamSize = 1,
+		IsGameOver = function(RoundInstance: Types.Round)
+			-- the game is over when the player pool consists of only people that were in the same team last round.
+			return AllOnSameTeam(RoundInstance)
+		end,
+		TeamsPerMatch = function()
+			return #Players:GetPlayers()
+		end,
+		UseSpawnType = "FFA",
 	},
 	--[[{
 		Name = "Distraction",

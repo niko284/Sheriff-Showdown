@@ -372,9 +372,25 @@ function RoundService:StartMatch(RoundInstance: Types.Round, Match: Types.Match)
 
 	local teamPlayerColors = {}
 
+	local randomSpawnLocations = {}
+	local spawnTotals = {}
+	for _, spawnLocation in mapGameModeFolder:GetDescendants() do
+		if spawnLocation:IsA("SpawnLocation") then
+			table.insert(randomSpawnLocations, spawnLocation)
+			spawnTotals[spawnLocation] = 0
+		end
+	end
+
 	for _index, team in pairs(Match.Teams) do
 		local spawnPoints = mapGameModeFolder:FindFirstChild(team.Name)
-		local spawners = spawnPoints:GetChildren()
+
+		local spawners = nil
+		if not spawnPoints then -- if there are no spawn points for the team, use the random spawn locations
+			spawners = randomSpawnLocations
+		else
+			spawners = spawnPoints:GetChildren()
+		end
+
 		local teamPlayers = RoundService:GetPlayersInTeam(team)
 
 		StartMatchClient:SendToPlayers(teamPlayers)
@@ -385,7 +401,23 @@ function RoundService:StartMatch(RoundInstance: Types.Round, Match: Types.Match)
 		}
 
 		for _, entityId in team.Entities do
-			local randomSpawnerIndex = math.random(1, #spawners)
+			local randomSpawnerIndex = 1
+
+			if spawners == randomSpawnLocations then
+				-- pick the spawner with the least amount of players
+				for index, spawner in ipairs(spawners) do
+					if spawnTotals[spawner] < spawnTotals[spawners[randomSpawnerIndex]] then
+						randomSpawnerIndex = index
+					end
+				end
+
+				print(randomSpawnerIndex, spawnTotals, spawners)
+
+				spawnTotals[spawners[randomSpawnerIndex]] += 1
+			else
+				randomSpawnerIndex = math.random(1, #spawners)
+			end
+
 			local spawnPoint = spawners[randomSpawnerIndex]
 
 			local renderable: Components.Renderable<Model>? = world:get(entityId, Components.Renderable)
@@ -571,9 +603,12 @@ function RoundService:AllocateMatches(PlayerPool: { Player }, RoundMode: Types.R
 
 	-- create a match for each team
 
-	local numberOfMatches = math.ceil(#shuffledPool / (RoundModeData.TeamSize * RoundModeData.TeamsPerMatch))
+	local teamsPerMatch = typeof(RoundModeData.TeamsPerMatch) == "function" and RoundModeData.TeamsPerMatch()
+		or RoundModeData.TeamsPerMatch
 
-	for _i = 1, numberOfMatches do
+	local numberOfMatches = teamsPerMatch and math.ceil(#shuffledPool / (RoundModeData.TeamSize * teamsPerMatch)) or 1
+
+	for i = 1, numberOfMatches do
 		local match = {
 			Teams = {},
 			MatchUUID = HttpService:GenerateGUID(false),
@@ -588,10 +623,11 @@ function RoundService:AllocateMatches(PlayerPool: { Player }, RoundMode: Types.R
 		end
 
 		if #shuffledPool <= 1 then
-			break -- no match should have only 1 player (uneven number of players in the pool). they will play in the next round.
+			--	break -- no match should have only 1 player (uneven number of players in the pool). they will play in the next round.
 		end
-		for j = 1, RoundModeData.TeamsPerMatch do
-			local teamName = RoundModeData.TeamNames[j]
+		for j = 1, teamsPerMatch do
+			local teamName = RoundModeData.TeamNames and RoundModeData.TeamNames[j]
+				or string.format("Team %s", tostring(i .. j))
 
 			local team: Types.Team = {
 				Entities = {},
@@ -604,7 +640,7 @@ function RoundService:AllocateMatches(PlayerPool: { Player }, RoundMode: Types.R
 		-- put a player in each team one by one until we run out of players in the pool or we fill all teams in the match
 		local playersInMatch = 0
 		local teamIndex = 1
-		while playersInMatch < (RoundModeData.TeamSize * RoundModeData.TeamsPerMatch) and #shuffledPool > 0 do
+		while playersInMatch < (RoundModeData.TeamSize * teamsPerMatch) and #shuffledPool > 0 do
 			local player = table.remove(shuffledPool, 1)
 			local entityId = RoundService:GetEntityIdFromPlayer(player)
 			if not entityId then
@@ -614,7 +650,7 @@ function RoundService:AllocateMatches(PlayerPool: { Player }, RoundMode: Types.R
 			table.insert(match.Teams[teamIndex].Entities, entityId)
 			playersInMatch += 1
 			teamIndex += 1
-			if teamIndex > RoundModeData.TeamsPerMatch then
+			if teamIndex > teamsPerMatch then
 				teamIndex = 1
 			end
 		end

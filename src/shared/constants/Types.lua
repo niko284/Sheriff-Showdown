@@ -99,12 +99,12 @@ export type LeaderboardInfo = {
 	Mapper: ((...any) -> any)?, -- A function that maps the value to a different value
 }
 
-export type RoundMode = "Singles" | "Duos" | "Distraction"
+export type RoundMode = "Singles" | "Duos" | "Distraction" | "Free For All"
 export type RoundModeData = {
 	Name: RoundMode,
 	TeamSize: number,
-	TeamsPerMatch: number,
-	TeamNames: { string },
+	TeamsPerMatch: (() -> number) | number,
+	TeamNames: { string }?,
 }
 export type Team = {
 	Entities: { number }, -- list of entity ids in this team.
