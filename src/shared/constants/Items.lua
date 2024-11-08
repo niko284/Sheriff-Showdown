@@ -10,7 +10,7 @@ local Items: { Types.ItemInfo } = {
 		Type = "Gun",
 		Rarity = "Legendary",
 		GunStatisticalData = {
-			BulletSpeed = 100,
+			BulletSpeed = 1000,
 			BulletSoundId = 130113322,
 		},
 		Default = true,

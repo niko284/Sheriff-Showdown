@@ -74,9 +74,19 @@ function SettingsController:FillInSettings(playerSettings: Types.PlayerDataSetti
 		if playerSettings[settingName] then
 			fullSettings[settingName] = playerSettings[settingName]
 		else
-			fullSettings[settingName] = {
-				Value = setting.Default,
-			}
+			if setting.Type == "Slider" then
+				local max = setting.Maximum :: number
+				local min = setting.Minimum :: number
+				-- map max and min with default to a percentage. i.e if default is 100 and max is 130 and min is 70, then 100 is 50%.
+				local percentage = ((setting.Default :: number) - min) / (max - min) * 100
+				fullSettings[settingName] = {
+					Value = percentage,
+				}
+			else
+				fullSettings[settingName] = {
+					Value = setting.Default,
+				}
+			end
 		end
 	end
 	return fullSettings

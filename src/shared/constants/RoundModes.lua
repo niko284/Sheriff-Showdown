@@ -45,6 +45,14 @@ return {
 		end,
 	},--]]
 	{
+		Name = "Red vs Blue",
+		IsGameOver = function(RoundInstance: Types.Round)
+			-- the game is over when the player pool consists of only people that were in the same team last round.
+			return AllOnSameTeam(RoundInstance)
+		end,
+		UseSpawnType = "RVB",
+	},
+	{
 		Name = "Duos",
 		TeamSize = 2,
 		TeamsPerMatch = 2,

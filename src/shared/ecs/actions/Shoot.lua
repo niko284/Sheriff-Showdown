@@ -12,6 +12,7 @@ type ShootPayload = {
 	origin: CFrame,
 	fromGun: number, -- server entity id of the gun that supposedly shot this bullet
 	timestamp: number, -- time the action was sent by the client
+	spawnedBullet: number, -- server entity id of the bullet that was spawned
 } & Types.GenericPayload
 
 return {
@@ -80,7 +81,7 @@ return {
 		local bulletStart = actionPayload.origin.Position + actionPayload.velocity * timeToJump
 		local adjustedBulletCFrame = CFrame.new(bulletStart, actionPayload.origin.LookVector)
 
-		world:spawn(
+		actionPayload.spawnedBullet = world:spawn(
 			Components.Bullet({
 				gunId = actionPayload.fromGun,
 				origin = actionPayload.origin,
@@ -107,4 +108,5 @@ return {
 			Components.Killed,
 		}),
 	},
+	afterProcess = {},
 } :: Types.Action<ShootPayload>

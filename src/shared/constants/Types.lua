@@ -99,11 +99,11 @@ export type LeaderboardInfo = {
 	Mapper: ((...any) -> any)?, -- A function that maps the value to a different value
 }
 
-export type RoundMode = "Singles" | "Duos" | "Distraction" | "Free For All"
+export type RoundMode = "Singles" | "Duos" | "Distraction" | "Free For All" | "Red vs Blue"
 export type RoundModeData = {
 	Name: RoundMode,
-	TeamSize: number,
-	TeamsPerMatch: (() -> number) | number,
+	TeamSize: ((() -> number) | number)?,
+	TeamsPerMatch: ((() -> number) | number)?,
 	TeamNames: { string }?,
 }
 export type Team = {
@@ -124,6 +124,7 @@ export type Round = {
 export type RoundModeExtension = {
 	IsGameOver: (Round) -> boolean,
 	StartMatch: (Match, Round, Matter.World) -> (),
+	AllocateMatches: (({ Player }) -> { Match })?,
 	Data: RoundModeData,
 	ExtraRoundProperties: { [string]: any },
 	ExtraMatchProperties: { [string]: any },
@@ -183,6 +184,7 @@ export type FrameProps = {
 }
 
 export type MiddlewareFn<T> = (world: Matter.World, player: Player, actionPayload: T) -> boolean
+export type AfterProcessFn<T> = (world: Matter.World, player: Player, actionPayload: T) -> ()
 
 -- >> action types ecs
 export type GenericPayload = {
@@ -194,6 +196,7 @@ export type Action<T> = {
 	process: (world: Matter.World, player: Player, actionPayload: T) -> (),
 	middleware: { MiddlewareFn<T> }?,
 	validatePayload: (sentPayload: any) -> boolean,
+	afterProcess: { AfterProcessFn<T> },
 }
 
 export type VisualEffect<T> = {

@@ -55,4 +55,5 @@ return {
 			actionId = t.string,
 		})
 	end,
+	afterProcess = {},
 } :: Types.Action<MerryGoRoundKillPayload>

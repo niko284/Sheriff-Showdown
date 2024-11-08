@@ -375,7 +375,7 @@ function RoundService:StartMatch(RoundInstance: Types.Round, Match: Types.Match)
 	local randomSpawnLocations = {}
 	local spawnTotals = {}
 	for _, spawnLocation in mapGameModeFolder:GetDescendants() do
-		if spawnLocation:IsA("SpawnLocation") then
+		if spawnLocation:IsA("BasePart") and spawnLocation.Name == "Spawner" then
 			table.insert(randomSpawnLocations, spawnLocation)
 			spawnTotals[spawnLocation] = 0
 		end
@@ -601,12 +601,19 @@ function RoundService:AllocateMatches(PlayerPool: { Player }, RoundMode: Types.R
 	local RoundModeData = RoundService:GetRoundModeData(RoundMode)
 	local RoundModeExtension = RoundService:GetRoundModeExtension(RoundMode)
 
+	if RoundModeExtension and RoundModeExtension.PreAllocateMatches then
+		-- if the round mode extension has a allocate matches function, use that instead of the default allocation
+		return RoundModeExtension.AllocateMatches(PlayerPool)
+	end
+
 	-- create a match for each team
 
 	local teamsPerMatch = typeof(RoundModeData.TeamsPerMatch) == "function" and RoundModeData.TeamsPerMatch()
 		or RoundModeData.TeamsPerMatch
+	local teamSize = typeof(RoundModeData.TeamSize) == "function" and RoundModeData.TeamSize(PlayerPool)
+		or RoundModeData.TeamSize
 
-	local numberOfMatches = teamsPerMatch and math.ceil(#shuffledPool / (RoundModeData.TeamSize * teamsPerMatch)) or 1
+	local numberOfMatches = teamsPerMatch and math.ceil(#shuffledPool / (teamSize * teamsPerMatch)) or 1
 
 	for i = 1, numberOfMatches do
 		local match = {
@@ -640,7 +647,7 @@ function RoundService:AllocateMatches(PlayerPool: { Player }, RoundMode: Types.R
 		-- put a player in each team one by one until we run out of players in the pool or we fill all teams in the match
 		local playersInMatch = 0
 		local teamIndex = 1
-		while playersInMatch < (RoundModeData.TeamSize * teamsPerMatch) and #shuffledPool > 0 do
+		while playersInMatch < (teamSize * teamsPerMatch) and #shuffledPool > 0 do
 			local player = table.remove(shuffledPool, 1)
 			local entityId = RoundService:GetEntityIdFromPlayer(player)
 			if not entityId then
