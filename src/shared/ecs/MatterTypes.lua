@@ -1,7 +1,7 @@
 export type Component<T> = (initialData: T?) -> ComponentInstance<T>
 
 -- TODO: Add below metatable to this when it works better
-export type ComponentInstance<T> = T
+export type ComponentInstance<T> = T & ComponentInstanceMeta<T>
 
 -- FUTURE: Improve above type and add this patch method when
 -- typeof(setmetatable()) works better with generic args,

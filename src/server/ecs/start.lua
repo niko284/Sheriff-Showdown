@@ -6,13 +6,25 @@ local RunService = game:GetService("RunService")
 local Components = require(ReplicatedStorage.ecs.components)
 local Items = require(ReplicatedStorage.constants.Items)
 local Matter = require(ReplicatedStorage.packages.Matter)
+local Plasma = require(ReplicatedStorage.packages.Plasma)
 
 local function start(systemsContainers: { Instance }, services)
 	local world = Matter.World.new()
 
+	local debugger = Matter.Debugger.new(Plasma) -- Pass Plasma into the debugger!
+	local widgets = debugger:getWidgets()
+
 	local loop = Matter.Loop.new(world, {
 		services = services,
-	})
+	}, widgets)
+
+	debugger:autoInitialize(loop)
+
+	debugger.authorize = function(player)
+		if player:GetRankInGroup(33234854) >= 254 then -- example
+			return true
+		end
+	end
 
 	local systems = {}
 	for _, systemContainer in ipairs(systemsContainers) do

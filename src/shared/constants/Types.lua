@@ -99,7 +99,7 @@ export type LeaderboardInfo = {
 	Mapper: ((...any) -> any)?, -- A function that maps the value to a different value
 }
 
-export type RoundMode = "Singles" | "Duos" | "Distraction" | "Free For All" | "Red vs Blue"
+export type RoundMode = "Singles" | "Duos" | "Distraction" | "Free For All" | "Red vs Blue" | "Revolver Relay"
 export type RoundModeData = {
 	Name: RoundMode,
 	TeamSize: ((() -> number) | number)?,
@@ -432,6 +432,21 @@ export type Achievement = {
 	UUID: string,
 	Claimed: boolean, -- Was our achievement claimed?
 	Requirements: { AchievementRequirement }, -- Our requirements
+}
+
+export type Character = {
+	Humanoid: Humanoid,
+	PrimaryPart: BasePart,
+	HumanoidRootPart: BasePart,
+} & { [string]: any }
+
+export type PlayerChildren = {
+	gunEntityId: number?,
+	waistRenderableGunId: number?,
+}
+
+export type GunChildren = {
+	handRenderableId: number?,
 }
 
 return nil

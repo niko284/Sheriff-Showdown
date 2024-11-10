@@ -1,4 +1,8 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
 local Components = {}
+
+local MatterTypes = require(ReplicatedStorage.ecs.MatterTypes)
 
 for _, ComponentModule in ipairs(script:GetChildren()) do
 	local Component = require(ComponentModule)
@@ -10,6 +14,7 @@ export type Renderable<T> = {
 }
 export type Gun = {
 	Damage: number,
+	Disabled: boolean?,
 	MaxCapacity: number,
 	ReloadTime: number,
 	CurrentCapacity: number,
@@ -19,13 +24,16 @@ export type Gun = {
 	BulletSoundId: number,
 	CriticalDamage: { [string]: number },
 }
+export type Parent = {
+	id: number,
+}
 export type Owner = {
 	OwnedBy: Player,
 }
-export type Transform = {
+export type Transform = MatterTypes.ComponentInstance<{
 	cframe: CFrame,
 	doNotReconcile: boolean?,
-}
+}>
 export type Velocity = {
 	velocity: Vector3,
 }
@@ -61,7 +69,7 @@ export type Health = {
 	maxHealth: number,
 	regenRate: number, -- amount of health regenerated per second
 	causedBy: number?, -- entity id of the entity that caused the damage
-}
+} & { [string]: any }
 export type Item = {
 	Id: number,
 }
@@ -80,9 +88,9 @@ export type Ragdolled = {}
 export type PlayerComponent = {
 	player: Player,
 }
-export type Children = {
-	children: { number },
-}
+export type Children<T> = MatterTypes.ComponentInstance<{
+	children: T,
+}>
 export type MerryGoRound = {
 	targetAngularVelocity: number,
 	currentAngularVelocity: number,

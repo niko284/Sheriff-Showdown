@@ -7,7 +7,7 @@ local Matter = require(ReplicatedStorage.packages.Matter)
 local MatterReplication = require(ReplicatedStorage.packages.MatterReplication)
 
 local function bulletsTravel(world: Matter.World, _state)
-	for eid, bullet, velocity in world:query(Components.Bullet, Components.Velocity) do
+	for eid, bullet, velocity: Components.Velocity in world:query(Components.Bullet, Components.Velocity) do
 		local serverEntity = world:get(eid, MatterReplication.ServerEntity)
 		local owner = world:get(eid, Components.Owner)
 
@@ -16,19 +16,16 @@ local function bulletsTravel(world: Matter.World, _state)
 		end
 
 		local deltaTime = Matter.useDeltaTime()
-		local distanceTraveled = velocity.velocity * deltaTime
 
-		local transform = world:get(eid, Components.Transform)
+		local transform: Components.Transform? = world:get(eid, Components.Transform)
+		if not transform then
+			continue
+		end
 
-		local newPosition = transform.cframe.Position + distanceTraveled
-		local positionChange = newPosition - transform.cframe.Position
+		local newCFrame =
+			CFrame.lookAlong(transform.cframe.Position + velocity.velocity * deltaTime, velocity.velocity.Unit)
 
-		local newCFrame = CFrame.new(newPosition, velocity.velocity.Unit + newPosition)
-
-		transform = transform:patch({
-			cframe = newCFrame,
-		})
-		world:insert(eid, transform)
+		local positionChange = newCFrame.Position - transform.cframe.Position
 
 		-- Check if we hit something. (Client only)
 		if RunService:IsClient() then
@@ -41,6 +38,11 @@ local function bulletsTravel(world: Matter.World, _state)
 				world:insert(eid, Components.Collided({ raycastResult = raycastResult }))
 			end
 		end
+
+		transform = transform:patch({
+			cframe = newCFrame,
+		})
+		world:insert(eid, transform)
 	end
 end
 

@@ -20,7 +20,8 @@ return {
 		end
 
 		-- get both the target player's and our own player's team.
-		local targetRenderable: Components.Renderable? = world:get(actionPayload.targetEntityId, Components.Renderable)
+		local targetRenderable: Components.Renderable<Model>? =
+			world:get(actionPayload.targetEntityId, Components.Renderable)
 		local targetTeam: Components.Team? = world:get(actionPayload.targetEntityId, Components.Team)
 		local targetComponent: Components.Target? = world:get(actionPayload.targetEntityId, Components.Target)
 
@@ -113,7 +114,7 @@ return {
 					local newHealth = health.health - damage
 					world:insert(
 						actionPayload.targetEntityId,
-						health:patch({ health = newHealth, causedBy = bullet.gunId })
+						health:patch({ health = newHealth, causedBy = bullet.gunId, bulletId = eid })
 					)
 				end
 			end
@@ -127,4 +128,5 @@ return {
 			actionId = t.string,
 		})
 	end,
+	afterProcess = {},
 } :: Types.Action<BulletHitPayload>

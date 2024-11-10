@@ -36,6 +36,7 @@ local function actionsAreConsumed(world: Matter.World)
 		end
 
 		local middlewareFns = action.middleware
+		local afterProcessFns = action.afterProcess
 
 		-- any middleware that returns false will prevent the action from being processed
 		if middlewareFns then
@@ -53,6 +54,12 @@ local function actionsAreConsumed(world: Matter.World)
 		end
 
 		action.process(world, player, actionPayload)
+
+		if afterProcessFns then
+			for _, afterProcessFn in ipairs(afterProcessFns) do
+				afterProcessFn(world, player, actionPayload)
+			end
+		end
 	end
 end
 

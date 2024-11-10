@@ -601,7 +601,7 @@ function RoundService:AllocateMatches(PlayerPool: { Player }, RoundMode: Types.R
 	local RoundModeData = RoundService:GetRoundModeData(RoundMode)
 	local RoundModeExtension = RoundService:GetRoundModeExtension(RoundMode)
 
-	if RoundModeExtension and RoundModeExtension.PreAllocateMatches then
+	if RoundModeExtension and RoundModeExtension.AllocateMatches then
 		-- if the round mode extension has a allocate matches function, use that instead of the default allocation
 		return RoundModeExtension.AllocateMatches(PlayerPool)
 	end

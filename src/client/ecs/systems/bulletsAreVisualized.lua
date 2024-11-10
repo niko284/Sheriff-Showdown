@@ -22,9 +22,14 @@ local function bulletsAreVisualized(world: Matter.World)
 		end
 
 		local bulletInstance = nil
+		local clientId = MatterReplication.resolveServerId(world, bullet.gunId :: number)
+		if not clientId then
+			continue
+		end
 
-		local item =
-			world:get(MatterReplication.resolveServerId(world, bullet.gunId :: number), Components.Item) :: Components.Item
+		print(clientId)
+
+		local item = world:get(clientId, Components.Item) :: Components.Item
 		local gunThatShotBullet = world:get(
 			MatterReplication.resolveServerId(world, bullet.gunId :: number),
 			Components.Gun
@@ -48,7 +53,9 @@ local function bulletsAreVisualized(world: Matter.World)
 		end
 
 		bulletInstance.Parent = workspace
-		AudioUtils.PlaySoundOnInstance(gunThatShotBullet.BulletSoundId, bulletInstance)
+
+		local ownerChar = owner.OwnedBy.Character :: Model
+		AudioUtils.PlaySoundOnInstance(gunThatShotBullet.BulletSoundId, ownerChar.PrimaryPart :: BasePart)
 
 		world:insert(
 			eid,

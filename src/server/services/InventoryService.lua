@@ -210,6 +210,9 @@ end
 
 function InventoryService:GetItemsOfType(Player: Player, ItemType: Types.ItemType, Equipped: boolean?): { Types.Item }
 	local Document = PlayerDataService:GetDocument(Player)
+	if not Document then
+		return {}
+	end
 	local data = Document:read()
 	local items = if Equipped == true then data.Inventory.Equipped else data.Inventory.Storage
 

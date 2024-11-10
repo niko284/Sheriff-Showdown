@@ -28,7 +28,8 @@ local function gunsCanShoot(world: Matter.World, state)
 		world:query(Components.Gun, Components.Owner, MatterReplication.ServerEntity):without(Components.Cooldown)
 	do
 		if isShooting then
-			if gun.CurrentCapacity > -math.huge and owner.OwnedBy == Players.LocalPlayer then
+			if gun.CurrentCapacity > -math.huge and owner.OwnedBy == Players.LocalPlayer and gun.Disabled ~= true then
+				print("Shooting")
 				local character = (owner.OwnedBy :: Player).Character
 				local bulletFilter = { character, unpack(CollectionService:GetTagged("Barrier")) }
 

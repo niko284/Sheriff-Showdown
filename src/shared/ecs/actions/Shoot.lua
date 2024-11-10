@@ -16,7 +16,7 @@ type ShootPayload = {
 } & Types.GenericPayload
 
 return {
-	process = function(world, player, actionPayload): boolean
+	process = function(world, player: Player, actionPayload): boolean
 		if not world:contains(actionPayload.fromGun) then
 			warn("Invalid gun id")
 			return false
@@ -40,6 +40,11 @@ return {
 		end
 
 		local gunComponent = world:get(actionPayload.fromGun, Components.Gun) :: Components.Gun
+
+		if gunComponent.Disabled == true then
+			warn("Gun is disabled")
+			return false
+		end
 
 		-- Verify that the origin is close to the player's right hand
 		local character = player.Character :: Model
