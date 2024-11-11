@@ -45,6 +45,14 @@ return {
 		end,
 	},--]]
 	{
+		Name = "Juggernaut",
+		IsGameOver = function(RoundInstance: Types.Round)
+			-- the game is over when the player pool consists of only people that were in the same team last round.
+			return AllOnSameTeam(RoundInstance)
+		end,
+		UseSpawnType = "FFA",
+	},
+	--[[{
 		Name = "Revolver Relay",
 		IsGameOver = function(RoundInstance: Types.Round)
 			-- the game is over when the player pool consists of only people that were in the same team last round.
@@ -56,6 +64,18 @@ return {
 			return #Players:GetPlayers()
 		end,
 	},
+	{
+		Name = "Hot Potato",
+		IsGameOver = function(RoundInstance: Types.Round)
+			-- the game is over when the player pool consists of only people that were in the same team last round.
+			return AllOnSameTeam(RoundInstance)
+		end,
+		UseSpawnType = "FFA",
+		TeamSize = 1,
+		TeamsPerMatch = function()
+			return #Players:GetPlayers()
+		end,
+	},--]]
 	{
 		Name = "Red vs Blue",
 		IsGameOver = function(RoundInstance: Types.Round)

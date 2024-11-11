@@ -60,7 +60,6 @@ function InventoryController:OnInit()
 		InventoryController.ItemAdded:Fire(item)
 	end)
 	ItemRemoved:Connect(function(item: Types.Item)
-		print("Gotdirect remove signal")
 		InventoryController.ItemRemoved:Fire(item)
 	end)
 end

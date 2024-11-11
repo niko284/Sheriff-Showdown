@@ -29,7 +29,6 @@ local function gunsCanShoot(world: Matter.World, state)
 	do
 		if isShooting then
 			if gun.CurrentCapacity > -math.huge and owner.OwnedBy == Players.LocalPlayer and gun.Disabled ~= true then
-				print("Shooting")
 				local character = (owner.OwnedBy :: Player).Character
 				local bulletFilter = { character, unpack(CollectionService:GetTagged("Barrier")) }
 

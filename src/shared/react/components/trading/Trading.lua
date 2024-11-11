@@ -119,7 +119,7 @@ local function Trading(_props: TradingProps)
 
 		DeclineTrade:CallServerAsync(serializedTradeUUID)
 			:andThen(function(response: Types.NetworkResponse)
-				print(response)
+				--print(response)
 			end)
 			:catch(function(err)
 				warn(tostring(err))

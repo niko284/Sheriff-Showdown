@@ -11,7 +11,10 @@ local Types = require(ReplicatedStorage.constants.Types)
 
 local function gunsAreRendered(world: Matter.World, server)
 	for eid, gunRecord: MatterTypes.WorldChangeRecord<Components.Gun> in world:queryChanged(Components.Gun) do
-		if gunRecord.new and (not gunRecord.old and gunRecord.new.Disabled ~= true) then -- put in their hand
+		if
+			gunRecord.new
+			and ((not gunRecord.old or gunRecord.old.Disabled == true) and gunRecord.new.Disabled ~= true)
+		then -- put in their hand
 			local parent: Components.Parent? = world:get(eid, Components.Parent)
 
 			if not parent or not world:contains(parent.id) then

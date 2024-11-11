@@ -38,6 +38,7 @@ local function healthUpdates(world: Matter.World)
 							})
 						)
 					else
+						humanoid.MaxHealth = healthRecord.new.maxHealth or humanoid.MaxHealth
 						humanoid.Health = healthRecord.new.health
 					end
 				end

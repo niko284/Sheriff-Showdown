@@ -27,8 +27,6 @@ local function bulletsAreVisualized(world: Matter.World)
 			continue
 		end
 
-		print(clientId)
-
 		local item = world:get(clientId, Components.Item) :: Components.Item
 		local gunThatShotBullet = world:get(
 			MatterReplication.resolveServerId(world, bullet.gunId :: number),
@@ -40,7 +38,7 @@ local function bulletsAreVisualized(world: Matter.World)
 			local gunAssets = Guns:FindFirstChild(itemInfo.Name)
 			if gunAssets then
 				local bulletModel = gunAssets:FindFirstChild("Bullet")
-				if bullet then
+				if bulletModel then
 					bulletInstance = bulletModel:Clone()
 				end
 			end

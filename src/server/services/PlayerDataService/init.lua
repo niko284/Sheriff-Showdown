@@ -81,7 +81,6 @@ function PlayerDataService:LoadDocument(Player: Player)
 				document:close():catch(warn)
 				return
 			end
-			print("Loaded")
 			PlayerDataService.Documents[Player] = document
 
 			document:beforeClose(function()

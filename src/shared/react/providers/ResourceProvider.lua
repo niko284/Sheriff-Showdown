@@ -24,7 +24,6 @@ local function ResourceProvider(props)
 		if resources == nil then
 			local replicatedResources = ResourceController:GetReplicatedResources()
 			if replicatedResources then
-				print(replicatedResources)
 				setResources(replicatedResources)
 			end
 		end

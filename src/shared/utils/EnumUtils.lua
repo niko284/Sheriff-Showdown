@@ -3,7 +3,6 @@
 local EnumUtils = {}
 
 function EnumUtils.IsEnum(EnumList, EnumItem)
-	print(EnumItem)
 	for _, enumList in Enum:GetEnums() do
 		if tostring(enumList) == tostring(EnumList) then
 			for _, enumItem in pairs(enumList:GetEnumItems()) do

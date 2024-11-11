@@ -80,7 +80,6 @@ return {
 		end
 		local timeLaunched = workspace:GetServerTimeNow() - latency - interpolationTime
 		local timeToJump = timeLaunched - actionPayload.timestamp
-		print(`Time to jump: ${timeToJump}`)
 
 		-- Calculate the new starting position of the bullet
 		local bulletStart = actionPayload.origin.Position + actionPayload.velocity * timeToJump

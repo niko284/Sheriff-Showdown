@@ -59,6 +59,11 @@ function RoundService:OnStart()
 	for _, extension in ExtensionsFolder:GetChildren() do
 		local extensionModule = require(extension) :: Types.RoundModeExtension
 		if not extensionModule.Data then
+			warn("Round extension " .. extension.Name .. " does not have a Data property.")
+			continue
+		end
+		if not extensionModule.Data.Name then
+			warn("Round extension " .. extension.Name .. " does not have a Name property.")
 			continue
 		end
 		RoundService.RoundExtensions[extensionModule.Data.Name] = extensionModule
@@ -106,7 +111,6 @@ function RoundService:OnStart()
 					})
 				end)
 				:andThen(function(FieldWinners)
-					print("Voting phase ended.")
 					local roundInstance = RoundService:CreateRound(FieldWinners.RoundModes.Name, FieldWinners.Maps.Name)
 					RoundService.CurrentRound = roundInstance
 					return RoundService:DoRound(roundInstance)
@@ -161,7 +165,6 @@ function RoundService:ProcessVote(Player: Player, VotingField: string, VotingCho
 end
 
 function RoundService:DoIntermission()
-	print("Intermission phase started.")
 	return Promise.delay(10)
 end
 
@@ -192,7 +195,6 @@ function RoundService:IsPlayerInTeam(Player: Player, Team: Types.Team): boolean
 end
 
 function RoundService:DoVoting()
-	print("Voting phase started.")
 	-- shuffle maps and round modes
 	local shuffledMaps = Sift.Array.shuffle(Maps)
 	local shuffledRoundModes = Sift.Array.shuffle(RoundModes)
@@ -321,7 +323,6 @@ function RoundService:LoadMap(MapName: string)
 end
 
 function RoundService:DoRound(RoundInstance: Types.Round)
-	print("Round phase started.")
 	return RoundService:RunMatches(RoundInstance)
 end
 
@@ -410,8 +411,6 @@ function RoundService:StartMatch(RoundInstance: Types.Round, Match: Types.Match)
 						randomSpawnerIndex = index
 					end
 				end
-
-				print(randomSpawnerIndex, spawnTotals, spawners)
 
 				spawnTotals[spawners[randomSpawnerIndex]] += 1
 			else

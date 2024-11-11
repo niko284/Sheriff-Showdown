@@ -83,19 +83,20 @@ return {
 
 				-- check if the position between the server-projected bullet and the target hit is close enough.
 				local diff = (hitCFrame.Position - transform.cframe.Position).Magnitude
-				print(`Diff between bullet and target: ${diff}`)
+				--print(`Diff between bullet and target: ${diff}`)
+
 				if diff > 5 then
 					--continue
 				end
 
 				local slowed = world:get(actionPayload.targetEntityId, Components.Slowed)
-				if slowed then -- if already slowed, slow down even more by half of the current multiplier
+				if slowed then -- if already slowed, slow down even more
 					world:insert(
 						actionPayload.targetEntityId,
-						slowed:patch({ walkspeedMultiplier = slowed.walkspeedMultiplier * 0.5 })
+						slowed:patch({ walkspeedMultiplier = slowed.walkspeedMultiplier * 0.95 })
 					)
 				else
-					world:insert(actionPayload.targetEntityId, Components.Slowed({ walkspeedMultiplier = 0.8 }))
+					world:insert(actionPayload.targetEntityId, Components.Slowed({ walkspeedMultiplier = 0.95 }))
 				end
 
 				-- deal damage to the target
@@ -110,6 +111,8 @@ return {
 					end
 
 					local myEntityId = myChar:GetAttribute("serverEntityId")
+
+					print(`Dealt {damage} damage to {actionPayload.targetEntityId} from {myEntityId}`)
 
 					local newHealth = health.health - damage
 					world:insert(

@@ -17,6 +17,7 @@ local RVBExtension = {
 function RVBExtension.AllocateMatches(playerPool: { Player }): { Types.Match }
 	local match = {} :: Types.Match
 	match.MatchUUID = HttpService:GenerateGUID(false)
+	match.Teams = {}
 
 	for i = 1, 2 do
 		local team = {} :: Types.Team
@@ -33,6 +34,8 @@ function RVBExtension.AllocateMatches(playerPool: { Player }): { Types.Match }
 			local playerEntityId = RoundService:GetEntityIdFromPlayer(player)
 			table.insert(team.Entities, playerEntityId)
 		end
+
+		table.insert(match.Teams, team)
 	end
 
 	return { match }

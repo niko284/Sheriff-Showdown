@@ -34,7 +34,6 @@ local function InventoryProvider(props)
 			local newStorage = table.clone(newInventory.Storage)
 			table.insert(newStorage, item)
 			newInventory.Storage = newStorage
-			print(newInventory.Storage)
 			setInventory(newInventory)
 		end)
 		local itemRemoved = InventoryController.ItemRemoved:Connect(function(item)

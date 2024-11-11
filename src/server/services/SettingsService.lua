@@ -57,7 +57,6 @@ function SettingsService:OnInit()
 		self.PlayerSettings:SetFor(Player, Data.Settings)
 	end)
 	ChangeSetting:SetCallback(function(Player: Player, SettingName: string, Value: Types.SettingValue)
-		print(Player, SettingName, Value)
 		return self:ChangeSettingNetworkRequest(Player, SettingName, Value)
 	end)
 end
