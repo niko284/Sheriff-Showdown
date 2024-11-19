@@ -133,7 +133,7 @@ function HotPotatoExtension.StartMatch(Match: Types.Match, RoundInstance: Types.
 				entityId,
 				Components.Killed({
 					killerEntityId = lastGunId or relayPlayerGunId, -- we technically died because of the person who shot us last OR we couldn't get rid of the gun if we were the first person to get it
-					expiry = os.time() + 5,
+					expiry = os.time() + 6,
 				})
 			)
 		end

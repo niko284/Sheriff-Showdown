@@ -34,7 +34,7 @@ local function healthUpdates(world: Matter.World)
 							eid,
 							Components.Killed({
 								killerEntityId = healthRecord.new.causedBy,
-								expiry = os.time() + 5, -- 5 seconds duration
+								expiry = os.time() + 6, -- 6 seconds duration
 							})
 						)
 					else

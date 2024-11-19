@@ -6,6 +6,7 @@ local Components = require(ReplicatedStorage.ecs.components)
 local Matter = require(ReplicatedStorage.packages.Matter)
 local Remotes = require(ReplicatedStorage.network.Remotes)
 local UUIDSerde = require(ReplicatedStorage.utils.UUIDSerde)
+local CollectionService = game:GetService("CollectionService")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -27,8 +28,8 @@ local function merryGoRoundsImpulse(world: Matter.World)
 	end
 
 	local rayParams = RaycastParams.new()
-	rayParams.FilterDescendantsInstances = { character }
-	rayParams.FilterType = Enum.RaycastFilterType.Exclude
+	rayParams.FilterDescendantsInstances = CollectionService:GetTagged("MerryGoRound")
+	rayParams.FilterType = Enum.RaycastFilterType.Include
 	local rayDown = workspace:Raycast(rightFoot.Position, Vector3.new(0, -10, 0), rayParams)
 
 	-- account for a merry go round that is spinning too fast (this will kill the player)
@@ -51,8 +52,9 @@ local function merryGoRoundsImpulse(world: Matter.World)
 	if useThrottle(1) and rayDown then
 		local merryGoRoundModel = rayDown.Instance:FindFirstAncestor("MerryGoRound")
 		local merryGoRoundId = merryGoRoundModel and merryGoRoundModel:GetAttribute("serverEntityId")
-		if merryGoRoundModel and merryGoRoundId then
-			local merryGoRound = world:get(merryGoRoundId, Components.MerryGoRound) :: Components.MerryGoRound?
+		local clientEntityId = merryGoRoundModel and merryGoRoundModel:GetAttribute("clientEntityId")
+		if merryGoRoundModel and clientEntityId then
+			local merryGoRound = world:get(clientEntityId, Components.MerryGoRound) :: Components.MerryGoRound?
 			if
 				merryGoRound
 				and merryGoRound.hardStopIn == nil

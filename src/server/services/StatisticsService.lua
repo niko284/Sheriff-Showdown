@@ -64,6 +64,10 @@ function StatisticsService:GetStatistics(Player: Player): { [string]: any }
 	return {}
 end
 
+function StatisticsService:GetStatisticChangedSignal(StatisticName: string): Signal.Signal<...any>
+	return StatisticsService.StatisticSignals[StatisticName]
+end
+
 function StatisticsService:ObserveStatisticChanged(
 	StatisticName: string,
 	Callback: (Player, ...any) -> ()
@@ -84,7 +88,7 @@ function StatisticsService:ObserveStatisticChanged(
 	return signal:Connect(Callback)
 end
 
-function StatisticsService:GetStatistic(Player: Player, Statistic: string): any?
+function StatisticsService:GetStatistic(Player: Player, Statistic: string): any
 	local playerStatistics = StatisticsService:GetStatistics(Player)
 	if playerStatistics then
 		return playerStatistics[Statistic]
@@ -128,7 +132,7 @@ function StatisticsService:IncrementStatistic(
 	StatisticName: string,
 	Increment: number,
 	shouldSendNetworkEvent: boolean?
-)
+): any
 	local PlayerStatistics = StatisticsService:GetStatistics(Player)
 	local oldValue: number? = PlayerStatistics[StatisticName]
 	local newValue = (oldValue or 0) + Increment
@@ -144,6 +148,8 @@ function StatisticsService:IncrementStatistic(
 			[StatisticName] = newValue,
 		})
 	end
+
+	return newValue
 end
 
 return StatisticsService

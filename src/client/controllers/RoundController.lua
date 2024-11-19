@@ -28,6 +28,7 @@ local StartMatch = RoundNamespace:Get("StartMatch") :: Net.ClientListenerEvent
 local EndMatch = RoundNamespace:Get("EndMatch") :: Net.ClientListenerEvent
 local SendDistraction = RoundNamespace:Get("SendDistraction") :: Net.ClientListenerEvent
 local VotingPoolClient = ClientComm:GetProperty("VotingPoolClient")
+local RoundStatus = ClientComm:GetProperty("RoundStatus")
 
 local DISTRACTION_SIGNS = Assets:FindFirstChild("distractions") :: Folder
 local CROSSHAIR_ICON = "rbxassetid://16896087891"
@@ -68,6 +69,14 @@ function RoundController:OnStart()
 			RoundController.StartVoting:Fire(VotingPool)
 		else
 			RoundController.EndVoting:Fire()
+		end
+	end)
+end
+
+function RoundController:ObserveStatusChanged(callback: (string, boolean) -> ())
+	return RoundStatus:Observe(function(currStatus: string?)
+		if currStatus then
+			callback(currStatus, true)
 		end
 	end)
 end

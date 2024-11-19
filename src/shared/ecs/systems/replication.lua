@@ -12,10 +12,10 @@ local REPLICATED_COMPONENTS = {
 	Components.Target,
 	Components.Killed,
 	Components.Player,
-	Components.Renderable,
 	Components.Item,
 	Components.MerryGoRound,
 	Components.Team,
+	Components.Renderable,
 }
 
 return MatterReplication.createReplicationSystem(REPLICATED_COMPONENTS)

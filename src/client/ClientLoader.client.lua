@@ -17,9 +17,7 @@ local SYSTEM_CONTAINERS = {
 local CONTROLLER_CONTAINERS = {
 	PlayerScripts.controllers,
 }
-local COLLECTION_COMPONENTS = {
-	MerryGoRound = {},
-}
+local COLLECTION_COMPONENTS = {}
 local LIFECYCLE_METHODS = { "OnInit", "OnStart" }
 
 local function fetchControllers(controllerContainers)

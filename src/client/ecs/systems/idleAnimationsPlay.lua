@@ -18,7 +18,7 @@ local function idleAnimationsPlay(world: Matter.World)
 		_eid,
 		renderable: Components.Renderable<Types.Character>,
 		player: Components.PlayerComponent,
-		children: Components.Children<Types.PlayerChildren>
+		children: Components.Children<Types.TargetChildren>
 	in world:query(Components.Renderable, Components.Player, Components.Children) do
 		local gunChild = children.children.gunEntityId
 

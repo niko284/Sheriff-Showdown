@@ -6,7 +6,7 @@ local MatterTypes = require(ReplicatedStorage.ecs.MatterTypes)
 
 local useEvent = Matter.useEvent
 
-type RenderableRecord = MatterTypes.WorldChangeRecord<Components.Renderable>
+type RenderableRecord = MatterTypes.WorldChangeRecord<Components.Renderable<Model>>
 type TargetRecord = MatterTypes.WorldChangeRecord<Components.Target>
 
 local function disableQueryingForAccessories(instance: Instance)

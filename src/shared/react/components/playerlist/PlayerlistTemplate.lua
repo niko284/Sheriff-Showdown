@@ -18,6 +18,11 @@ type TemplateProps = Types.FrameProps & {
 	player: Player,
 	level: number,
 	size: UDim2,
+	kills: number,
+	deaths: number,
+	playTime: number,
+	longestKillStreak: number,
+	wins: number,
 }
 
 local function PlayerlistTemplate(props: TemplateProps)
@@ -25,6 +30,11 @@ local function PlayerlistTemplate(props: TemplateProps)
 		usePlayerThumbnail(props.player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size60x60)
 
 	local showInformation, setShowInformation = useState(false)
+
+	local hours = math.floor(props.playTime / 3600)
+	local minutes = math.floor((props.playTime % 3600) / 60)
+	local seconds = math.floor(props.playTime % 60)
+	local timePlayed = string.format("%02d:%02d:%02d", hours, minutes, seconds)
 
 	return e(AutomaticFrame, {
 		className = "Frame",
@@ -111,7 +121,7 @@ local function PlayerlistTemplate(props: TemplateProps)
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-				Text = "146",
+				Text = props.kills,
 				TextColor3 = Color3.fromRGB(255, 255, 255),
 				TextSize = 12,
 				TextXAlignment = Enum.TextXAlignment.Left,
@@ -126,7 +136,7 @@ local function PlayerlistTemplate(props: TemplateProps)
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-				Text = "55",
+				Text = props.deaths,
 				TextColor3 = Color3.fromRGB(255, 255, 255),
 				TextSize = 12,
 				TextXAlignment = Enum.TextXAlignment.Left,
@@ -141,7 +151,7 @@ local function PlayerlistTemplate(props: TemplateProps)
 					Enum.FontWeight.Medium,
 					Enum.FontStyle.Normal
 				),
-				Text = "Time Spent",
+				Text = "Playtime",
 				TextColor3 = Color3.fromRGB(255, 255, 255),
 				TextSize = 9,
 				TextTransparency = 0.38,
@@ -157,7 +167,7 @@ local function PlayerlistTemplate(props: TemplateProps)
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-				Text = "123hr 56m",
+				Text = timePlayed,
 				TextColor3 = Color3.fromRGB(255, 255, 255),
 				TextSize = 12,
 				TextXAlignment = Enum.TextXAlignment.Left,
@@ -188,7 +198,7 @@ local function PlayerlistTemplate(props: TemplateProps)
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-				Text = "12 Kills",
+				Text = string.format("%d Kills", props.longestKillStreak),
 				TextColor3 = Color3.fromRGB(255, 255, 255),
 				TextSize = 12,
 				TextXAlignment = Enum.TextXAlignment.Left,
@@ -197,13 +207,13 @@ local function PlayerlistTemplate(props: TemplateProps)
 				Size = UDim2.fromOffset(39, 10),
 			}),
 
-			leaderPlace = e("TextLabel", {
+			winsText = e("TextLabel", {
 				FontFace = Font.new(
 					"rbxasset://fonts/families/GothamSSm.json",
 					Enum.FontWeight.Medium,
 					Enum.FontStyle.Normal
 				),
-				Text = "Leaderboard Place",
+				Text = "Wins",
 				TextColor3 = Color3.fromRGB(255, 255, 255),
 				TextSize = 9,
 				TextTransparency = 0.38,
@@ -213,14 +223,14 @@ local function PlayerlistTemplate(props: TemplateProps)
 				Size = UDim2.fromOffset(82, 7),
 			}),
 
-			lBPlace = e("TextLabel", {
+			winsAmount = e("TextLabel", {
 				FontFace = Font.new(
 					"rbxasset://fonts/families/GothamSSm.json",
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-				Text = "1st",
-				TextColor3 = Color3.fromRGB(219, 190, 91),
+				Text = props.wins,
+				TextColor3 = Color3.fromRGB(255, 255, 255),
 				TextSize = 12,
 				TextXAlignment = Enum.TextXAlignment.Left,
 				BackgroundTransparency = 1,

@@ -8,6 +8,7 @@ local StatusService = { Name = "StatusService", StatusProcessed = Signal.new() :
 StatusService.StatusComponents = {
 	Components.Killed,
 	Components.Slowed,
+	Components.Knocked,
 }
 
 return StatusService

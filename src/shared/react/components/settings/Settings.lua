@@ -65,17 +65,17 @@ local function Settings(_props: SettingsProps)
 		newSetting.Value = settingValue
 		newSettingsState[settingName] = newSetting
 
-		SettingsController.SettingsChanged:Fire(newSettingsState)
+		SettingsController.SettingsChanged:Fire(newSettingsState, oldSettingsState)
 		ChangeSetting:CallServerAsync(settingName, settingValue)
 			:andThen(function(response: Types.NetworkResponse)
 				if response.Success == false then
 					warn(response.Message)
-					SettingsController.SettingsChanged:Fire(oldSettingsState)
+					SettingsController.SettingsChanged:Fire(oldSettingsState, newSettingsState)
 				end
 			end)
 			:catch(function(err)
 				warn("Failed to change setting", tostring(err))
-				SettingsController.SettingsChanged:Fire(oldSettingsState)
+				SettingsController.SettingsChanged:Fire(oldSettingsState, newSettingsState)
 			end)
 	end, { settingsState })
 

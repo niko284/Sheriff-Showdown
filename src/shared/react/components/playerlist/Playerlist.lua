@@ -42,6 +42,11 @@ local function Playerlist(_props: PlayerlistProps)
 			player = player.Player,
 			level = player.Level,
 			size = UDim2.fromOffset(240, 42),
+			kills = player.Kills,
+			deaths = player.Deaths,
+			playTime = player.Playtime,
+			longestKillStreak = player.LongestKillStreak,
+			wins = player.Wins,
 		})
 	end
 

@@ -7,6 +7,7 @@ local Components = require(ReplicatedStorage.ecs.components)
 local STATUS_EFFECT_COMPONENTS = {
 	Killed = Components.Killed,
 	Slowed = Components.Slowed,
+	Knocked = Components.Knocked,
 }
 
 local function statusesAreProcessed(world: Matter.World, state)

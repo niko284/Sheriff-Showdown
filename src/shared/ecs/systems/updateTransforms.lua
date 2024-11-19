@@ -12,13 +12,13 @@ local Transform = Components.Transform
 local Renderable = Components.Renderable
 
 type TransformRecord = MatterTypes.WorldChangeRecord<Components.Transform>
-type RenderableRecord = MatterTypes.WorldChangeRecord<Components.Renderable>
+type RenderableRecord = MatterTypes.WorldChangeRecord<Components.Renderable<any>>
 
 local function updateTransforms(world: Matter.World)
 	-- Handle Transform added/changed to existing entity with Model
 	for id, transformRecord: TransformRecord in world:queryChanged(Transform) do
 		if transformRecord.new then
-			local renderable = world:get(id, Renderable) :: Components.Renderable?
+			local renderable = world:get(id, Renderable) :: Components.Renderable<Instance>?
 
 			-- Take care to ignore the changed event if it was us that triggered it
 			if renderable and not transformRecord.new.doNotReconcile then
@@ -33,15 +33,27 @@ local function updateTransforms(world: Matter.World)
 		if renderableRecord.new then
 			local transform = world:get(id, Transform) :: Components.Transform?
 
-			if transform then
+			if transform and not transform.doNotReconcile then
 				local instance = renderableRecord.new.instance :: PVInstance
 				instance:PivotTo(transform.cframe)
+			else
+				local cf = renderableRecord.new.instance:IsA("Model") and renderableRecord.new.instance:GetPivot() or (renderableRecord.new.instance:IsA("BasePart") and renderableRecord.new.instance.CFrame)
+				if cf then
+					world:insert(
+						id,
+						Transform({
+							cframe = cf,
+						})
+					)
+				end
 			end
 		end
 	end
 
 	-- Update Transform on unanchored Models
-	for id, renderable: Components.Renderable, transform: Components.Transform in world:query(Renderable, Transform) do
+	for id, renderable: Components.Renderable<Instance>, transform: Components.Transform in
+		world:query(Renderable, Transform)
+	do
 		local instance = renderable.instance :: PVInstance
 
 		if instance:IsA("BasePart") then

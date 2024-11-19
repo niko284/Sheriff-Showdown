@@ -433,10 +433,12 @@ function AchievementService:UpdateRequirementProgress(
 		if Achievement.UUID == AchievementUUID then
 			local newActiveAchievements = table.clone(playerAchievements.ActiveAchievements)
 			local newAchievement = table.clone(Achievement)
-			local requirement = newAchievement.Requirements[requirementIndex]
+			local newRequirements = table.clone(newAchievement.Requirements)
+			local requirement = newRequirements[requirementIndex]
 			requirement = table.clone(requirement)
 			requirement.Progress = NewValue
-			newAchievement.Requirements[requirementIndex] = requirement
+			newRequirements[requirementIndex] = requirement
+			newAchievement.Requirements = newRequirements
 			newActiveAchievements[index] = newAchievement
 
 			playerDocument:write(

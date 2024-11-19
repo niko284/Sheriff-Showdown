@@ -89,7 +89,8 @@ local function Voting(_props: VotingProps)
 					key = choice.Name .. votingChoices.Field,
 					field = votingChoices.Field,
 					onActivated = onVotingFieldChoiceSelected,
-					backgroundImage = choice.Image,
+					background = string.format("rbxassetid://%d", choice.Image or 0),
+					amountOfVotes = 0,
 				})
 			)
 		end

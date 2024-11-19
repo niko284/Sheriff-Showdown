@@ -10,7 +10,7 @@ for _, ComponentModule in ipairs(script:GetChildren()) do
 end
 
 export type Renderable<T> = {
-	instance: T,
+	instance: T & Instance,
 }
 export type Gun = {
 	Damage: number,
@@ -22,6 +22,7 @@ export type Gun = {
 	BulletSpeed: number,
 	BulletLifeTime: number,
 	BulletSoundId: number,
+	KnockStrength: number,
 	CriticalDamage: { [string]: number },
 }
 export type Parent = {
@@ -60,6 +61,14 @@ export type Identifier = {
 export type Slowed = {
 	walkspeedMultiplier: number,
 } & StatusEffect
+
+export type Knocked = MatterTypes.ComponentInstance<{
+	direction: Vector3,
+	strength: number,
+	applied: boolean,
+	force: BodyVelocity?,
+} & StatusEffect>
+
 export type WalkSpeed = {
 	speed: number,
 	modifier: number,

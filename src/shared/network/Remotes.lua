@@ -20,6 +20,9 @@ return Net.CreateDefinitions({
 		}),
 		VisualizeEffect = Net.Definitions.ServerToClientEvent(),
 	}),
+	Rewards = Net.Definitions.Namespace({
+		ClaimDailyReward = Net.Definitions.ServerAsyncFunction({}),
+	}),
 	Achievements = Net.Definitions.Namespace({
 		ClaimAchievement = Net.Definitions.ServerAsyncFunction({
 			Net.Middleware.TypeChecking(t.string),

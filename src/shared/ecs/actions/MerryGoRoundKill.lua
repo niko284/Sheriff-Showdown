@@ -44,7 +44,7 @@ return {
 			serverEntityIdCharacter,
 			Components.Killed({
 				killerEntityId = actionPayload.merryGoRoundId,
-				expiry = os.time() + 5,
+				expiry = os.time() + 6,
 			})
 		)
 	end,

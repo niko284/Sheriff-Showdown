@@ -27,6 +27,10 @@ function ResourceService:OnInit()
 	end)
 end
 
+function ResourceService:GetResourceChangedSignal(ResourceName: string): Signal.Signal<Player, any>
+	return ResourceService.ResourceSignals[ResourceName]
+end
+
 function ResourceService:SetResource(Player: Player, Resource: string, Value: any): ()
 	local document = PlayerDataService:GetDocument(Player)
 	local newData = table.clone(document:read())

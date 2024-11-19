@@ -15,6 +15,7 @@ local AchievementsProvider = require(Providers.AchievementsProvider)
 local AutoUIScale = require(Components.other.AutoUIScale)
 local ContextStack = require(ReplicatedStorage.utils.ContextStack)
 local CurrentInterfaceProvider = require(Providers.CurrentInterfaceProvider)
+local DailyRewards = require(Components.dailyRewards.DailyRewards)
 local DistractionViewport = require(Components.round.DistractionViewport)
 local GiftingSelectionList = require(Components.shop.GiftingSelectionList)
 local Inventory = require(Components.inventory.Inventory)
@@ -24,17 +25,20 @@ local NotificationManager = require(Components.notification.NotificationManager)
 local Playerlist = require(Components.playerlist.Playerlist)
 local React = require(ReplicatedStorage.packages.React)
 local ResourceProvider = require(Providers.ResourceProvider)
+local RewardsProvider = require(Providers.RewardsProvider)
 local ScaleContext = require(Contexts.ScaleContext)
 local Settings = require(Components.settings.Settings)
 local SettingsProvider = require(Providers.SettingsProvider)
 local Shop = require(Components.shop.Shop)
 local ShopProvider = require(Providers.ShopProvider)
 local SideButtonHUD = require(Components.other.SideButtonHUD)
+local StatisticsProvider = require(Providers.StatisticsProvider)
 local TradeProvider = require(Providers.TradeProvider)
 local TradeResults = require(Components.trading.TradeResults)
 local Trading = require(Components.trading.Trading)
 local TradingPlayerList = require(Components.trading.TradingPlayerList)
 local Voting = require(Components.voting.Voting)
+local StatusText = require(Components.round.StatusText)
 
 local e = React.createElement
 local useState = React.useState
@@ -66,7 +70,7 @@ local SIDE_BUTTONS = {
 		LayoutOrder = 4,
 		Gradient = ColorSequence.new(Color3.fromRGB(255, 223, 46)),
 	},
-}
+} :: { [any]: any }
 
 local function App()
 	local currentScale, setScale = useState(1)
@@ -84,6 +88,8 @@ local function App()
 			e(AchievementsProvider),
 			e(ResourceProvider),
 			e(TradeProvider),
+			e(StatisticsProvider),
+			e(RewardsProvider),
 		},
 	}, {
 		App = e("ScreenGui", {
@@ -126,8 +132,10 @@ local function App()
 			}),
 			voting = e(Voting),
 			inventory = e(Inventory),
+			statusText = e(StatusText),
 			trading = e(Trading),
 			settings = e(Settings),
+			dailyRewards = e(DailyRewards),
 			--confirmationPrompt = e(ConfirmationPrompt),
 		}),
 	})

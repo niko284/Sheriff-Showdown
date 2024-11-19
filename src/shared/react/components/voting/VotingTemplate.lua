@@ -15,6 +15,7 @@ type VotingTemplateProps = Types.FrameProps & {
 	onActivated: (string, string) -> (),
 	choice: string,
 	field: string,
+	background: string,
 }
 
 local function VotingTemplate(props: VotingTemplateProps)
@@ -62,6 +63,20 @@ local function VotingTemplate(props: VotingTemplateProps)
 			BackgroundTransparency = 1,
 			Position = UDim2.fromOffset(166, 28),
 			Size = UDim2.fromOffset(59, 11),
+		}),
+
+		votingImage = e("ImageLabel", {
+			Image = props.background,
+			BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+			BackgroundTransparency = 1,
+			BorderColor3 = Color3.fromRGB(0, 0, 0),
+			BorderSizePixel = 0,
+			Size = UDim2.fromScale(1, 1),
+			ZIndex = 0,
+		}, {
+			uICorner = e("UICorner", {
+				CornerRadius = UDim.new(0, 14),
+			}),
 		}),
 
 		selectionName = e("TextLabel", {

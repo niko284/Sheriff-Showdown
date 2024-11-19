@@ -25,17 +25,17 @@ local useEffect = React.useEffect
 local useContext = React.useContext
 
 type AutomaticScrollingFrameProps = Types.FrameProps & {
-	onScroll: () -> (),
-	bottomImage: string,
-	topImage: string,
-	scrollingDirection: Enum.ScrollingDirection,
+	onScroll: ((ScrollingFrame) -> ())?,
+	bottomImage: string?,
+	topImage: string?,
+	scrollingDirection: Enum.ScrollingDirection?,
 	scrollBarThickness: number,
-	selectable: boolean,
-	canvasPosition: UDim2,
-	scrollBarImageColor3: Color3,
-	scrollBarImageTransparency: number,
+	selectable: boolean?,
+	canvasPosition: UDim2?,
+	scrollBarImageColor3: Color3?,
+	scrollBarImageTransparency: number?,
 	selectionGroup: boolean?,
-	children: { React.ReactElement<any, any> },
+	children: { React.ReactElement<any, any> }?,
 }
 
 local defaultProps = {
@@ -128,7 +128,7 @@ local function AutomaticScrollingFrame(props: AutomaticScrollingFrameProps)
 		[React.Event.ChildAdded] = attemptResize,
 		[React.Event.ChildRemoved] = attemptResize,
 		[React.Change.AbsoluteSize] = attemptResize,
-		[React.Change.CanvasPosition] = props.onScroll,
+		[React.Change.CanvasPosition] = props.onScroll :: any,
 		AnchorPoint = props.anchorPoint,
 		Active = props.active,
 		Size = props.size,

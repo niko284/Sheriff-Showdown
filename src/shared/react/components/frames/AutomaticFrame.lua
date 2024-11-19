@@ -52,10 +52,10 @@ type AutomaticFrameProps = Types.FrameProps & {
 	automaticSize: EnumItem?,
 	maxSize: Vector2,
 	textToRead: string?,
-	minSize: Vector2,
+	minSize: Vector2?,
 	instanceProps: { [string]: any },
 	className: string,
-	children: { any },
+	children: { any }?,
 }
 
 local defaultProps = {

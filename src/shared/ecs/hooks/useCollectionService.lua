@@ -9,14 +9,17 @@ local function cleanup(storage)
 			connection:Disconnect()
 		end
 	end
-	table.clear(storage.collection)
+	if storage.collection then
+		table.clear(storage.collection)
+	end
 end
 
 local function useCollectionService(tag: string)
-	local storage = Matter.useHookState({
-		collection = CollectionService:GetTagged(tag),
-		currIndex = 1,
-	}, cleanup)
+	local storage = Matter.useHookState(tag, cleanup)
+
+	if not storage.collection then
+		storage.collection = CollectionService:GetTagged(tag)
+	end
 
 	if not storage.connections then
 		storage.connections = {}
@@ -34,7 +37,7 @@ local function useCollectionService(tag: string)
 	end
 
 	return function()
-		local currIndex = storage.currIndex
+		local currIndex = storage.currIndex or 1
 		storage.currIndex = currIndex + 1
 
 		local value = storage.collection[currIndex]

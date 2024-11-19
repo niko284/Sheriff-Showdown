@@ -70,7 +70,7 @@ local function gunsAreRendered(world: Matter.World, server)
 		eid,
 		_target: Components.Target,
 		renderable: Components.Renderable<Types.Character>,
-		children: Components.Children<Types.PlayerChildren>
+		children: Components.Children<Types.TargetChildren>
 	in world:query(Components.Target, Components.Renderable, Components.Children) do
 		local gunEntityId = children.children.gunEntityId
 		local waistRenderableGunId = children.children.waistRenderableGunId

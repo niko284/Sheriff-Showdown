@@ -51,8 +51,9 @@ return {
 			return AllOnSameTeam(RoundInstance)
 		end,
 		UseSpawnType = "FFA",
+		Image = 77237596598471,
 	},
-	--[[{
+	{
 		Name = "Revolver Relay",
 		IsGameOver = function(RoundInstance: Types.Round)
 			-- the game is over when the player pool consists of only people that were in the same team last round.
@@ -63,6 +64,7 @@ return {
 		TeamsPerMatch = function()
 			return #Players:GetPlayers()
 		end,
+		Image = 99452383534143,
 	},
 	{
 		Name = "Hot Potato",
@@ -75,7 +77,8 @@ return {
 		TeamsPerMatch = function()
 			return #Players:GetPlayers()
 		end,
-	},--]]
+		Image = 75034171719400,
+	},
 	{
 		Name = "Red vs Blue",
 		IsGameOver = function(RoundInstance: Types.Round)
@@ -83,6 +86,7 @@ return {
 			return AllOnSameTeam(RoundInstance)
 		end,
 		UseSpawnType = "RVB",
+		Image = 100074347186146,
 	},
 	--[[{
 		Name = "Duos",
@@ -105,6 +109,7 @@ return {
 			return #Players:GetPlayers()
 		end,
 		UseSpawnType = "FFA",
+		Image = 73093599523132,
 	},
 	--[[{
 		Name = "Distraction",

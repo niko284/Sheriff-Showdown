@@ -15,11 +15,13 @@ local Components = require(ReplicatedStorage.ecs.components)
 local Maps = require(Constants.Maps)
 local Matter = require(Packages.Matter)
 local Promise = require(Packages.Promise)
+local RagdollService = require(ServerScriptService.services.RagdollService)
 local Remotes = require(ReplicatedStorage.network.Remotes)
 local RoundModes = require(Constants.RoundModes)
 local ServerComm = require(ServerScriptService.ServerComm)
 local Sift = require(Packages.Sift)
 local Signal = require(Packages.Signal)
+local StatisticsService = require(ServerScriptService.services.StatisticsService)
 local Teams = require(Constants.Teams)
 local Types = require(Constants.Types)
 
@@ -48,6 +50,7 @@ local RoundService = {
 	CurrentRound = nil :: Types.Round?,
 	VotingPoolClient = ServerComm:CreateProperty("VotingPoolClient", nil),
 	StartMatchTimestamp = ServerComm:CreateProperty("StartMatchTimestamp", nil),
+	RoundStatus = ServerComm:CreateProperty("RoundStatus", nil),
 	VotingPool = nil :: Types.VotingPool?,
 	World = nil :: Matter.World, -- injected by our ECS system
 }
@@ -105,9 +108,13 @@ function RoundService:OnStart()
 							-- we want to cancel the entire promise chain if there are not enough players to start a round after voting or intermission.
 							return Promise.reject("Not enough players to start a round.")
 						end),
-						RoundService:DoIntermission():andThen(function()
-							return RoundService:DoVoting()
-						end),
+						RoundService:DoIntermission()
+							:andThen(function()
+								return RoundService:DoVoting()
+							end)
+							:tap(function()
+								return Promise.delay(2)
+							end),
 					})
 				end)
 				:andThen(function(FieldWinners)
@@ -116,12 +123,6 @@ function RoundService:OnStart()
 					return RoundService:DoRound(roundInstance)
 				end)
 				:andThen(function(_winningPlayers: { Player })
-					-- destroy the map
-					local round = RoundService:GetRound()
-					if round then
-						round.Map:Destroy()
-					end
-
 					return Promise.delay(8)
 				end)
 				:catch(function(err)
@@ -165,6 +166,7 @@ function RoundService:ProcessVote(Player: Player, VotingField: string, VotingCho
 end
 
 function RoundService:DoIntermission()
+	RoundService.RoundStatus:Set("Intermission...")
 	return Promise.delay(10)
 end
 
@@ -198,6 +200,8 @@ function RoundService:DoVoting()
 	-- shuffle maps and round modes
 	local shuffledMaps = Sift.Array.shuffle(Maps)
 	local shuffledRoundModes = Sift.Array.shuffle(RoundModes)
+
+	RoundService.RoundStatus:Set("Voting in progress...")
 
 	-- pick MAP_VOTING_COUNT maps and ROUND_MODE_VOTING_COUNT round modes
 
@@ -281,6 +285,8 @@ function RoundService:DoVoting()
 			fieldsWithWinningChoices[field] = winningChoice
 		end
 
+		RoundService.RoundStatus:Set("Chosen game mode: " .. fieldsWithWinningChoices.RoundModes.Name)
+
 		RoundService.VotingPoolClient:Set(nil) -- close the voting interface
 
 		return fieldsWithWinningChoices
@@ -289,6 +295,7 @@ end
 
 function RoundService:WaitForPlayers(PlayerCount: number)
 	local playerCount = #Players:GetPlayers()
+	RoundService.RoundStatus:Set("Waiting for players...")
 	if playerCount >= PlayerCount then
 		return Promise.resolve()
 	else
@@ -319,7 +326,9 @@ function RoundService:LoadMap(MapName: string)
 	local mapClone = mapModel:Clone()
 	mapClone.Parent = workspace -- add the map to the workspace (load it in)
 
-	return mapClone
+	return Promise.delay(3):andThen(function()
+		return mapClone
+	end)
 end
 
 function RoundService:DoRound(RoundInstance: Types.Round)
@@ -363,6 +372,8 @@ end
 function RoundService:StartMatch(RoundInstance: Types.Round, Match: Types.Match)
 	-- teleport players to their spawn points
 	local mapFolder = RoundInstance.Map
+
+	RoundService.RoundStatus:Set("Match in progress...")
 
 	local world = RoundService.World :: Matter.World
 
@@ -425,6 +436,8 @@ function RoundService:StartMatch(RoundInstance: Types.Round, Match: Types.Match)
 				renderable.instance:PivotTo(spawnPoint.CFrame * CFrame.new(0, 5, 0))
 				table.remove(spawners, randomSpawnerIndex) -- we don't want to spawn two players at the same spawn point
 			end
+
+			RoundService.World:insert(entityId, Components.Target())
 		end
 	end
 
@@ -492,20 +505,21 @@ function RoundService:WaitForMatchesToFinish(RoundInstance: Types.Round)
 							if winningPlayer:IsDescendantOf(game) == false then
 								continue
 							end
+							StatisticsService:IncrementStatistic(winningPlayer, "TotalWins", 1)
 							EndMatchClient:SendToPlayer(winningPlayer)
 							winningPlayer:LoadCharacter()
-						end
-
-						for _, team in match.Teams do
-							for _, entityId in team.Entities do
-								RoundService.World:despawn(entityId)
-							end
 						end
 
 						local nextMatch = RoundInstance.Matches[index + 1]
 						if nextMatch then
 							task.wait(2)
 							RoundService:StartMatch(RoundInstance, nextMatch) -- start it after the winning team respawns.
+						else
+							-- destroy the map
+							local round = RoundService:GetRound()
+							if round then
+								round.Map:Destroy()
+							end
 						end
 					end)
 
@@ -541,7 +555,7 @@ function RoundService:CreateRound(RoundMode: Types.RoundMode, MapName: string): 
 		Players = playerPool,
 		Matches = RoundService:AllocateMatches(playerPool, RoundMode),
 		RoundMode = RoundMode,
-		Map = RoundService:LoadMap(MapName),
+		Map = RoundService:LoadMap(MapName):expect(),
 	}
 
 	local roundModeExtension = RoundService:GetRoundModeExtension(RoundMode)
@@ -571,7 +585,7 @@ function RoundService:GetEntityIdFromRenderable(RenderableInstance: Instance): n
 	for eid, renderable: Components.Renderable<Model>, _target in
 		RoundService.World:query(Components.Renderable, Components.Target)
 	do
-		if renderable.instance == RenderableInstance then
+		if (renderable.instance :: Instance) == RenderableInstance then
 			return eid
 		end
 	end
@@ -579,14 +593,7 @@ function RoundService:GetEntityIdFromRenderable(RenderableInstance: Instance): n
 end
 
 function RoundService:GetEntityIdFromPlayer(Player: Player): number?
-	for eid, playerComponent: Components.PlayerComponent, _target in
-		RoundService.World:query(Components.Player, Components.Target)
-	do
-		if playerComponent.player == Player then
-			return eid
-		end
-	end
-	return nil
+	return Player:GetAttribute("serverEntityId") :: number?
 end
 
 function RoundService:AllocateMatches(PlayerPool: { Player }, RoundMode: Types.RoundMode): { Types.Match }

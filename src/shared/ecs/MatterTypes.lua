@@ -8,7 +8,7 @@ export type ComponentInstance<T> = T & ComponentInstanceMeta<T>
 -- right now a recursive type such as this also seems
 -- to break a lot of tooling such as luau-lsp
 export type ComponentInstanceMeta<T> = {
-	patch: (self: ComponentInstance<T>, changes: T) -> ComponentInstance<T>,
+	patch: (self: ComponentInstance<T>, changes: any) -> ComponentInstance<T>,
 }
 
 type SystemFn = (...any) -> ()

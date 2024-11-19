@@ -110,6 +110,7 @@ export type RoundMode =
 	| "Juggernaut"
 export type RoundModeData = {
 	Name: RoundMode,
+	Image: number,
 	TeamSize: ((() -> number) | number)?,
 	TeamsPerMatch: ((() -> number) | number)?,
 	TeamNames: { string }?,
@@ -215,6 +216,11 @@ export type VisualEffect<T> = {
 export type PlayerlistPlayer = {
 	Player: Player,
 	Level: number,
+	Kills: number,
+	Playtime: number,
+	Deaths: number,
+	LongestKillStreak: number,
+	Wins: number,
 }
 
 export type NetworkResponse = {
@@ -226,6 +232,13 @@ export type Currency = "Coins" | "Gems"
 export type CurrencyData = {
 	CanPurchase: boolean,
 	Color: Color3,
+	Packs: {
+		{
+			Amount: number,
+			ProductId: number,
+			Image: number,
+		}
+	},
 }
 
 export type Interface =
@@ -238,6 +251,7 @@ export type Interface =
 	| "ActiveTrade"
 	| "TradeProcessed"
 	| "Achievements"
+	| "DailyRewards"
 
 export type ProductInfo = {
 	Name: string,
@@ -383,6 +397,20 @@ export type NotificationElementPropsGeneric = {
 	isActive: boolean,
 }
 
+export type RewardType = "Daily"
+export type Reward = {
+	RewardType: RewardType,
+}
+
+export type DailyRewardType = "Coins" | "Gems" | "Item" | "Badge"
+export type DailyReward = {
+	Day: number,
+	Type: DailyRewardType,
+	Amount: (number | (DailyReward, Player) -> number)?,
+	Icon: string?,
+	ItemId: number?,
+} & Reward
+
 export type AchievementReward = {
 	Type: "Currency" | "Item" | "Badge",
 	Currency: Currency,
@@ -448,7 +476,7 @@ export type Character = {
 	HumanoidRootPart: BasePart,
 } & { [string]: any }
 
-export type PlayerChildren = {
+export type TargetChildren = {
 	gunEntityId: number?,
 	waistRenderableGunId: number?,
 }

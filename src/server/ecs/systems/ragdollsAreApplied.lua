@@ -10,7 +10,7 @@ type RagdolledRecord = MatterTypes.WorldChangeRecord<Components.Ragdolled>
 
 local function ragdollsAreApplied(world: Matter.World)
 	-- ragdolls are applied to entities with a Renderable and Ragdolled component
-	for _eid, renderable: Components.Renderable, _ragdolled: Components.Ragdolled in
+	for _eid, renderable: Components.Renderable<Model>, _ragdolled: Components.Ragdolled in
 		world:query(Components.Renderable, Components.Ragdolled)
 	do
 		local humanoid = renderable.instance:FindFirstChildOfClass("Humanoid")
@@ -21,7 +21,7 @@ local function ragdollsAreApplied(world: Matter.World)
 
 	-- ragdolls are removed from entities without a Ragdolled component
 	for eid, ragdolledRecord: RagdolledRecord in world:queryChanged(Components.Ragdolled) do
-		if ragdolledRecord.new == nil then -- the ragdolled component was removed from an entity
+		if ragdolledRecord.new == nil and world:contains(eid) then -- the ragdolled component was removed from an entity
 			local renderable = world:get(eid, Components.Renderable)
 			if renderable then
 				local humanoid = renderable.instance:FindFirstChildOfClass("Humanoid")

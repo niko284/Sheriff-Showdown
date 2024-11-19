@@ -3,11 +3,11 @@
 return {
 	{
 		Name = "Desert",
-		Image = 16345010678,
+		Image = 106723537847786,
 	},
 	{
 		Name = "Saloon",
-		Image = 16345012320,
+		Image = 92701169670251,
 	},
 	{
 		Name = "Cement",
@@ -15,11 +15,11 @@ return {
 	},
 	{
 		Name = "Field",
-		Image = 16860485891,
+		Image = 103508234657269,
 	},
 	{
 		Name = "River",
-		Image = 16860487532,
+		Image = 106599488395228,
 	},
 	--[[{
 		Name = "Office",
@@ -27,7 +27,7 @@ return {
 	},--]]
 	{
 		Name = "Bridge",
-		Image = 17335342026,
+		Image = 136163376232235,
 	},
 	{
 		Name = "Castle",
@@ -35,7 +35,7 @@ return {
 	},
 	{
 		Name = "Playground",
-		Image = 0,
+		Image = 104298847591808,
 	},
 	{
 		Name = "Construction",

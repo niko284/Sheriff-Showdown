@@ -12,25 +12,37 @@ local Components = require(ReplicatedStorage.ecs.components)
 local Matter = require(Packages.Matter)
 local MatterReplication = require(Packages.MatterReplication)
 local Remotes = require(ReplicatedStorage.network.Remotes)
+local Types = require(ReplicatedStorage.constants.Types)
 local UUIDSerde = require(Utils.UUIDSerde)
+local useAnimation = require(ReplicatedStorage.ecs.hooks.useAnimation)
 
 local CombatNamespace = Remotes.Client:GetNamespace("Combat")
 local ProcessAction = CombatNamespace:Get("ProcessAction")
 
+local Assets = ReplicatedStorage:FindFirstChild("assets") :: Folder
+local Animations = Assets:FindFirstChild("animations") :: Folder
+
+local SHOOT_ANIMATION = Animations:FindFirstChild("gunshoot") :: Animation
+
 local function gunsCanShoot(world: Matter.World, state)
 	local actions = state.actions
 
-	local isShooting = actions:justPressed("shoot")
-	local mouseLocation = UserInputService:GetMouseLocation() - GuiService:GetGuiInset()
-	local viewportPointRay = workspace.CurrentCamera:ScreenPointToRay(mouseLocation.X, mouseLocation.Y)
+	local isShooting = actions:pressed("shoot")
 
 	for eid, gun, owner: Components.Owner, serverEntity in
 		world:query(Components.Gun, Components.Owner, MatterReplication.ServerEntity):without(Components.Cooldown)
 	do
 		if isShooting then
 			if gun.CurrentCapacity > -math.huge and owner.OwnedBy == Players.LocalPlayer and gun.Disabled ~= true then
-				local character = (owner.OwnedBy :: Player).Character
+				local mouseLocation = UserInputService:GetMouseLocation() - GuiService:GetGuiInset()
+				local viewportPointRay = workspace.CurrentCamera:ScreenPointToRay(mouseLocation.X, mouseLocation.Y)
+
+				local character = (owner.OwnedBy :: any).Character :: Types.Character
 				local bulletFilter = { character, unpack(CollectionService:GetTagged("Barrier")) }
+
+				local animator = character.Humanoid:FindFirstChildOfClass("Animator")
+
+				useAnimation(animator, SHOOT_ANIMATION, false)
 
 				local raycastParams = RaycastParams.new()
 				raycastParams.FilterDescendantsInstances = bulletFilter

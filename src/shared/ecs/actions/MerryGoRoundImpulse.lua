@@ -50,9 +50,9 @@ return {
 
 		if merryGoRoundModel and merryGoRoundId and merryGoRoundId == impulsePayload.merryGoRoundId then
 			if merryGoRound.hardStopIn == nil then -- we don't want to override the hard stop
-				print(
+				--[[print(
 					`New target angular velocity after player-applied impulse: {merryGoRound.targetAngularVelocity + 0.1}`
-				)
+				)--]]
 				merryGoRound = merryGoRound:patch({
 					targetAngularVelocity = merryGoRound.targetAngularVelocity + 0.1,
 				})

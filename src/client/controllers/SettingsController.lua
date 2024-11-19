@@ -43,7 +43,8 @@ local SettingsController = {
 			Description = "Extra settings for the game.",
 		},
 	},
-	SettingsChanged = Signal.new() :: Signal.Signal<Types.PlayerDataSettings>,
+	SettingsChanged = Signal.new() :: Signal.Signal<Types.PlayerDataSettings, Types.PlayerDataSettings?>,
+	CurrentSettings = nil :: Types.PlayerDataSettings?,
 }
 
 -- // Functions \\
@@ -51,19 +52,33 @@ local SettingsController = {
 function SettingsController:Init()
 	PlayerSettingsProperty:Observe(function(playerSettings: Types.PlayerDataSettings?)
 		if playerSettings then
-			SettingsController.SettingsChanged:Fire(playerSettings)
+			SettingsController.CurrentSettings = playerSettings
+			SettingsController.SettingsChanged:Fire(playerSettings, nil)
 		end
 	end)
+	SettingsController.SettingsChanged:Connect(
+		function(playerSettings: Types.PlayerDataSettings, _oldSettings: Types.PlayerDataSettings?)
+			SettingsController.CurrentSettings = playerSettings
+		end
+	)
 end
 
 function SettingsController:GetReplicatedSettings()
 	return PlayerSettingsProperty:Get()
 end
 
-function SettingsController:ObserveSettingsChanged(callback: (Types.PlayerDataSettings) -> ())
+function SettingsController:GetSetting(settingName: string): Types.SettingInternal
+	local playerSettings =
+		SettingsController:FillInSettings(SettingsController.CurrentSettings or PlayerSettingsProperty:Get())
+	return playerSettings[settingName]
+end
+
+function SettingsController:ObserveSettingsChanged(
+	callback: (Types.PlayerDataSettings, Types.PlayerDataSettings?) -> ()
+)
 	local playerSettings = PlayerSettingsProperty:Get()
 	if playerSettings then
-		callback(playerSettings)
+		callback(playerSettings, nil)
 	end
 	return SettingsController.SettingsChanged:Connect(callback)
 end

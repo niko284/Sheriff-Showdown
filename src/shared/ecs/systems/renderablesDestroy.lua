@@ -15,9 +15,16 @@ type RenderableRecord = {
 
 local function renderablesDestroy(world: Matter.World)
 	-- account for the case where a renderable is removed from an entity OR the entity is despawned.
-	for _eid, renderableRecord: RenderableRecord in world:queryChanged(Renderable) do
+	for eid, renderableRecord: RenderableRecord in world:queryChanged(Renderable) do
 		if renderableRecord.new == nil then
 			if renderableRecord.old and renderableRecord.old.instance then
+				if
+					world:contains(eid)
+					and RunService:IsClient() == true
+					and world:get(eid, MatterReplication.ServerEntity)
+				then
+					return -- don't destroy the renderable if it's a server entity and we're on the client.
+				end
 				renderableRecord.old.instance:Destroy()
 			end
 		end
@@ -26,7 +33,11 @@ local function renderablesDestroy(world: Matter.World)
 	for eid, renderable: Components.Renderable<Instance> in world:query(Renderable) do
 		for _ in useEvent(renderable.instance, "AncestryChanged") do
 			if renderable.instance:IsDescendantOf(game) == false then
-				if RunService:IsClient() == true and world:get(eid, MatterReplication.ServerEntity) then
+				if
+					world:contains(eid)
+					and RunService:IsClient() == true
+					and world:get(eid, MatterReplication.ServerEntity)
+				then
 					return -- don't destroy the renderable if it's a server entity and we're on the client.
 				end
 
