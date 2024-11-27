@@ -485,4 +485,15 @@ export type GunChildren = {
 	handRenderableId: number?,
 }
 
+export type PurchaseType = "Gems" | "Coins" | "Robux"
+
+
+export type CratePurchaseInfo = {
+	ProductId: number?, -- for robux
+	Price: number?, -- for gems and coins
+	PurchaseType: PurchaseType,
+}
+
+export type CrateType = "Standard" | "Standard"
+
 return nil
