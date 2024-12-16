@@ -16,8 +16,8 @@ local Packages = ReplicatedStorage.packages
 local Assets = ReplicatedStorage:FindFirstChild("assets") :: Folder
 local Guns = Assets:FindFirstChild("guns") :: Folder
 local Constants = ReplicatedStorage.constants
-local Effects = Assets:FindFirstChild("effects") :: Folder
-local BulletBeam = Effects:FindFirstChild("Shot") :: Beam
+local Other = Assets:FindFirstChild("other") :: Folder
+local BulletBeam = Other:FindFirstChild("Shot") :: Beam
 
 local Janitor = require(Packages.Janitor)
 local Promise = require(Packages.Promise)
@@ -91,7 +91,7 @@ type HitboxProps = {
 
 function Util.FindPlayingAnimationTrackOfId(AnimationId: string, Entity: Instance): AnimationTrack?
 	local otherAnimationId = tonumber(AnimationId:match("%d+"))
-    local Humanoid = Entity:FindFirstChildOfClass("Humanoid") :: Humanoid
+	local Humanoid = Entity:FindFirstChildOfClass("Humanoid") :: Humanoid
 	local animator = Humanoid:FindFirstChildOfClass("Animator")
 	if animator then
 		for _, track in pairs(animator:GetPlayingAnimationTracks()) do
@@ -116,7 +116,7 @@ function Util.NPCAttackHitboxNew(CFrame: CFrame, Size: Vector3, Shape: string, D
 		Transparency = 0.65,
 	})
 	hitbox:AddTag("Zone")
-    Debris:AddItem(hitbox, Duration + 1.5)
+	Debris:AddItem(hitbox, Duration + 1.5)
 
 	local colorTween =
 		TweenService:Create(hitbox, TweenInfo.new(Duration, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {
@@ -195,7 +195,7 @@ function Util.Part(properties: { [string]: any }, DebrisTime: number?, Tags: { s
 	end
 
 	if properties.DebrisClear == nil then
-        Debris:AddItem(part, DebrisTime or 10)
+		Debris:AddItem(part, DebrisTime or 10)
 	end
 
 	part.Parent = properties.Parent or workspace -- Assign parent last to optimize
@@ -499,7 +499,8 @@ function Util.Emit(thing: Instance, particleInfo: { [string]: number }?): Instan
 		if not particle:IsA("ParticleEmitter") then
 			continue
 		else
-			local emitCount = particleInfo and particleInfo[particle.Name] or particle:GetAttribute("EmitCount") :: number
+			local emitCount = particleInfo and particleInfo[particle.Name]
+				or particle:GetAttribute("EmitCount") :: number
 			if not emitCount then
 				continue
 			end
@@ -558,7 +559,7 @@ function Util.UnlockCharacter(Character: Model)
 end
 
 function Util.RaycastDownwards(Entity: Instance)
-    local HumanoidRootPart = Entity:FindFirstChild("HumanoidRootPart") :: BasePart
+	local HumanoidRootPart = Entity:FindFirstChild("HumanoidRootPart") :: BasePart
 	local params = RaycastParams.new()
 	params.FilterDescendantsInstances = {
 		Entity,

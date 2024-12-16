@@ -3,14 +3,32 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local React = require(ReplicatedStorage.packages.React)
+local Currencies = require(ReplicatedStorage.constants.Currencies)
+local Types = require(ReplicatedStorage.constants.Types)
+local useProductInfoFromIds = require(ReplicatedStorage.react.hooks.useProductInfoFromIds)
+local Freeze = require(ReplicatedStorage.packages.Freeze)
+local FormatNumber = require(ReplicatedStorage.utils.FormatNumber)
+
+local NumberFormatter = FormatNumber.NumberFormatter
 
 local e = React.createElement
+local useRef = React.useRef
 
 type CurrencyPageProps = {
 	pageRef: (ref: Frame) -> (),
 }
 
+local currencyInfo = (Currencies :: any).Coins :: Types.CurrencyData
+local productIds = Freeze.Dictionary.map(currencyInfo.Packs, function(pack)
+	return Enum.InfoType.Product, pack.ProductId
+end) :: { [number]: Enum.InfoType }
+
 local function CurrencyPage(props: CurrencyPageProps)
+	local formatter = useRef(NumberFormatter.with():Precision(FormatNumber.Precision.integer()))
+
+	local productInfo = useProductInfoFromIds(productIds)
+
+	print("rerender")
 	return e("Frame", {
 		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 		BackgroundTransparency = 1,
@@ -48,6 +66,17 @@ local function CurrencyPage(props: CurrencyPageProps)
 				Color = Color3.fromRGB(255, 255, 255),
 			}),
 
+			icon = e("ImageLabel", {
+				Image = string.format("rbxassetid://%d", currencyInfo.Packs[1].Image),
+				BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+				BackgroundTransparency = 1,
+				BorderColor3 = Color3.fromRGB(0, 0, 0),
+				BorderSizePixel = 0,
+				Position = UDim2.fromScale(0.117, 0.153),
+				Size = UDim2.fromScale(0.755, 0.684),
+				ZIndex = 0,
+			}),
+
 			corner = e("UICorner", {
 				CornerRadius = UDim.new(0, 5),
 			}),
@@ -58,7 +87,7 @@ local function CurrencyPage(props: CurrencyPageProps)
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-				Text = "$100,000",
+				Text = string.format("$%d", currencyInfo.Packs[1].Amount),
 				TextColor3 = Color3.fromRGB(240, 240, 240),
 				TextSize = 16,
 				TextXAlignment = Enum.TextXAlignment.Left,
@@ -73,7 +102,13 @@ local function CurrencyPage(props: CurrencyPageProps)
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-				Text = "555",
+				Text = string.format(
+					"%d",
+					productInfo
+							and productInfo[currencyInfo.Packs[1].ProductId]
+							and formatter.current:Format(productInfo[currencyInfo.Packs[1].ProductId].PriceInRobux or 0)
+						or 0
+				),
 				TextColor3 = Color3.fromRGB(255, 255, 255),
 				TextSize = 16,
 				TextXAlignment = Enum.TextXAlignment.Left,
@@ -97,7 +132,7 @@ local function CurrencyPage(props: CurrencyPageProps)
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-				Text = "$100,000",
+				Text = string.format("$%d", currencyInfo.Packs[2].Amount),
 				TextColor3 = Color3.fromRGB(240, 240, 240),
 				TextSize = 16,
 				TextXAlignment = Enum.TextXAlignment.Left,
@@ -106,13 +141,30 @@ local function CurrencyPage(props: CurrencyPageProps)
 				Size = UDim2.fromOffset(74, 17),
 			}),
 
+			icon = e("ImageLabel", {
+				Image = string.format("rbxassetid://%d", currencyInfo.Packs[2].Image),
+				BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+				BackgroundTransparency = 1,
+				BorderColor3 = Color3.fromRGB(0, 0, 0),
+				BorderSizePixel = 0,
+				Position = UDim2.fromScale(0.117, 0.153),
+				Size = UDim2.fromScale(0.755, 0.684),
+				ZIndex = 0,
+			}),
+
 			robuxPrice1 = e("TextLabel", {
 				FontFace = Font.new(
 					"rbxasset://fonts/families/GothamSSm.json",
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-				Text = "555",
+				Text = string.format(
+					"%d",
+					productInfo
+							and productInfo[currencyInfo.Packs[2].ProductId]
+							and formatter.current:Format(productInfo[currencyInfo.Packs[2].ProductId].PriceInRobux or 0)
+						or 0
+				),
 				TextColor3 = Color3.fromRGB(255, 255, 255),
 				TextSize = 16,
 				TextXAlignment = Enum.TextXAlignment.Left,
@@ -146,13 +198,24 @@ local function CurrencyPage(props: CurrencyPageProps)
 				Color = Color3.fromRGB(255, 255, 255),
 			}),
 
+			icon = e("ImageLabel", {
+				Image = string.format("rbxassetid://%d", currencyInfo.Packs[3].Image),
+				BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+				BackgroundTransparency = 1,
+				BorderColor3 = Color3.fromRGB(0, 0, 0),
+				BorderSizePixel = 0,
+				Position = UDim2.fromScale(0.117, 0.153),
+				Size = UDim2.fromScale(0.755, 0.684),
+				ZIndex = 0,
+			}),
+
 			coins2 = e("TextLabel", {
 				FontFace = Font.new(
 					"rbxasset://fonts/families/GothamSSm.json",
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-				Text = "$100,000",
+				Text = string.format("$%d", currencyInfo.Packs[3].Amount),
 				TextColor3 = Color3.fromRGB(240, 240, 240),
 				TextSize = 16,
 				TextXAlignment = Enum.TextXAlignment.Left,
@@ -167,7 +230,13 @@ local function CurrencyPage(props: CurrencyPageProps)
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-				Text = "555",
+				Text = string.format(
+					"%d",
+					productInfo
+							and productInfo[currencyInfo.Packs[3].ProductId]
+							and formatter.current:Format(productInfo[currencyInfo.Packs[3].ProductId].PriceInRobux or 0)
+						or 0
+				),
 				TextColor3 = Color3.fromRGB(255, 255, 255),
 				TextSize = 16,
 				TextXAlignment = Enum.TextXAlignment.Left,
@@ -191,7 +260,7 @@ local function CurrencyPage(props: CurrencyPageProps)
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-				Text = "$100,000",
+				Text = string.format("$%d", currencyInfo.Packs[4].Amount),
 				TextColor3 = Color3.fromRGB(240, 240, 240),
 				TextSize = 16,
 				TextXAlignment = Enum.TextXAlignment.Left,
@@ -200,13 +269,30 @@ local function CurrencyPage(props: CurrencyPageProps)
 				Size = UDim2.fromOffset(74, 17),
 			}),
 
+			icon = e("ImageLabel", {
+				Image = string.format("rbxassetid://%d", currencyInfo.Packs[4].Image),
+				BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+				BackgroundTransparency = 1,
+				BorderColor3 = Color3.fromRGB(0, 0, 0),
+				BorderSizePixel = 0,
+				Position = UDim2.fromScale(0.129, -0.0116),
+				Size = UDim2.fromScale(0.76, 0.981),
+				ZIndex = 0,
+			}),
+
 			robux = e("TextLabel", {
 				FontFace = Font.new(
 					"rbxasset://fonts/families/GothamSSm.json",
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-				Text = "555",
+				Text = string.format(
+					"%d",
+					productInfo
+							and productInfo[currencyInfo.Packs[4].ProductId]
+							and formatter.current:Format(productInfo[currencyInfo.Packs[4].ProductId].PriceInRobux or 0)
+						or 0
+				),
 				TextColor3 = Color3.fromRGB(255, 255, 255),
 				TextSize = 16,
 				TextXAlignment = Enum.TextXAlignment.Left,
@@ -238,7 +324,13 @@ local function CurrencyPage(props: CurrencyPageProps)
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-				Text = "555",
+				Text = string.format(
+					"%d",
+					productInfo
+							and productInfo[currencyInfo.Packs[5].ProductId]
+							and formatter.current:Format(productInfo[currencyInfo.Packs[5].ProductId].PriceInRobux or 0)
+						or 0
+				),
 				TextColor3 = Color3.fromRGB(255, 255, 255),
 				TextSize = 16,
 				TextXAlignment = Enum.TextXAlignment.Left,
@@ -255,13 +347,24 @@ local function CurrencyPage(props: CurrencyPageProps)
 				Color = Color3.fromRGB(255, 255, 255),
 			}),
 
+			icon = e("ImageLabel", {
+				Image = string.format("rbxassetid://%d", currencyInfo.Packs[5].Image),
+				BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+				BackgroundTransparency = 1,
+				BorderColor3 = Color3.fromRGB(0, 0, 0),
+				BorderSizePixel = 0,
+				Position = UDim2.fromScale(0.117, 0.153),
+				Size = UDim2.fromScale(0.755, 0.684),
+				ZIndex = 0,
+			}),
+
 			coins4 = e("TextLabel", {
 				FontFace = Font.new(
 					"rbxasset://fonts/families/GothamSSm.json",
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-				Text = "$100,000",
+				Text = string.format("$%d", currencyInfo.Packs[5].Amount),
 				TextColor3 = Color3.fromRGB(240, 240, 240),
 				TextSize = 16,
 				TextXAlignment = Enum.TextXAlignment.Left,
@@ -287,13 +390,24 @@ local function CurrencyPage(props: CurrencyPageProps)
 				Color = Color3.fromRGB(255, 255, 255),
 			}),
 
+			icon = e("ImageLabel", {
+				Image = string.format("rbxassetid://%d", currencyInfo.Packs[6].Image),
+				BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+				BackgroundTransparency = 1,
+				BorderColor3 = Color3.fromRGB(0, 0, 0),
+				BorderSizePixel = 0,
+				Position = UDim2.fromScale(-5.28e-07, 0.204),
+				Size = UDim2.fromScale(1, 0.684),
+				ZIndex = 0,
+			}),
+
 			coins5 = e("TextLabel", {
 				FontFace = Font.new(
 					"rbxasset://fonts/families/GothamSSm.json",
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-				Text = "$100,000",
+				Text = string.format("$%d", currencyInfo.Packs[6].Amount),
 				TextColor3 = Color3.fromRGB(240, 240, 240),
 				TextSize = 16,
 				TextXAlignment = Enum.TextXAlignment.Left,
@@ -308,7 +422,13 @@ local function CurrencyPage(props: CurrencyPageProps)
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-				Text = "555",
+				Text = string.format(
+					"%d",
+					productInfo
+							and productInfo[currencyInfo.Packs[6].ProductId]
+							and formatter.current:Format(productInfo[currencyInfo.Packs[6].ProductId].PriceInRobux or 0)
+						or 0
+				),
 				TextColor3 = Color3.fromRGB(255, 255, 255),
 				TextSize = 16,
 				TextXAlignment = Enum.TextXAlignment.Left,

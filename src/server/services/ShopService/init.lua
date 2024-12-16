@@ -65,7 +65,7 @@ function ShopService:PurchaseCrateNetworkRequest(
 		return { Success = false, Message = "Invalid crate item" }
 	end
 
-	ItemService:GenerateItem(itemInfo.Id):andThen(function(Item: Types.Item)
+	ItemService:GenerateItem(itemInfo.Id):tap(function(Item: Types.Item)
 		InventoryService:AddItem(Player, Item, true)
 		ResourceService:SetResource(Player, purchaseMethod.Type, resources[purchaseMethod.Type] - purchaseMethod.Price)
 	end)

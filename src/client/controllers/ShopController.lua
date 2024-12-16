@@ -3,24 +3,57 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
-local Promise = require(ReplicatedStorage.packages.Promise)
-local Types = require(ReplicatedStorage.constants.Types)
 local CrateData = require(ReplicatedStorage.constants.Crates)
 local EffectUtils = require(ReplicatedStorage.utils.EffectUtils)
+local ItemUtils = require(ReplicatedStorage.utils.ItemUtils)
+local Promise = require(ReplicatedStorage.packages.Promise)
+local Signal = require(ReplicatedStorage.packages.Signal)
+local Types = require(ReplicatedStorage.constants.Types)
 
-local Assets = ReplicatedStorage:FindFirstChild("assets")
+local Assets = ReplicatedStorage:FindFirstChild("assets") :: Folder
 local CurrentCamera = workspace.CurrentCamera
-local Guns = Assets:FindFirstChild("guns")
-local Crates = ReplicatedStorage:FindFirstChild("assets"):FindFirstChild("crates")
+local Guns = Assets:FindFirstChild("guns") :: Folder
+local Crates = Assets:FindFirstChild("crates") :: Folder
 local GUN_TWEEN_UP_INFO = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 local CRATE_DOWN_MARKER_NAME = "CrateDown"
 local PARTICLE_MARKER_NAME = "ParticleEnabled"
 
 local ShopController = {
-    Name = "ShopController"
+	Name = "ShopController",
+	CrateOpened = Signal.new() :: Signal.Signal<Types.Crate, number, () -> ()>,
 }
 
-function ShopController:OpenCrate(CrateType: Types.CrateType, GunInfo: Types.ItemInfo)
+local function getGunModel(gunFolder: Folder): Model
+	if gunFolder:FindFirstChild("Render") then
+		local gunModel = gunFolder:FindFirstChild("Render") :: Model
+		local mod = gunModel:Clone()
+		return mod
+	else
+		local mod = Instance.new("Model")
+		local handsFolder = gunFolder:FindFirstChild("Hands") :: Folder
+		local handAttach = handsFolder:FindFirstChild("Handattach") :: Accessory
+		local handle = handAttach:FindFirstChild("Handle") :: BasePart
+		local handleClone = handle:Clone()
+		mod.PrimaryPart = handleClone
+		handleClone.Parent = mod
+		return mod
+	end
+end
+
+function ShopController:OpenMultipleCrates(Crate: Types.Crate, GunInfo: { Types.Item })
+	for _, gun in ipairs(GunInfo) do
+		local gunInfo = ItemUtils.GetItemInfoFromId(gun.Id)
+		ShopController:OpenCrate(Crate, gunInfo.Id):await()
+		task.wait(0.2)
+	end
+end
+
+function ShopController:OpenCrate(CrateType: Types.Crate, GunId: number): any
+	local GunInfo = ItemUtils.GetItemInfoFromId(GunId)
+	if not GunInfo then
+		warn("Gun info not found: " .. GunId)
+		return
+	end
 	local crateModel = Crates:FindFirstChild(CrateType)
 	if not crateModel then
 		warn("Crate not found: " .. CrateType)
@@ -59,24 +92,29 @@ function ShopController:OpenCrate(CrateType: Types.CrateType, GunInfo: Types.Ite
 
 	local track = animationController:LoadAnimation(openAnimation) :: AnimationTrack
 	track:Play()
+	track.TimePosition = 0.03
+	track:AdjustSpeed(0)
 
-	task.wait(0.1) -- wait for the box to snap to its new position (snaps down to animate upwards)
+	task.delay(0.03, function()
+		CurrentCamera.CFrame = CFrame.new(cratePosition + crateCFrame.RightVector * 3.75, cratePosition)
+		-- angle the camera down slightly to look at the crate, and also move the camera up a bit
+		CurrentCamera.CFrame = CurrentCamera.CFrame * CFrame.Angles(math.rad(-15), 0, 0) * CFrame.new(0, 1, 0)
+	end)
 
-	CurrentCamera.CFrame = CFrame.new(cratePosition + crateCFrame.RightVector * 3.75, cratePosition)
-	-- angle the camera down slightly to look at the crate, and also move the camera up a bit
-	CurrentCamera.CFrame = CurrentCamera.CFrame * CFrame.Angles(math.rad(-15), 0, 0) * CFrame.new(0, 1, 0)
+	track:AdjustSpeed(1)
 
 	-- pop the gun out of the crate
-	local gunFolder = Guns:FindFirstChild(GunInfo.Name)
+	local gunFolder = Guns:FindFirstChild(GunInfo.Name) :: Folder?
 	if not gunFolder then
 		warn("Gun not found: " .. GunInfo.Name)
 		return
 	end
 
-	local gunModel = gunFolder.Render:Clone() :: Model
+	local gunModel = getGunModel(gunFolder)
+
 	gunModel:PivotTo(CFrame.new(crateCFrame.Position))
 
-    local primaryPart = gunModel.PrimaryPart :: BasePart 
+	local primaryPart = gunModel.PrimaryPart :: BasePart
 
 	track:GetMarkerReachedSignal(PARTICLE_MARKER_NAME):Once(function()
 		-- enable particles
@@ -85,7 +123,7 @@ function ShopController:OpenCrate(CrateType: Types.CrateType, GunInfo: Types.Ite
 
 		gunModel.Parent = workspace
 		-- tween the gun upwards
-		local gunTween = TweenService:Create(gunModel.PrimaryPart, GUN_TWEEN_UP_INFO, {
+		local gunTween = TweenService:Create(gunModel.PrimaryPart :: BasePart, GUN_TWEEN_UP_INFO, {
 			CFrame = primaryPart.CFrame * CFrame.new(0, 1, 0),
 		})
 
@@ -95,10 +133,16 @@ function ShopController:OpenCrate(CrateType: Types.CrateType, GunInfo: Types.Ite
 		EffectUtils.DisableBeams(crate)
 		EffectUtils.DisableBeams(crate)
 		task.wait(0.2)
-		local gunSlightDownTween = TweenService:Create(gunModel.PrimaryPart, GUN_TWEEN_UP_INFO, {
+		local gunSlightDownTween = TweenService:Create(gunModel.PrimaryPart :: BasePart, GUN_TWEEN_UP_INFO, {
 			CFrame = primaryPart.CFrame * CFrame.new(0, -1, 0) * CFrame.Angles(0, math.rad(195), 0),
 		})
 		gunSlightDownTween:Play()
+		gunSlightDownTween.Completed:Once(function()
+			ShopController.CrateOpened:Fire(CrateType, GunId, function()
+				gunModel:Destroy()
+				--crate:Destroy()
+			end)
+		end)
 	end)
 	track.Stopped:Once(function()
 		-- disable particles
@@ -106,8 +150,9 @@ function ShopController:OpenCrate(CrateType: Types.CrateType, GunInfo: Types.Ite
 	end)
 
 	return Promise.fromEvent(track.Stopped, function()
-		task.wait(2)
 		return true
+	end):andThen(function()
+		return Promise.delay(2)
 	end)
 end
 

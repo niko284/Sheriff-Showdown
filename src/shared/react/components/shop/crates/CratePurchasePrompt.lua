@@ -4,7 +4,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Components = ReplicatedStorage.react.components
 local Contexts = ReplicatedStorage.react.contexts
-local Hooks = ReplicatedStorage.react.hooks
 
 local ConfirmationPrompt = require(Components.other.ConfirmationPrompt)
 local Crates = require(ReplicatedStorage.constants.Crates)
@@ -14,7 +13,6 @@ local React = require(ReplicatedStorage.packages.React)
 local Remotes = require(ReplicatedStorage.network.Remotes)
 local ResourceContext = require(Contexts.ResourceContext)
 local Types = require(ReplicatedStorage.constants.Types)
-local useProductInfoFromId = require(Hooks.useProductInfoFromId)
 
 local ShopNamespace = Remotes.Client:GetNamespace("Shop")
 local PurchaseCrate = ShopNamespace:Get("PurchaseCrate") :: Net.ClientAsyncCaller

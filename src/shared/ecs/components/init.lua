@@ -88,6 +88,7 @@ export type Team = {
 
 export type StatusEffect = {
 	expiry: number?,
+	processRemoval: boolean?,
 }
 
 export type Killed = {

@@ -30,6 +30,7 @@ local function healthUpdates(world: Matter.World)
 					if healthRecord.new.health <= 0 then
 						humanoid.Health = 1 -- set to 1 so the character doesn't die immediately
 						-- insert kill logic afterwards:
+						print("Killed ", renderable.instance.Name)
 						world:insert(
 							eid,
 							Components.Killed({

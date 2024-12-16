@@ -28,10 +28,7 @@ local function bulletsAreVisualized(world: Matter.World)
 		end
 
 		local item = world:get(clientId, Components.Item) :: Components.Item
-		local gunThatShotBullet = world:get(
-			MatterReplication.resolveServerId(world, bullet.gunId :: number),
-			Components.Gun
-		) :: Components.Gun
+		local gunThatShotBullet = world:get(clientId, Components.Gun) :: Components.Gun
 
 		if item then
 			local itemInfo = ItemUtils.GetItemInfoFromId(item.Id)

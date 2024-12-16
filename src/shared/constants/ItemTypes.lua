@@ -14,11 +14,13 @@ return {
 		CanEquip = true,
 		CanSell = true,
 		CanTrade = true,
+		Stacks = false,
 	},
 	Crate = {
 		TagWithSerial = false,
 		CanEquip = false,
 		CanSell = false,
 		CanTrade = true,
+		Stacks = true, -- does it show as x1, etc in inventory
 	},
 } :: { [Types.ItemType]: Types.ItemTypeInfo }

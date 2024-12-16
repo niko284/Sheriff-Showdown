@@ -34,9 +34,12 @@ function HotPotatoExtension.StartMatch(Match: Types.Match, RoundInstance: Types.
 
 	local relayJanitor = Janitor.new()
 
-	local currentPlayer = shiftedPlayersInMatch[1]
+	local currentPlayer: Player? = shiftedPlayersInMatch[1]
 
-	local function giveGunToPlayer(player: Player)
+	local function giveGunToPlayer(player: Player?)
+		if not player then
+			return
+		end
 		local entityId = RoundService:GetEntityIdFromPlayer(player)
 
 		local plrComponent: Components.PlayerComponent? = World:get(entityId, Components.Player)
@@ -127,6 +130,9 @@ function HotPotatoExtension.StartMatch(Match: Types.Match, RoundInstance: Types.
 
 	hotPotatoTimer.Tick:Connect(function()
 		-- kill the player with the gun
+		if not currentPlayer then
+			return
+		end
 		local entityId = RoundService:GetEntityIdFromPlayer(currentPlayer)
 		if entityId and World:contains(entityId) then
 			World:insert(
@@ -134,8 +140,20 @@ function HotPotatoExtension.StartMatch(Match: Types.Match, RoundInstance: Types.
 				Components.Killed({
 					killerEntityId = lastGunId or relayPlayerGunId, -- we technically died because of the person who shot us last OR we couldn't get rid of the gun if we were the first person to get it
 					expiry = os.time() + 6,
+					processRemoval = false,
 				})
 			)
+
+			table.remove(shiftedPlayersInMatch, table.find(shiftedPlayersInMatch, currentPlayer))
+
+			if #shiftedPlayersInMatch > 1 then -- we have more than 1 player left, so give the gun to a random player that hasn't been killed
+				relayJanitor:Cleanup()
+				local randomPlayer = shiftedPlayersInMatch[math.random(1, #shiftedPlayersInMatch)]
+				giveGunToPlayer(randomPlayer)
+				currentPlayer = randomPlayer
+			else
+				currentPlayer = nil
+			end
 		end
 	end)
 
@@ -144,6 +162,7 @@ function HotPotatoExtension.StartMatch(Match: Types.Match, RoundInstance: Types.
 	table.insert(Actions.BulletHit.afterProcess, checkBulletHit)
 
 	Generic.MatchFinishedPromise(Match):andThen(function()
+		print("MATCH FINISHED")
 		table.remove(Actions.BulletHit.afterProcess, table.find(Actions.BulletHit.afterProcess, checkBulletHit))
 		relayJanitor:Destroy()
 		hotPotatoTimer:Destroy()

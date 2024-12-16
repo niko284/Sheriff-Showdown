@@ -365,7 +365,7 @@ function InventoryService:OpenCrateNetworkRequest(Player: Player, CrateUUID: str
 		:awaitStatus()
 
 	if status == Promise.Status.Resolved then
-		return { Success = true, Message = "Opened crate" }
+		return { Success = true, Message = "Opened crate", Response = randomItem.Id }
 	else
 		return { Success = false, Message = "Failed to open crate" }
 	end

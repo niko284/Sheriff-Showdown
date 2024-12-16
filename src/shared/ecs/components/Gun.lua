@@ -5,7 +5,7 @@ local Matter = require(ReplicatedStorage.packages.Matter)
 -- guns are only replicated from the server to the client when they are equipped, so it's less expensive to store some of the bullet information on the gun itself.
 
 local Gun = Matter.component("Gun", {
-	LocalCooldownMillis = 600, -- How long does the gun have to wait before it can shoot again?
+	LocalCooldownMillis = 200, -- How long does the gun have to wait before it can shoot again?
 
 	-- Store other information about the gun here like:
 	Damage = 25,

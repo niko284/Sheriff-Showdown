@@ -8,7 +8,7 @@ local Types = require(Constants.Types)
 
 return {
 	Standard = {
-		OpenAnimation = 16440704773,
+		OpenAnimation = 103475632191659,
 		ShopLayoutOrder = 1,
 		ShopImage = 16417980472,
 		ItemContents = {
@@ -44,7 +44,7 @@ return {
 		},
 	},
 	Classic = {
-		OpenAnimation = 16440704773,
+		OpenAnimation = 103475632191659,
 		ShopLayoutOrder = 2,
 		ShopImage = 16560968952,
 		ItemContents = {

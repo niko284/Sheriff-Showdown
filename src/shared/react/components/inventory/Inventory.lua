@@ -40,6 +40,16 @@ local useEffect = React.useEffect
 
 type InventoryProps = {}
 
+local function getAmountOfItemId(items: { Types.Item }, id: number)
+	local amount = 0
+	for _, item in ipairs(items) do
+		if item.Id == id then
+			amount += 1
+		end
+	end
+	return amount
+end
+
 local function Inventory(_props: InventoryProps)
 	local inventory: Types.PlayerInventory? = useContext(InventoryContext)
 	local tradeState = useContext(TradeContext)
@@ -88,22 +98,30 @@ local function Inventory(_props: InventoryProps)
 			then
 				continue
 			end
-			itemElements[item.UUID] = e(ItemTemplate, {
-				layoutOrder = nextOrder(),
-				image = string.format("rbxassetid://%d", itemInfo.Image),
-				rarity = itemInfo.Rarity,
-				itemName = itemInfo.Name,
-				itemSerial = item.Serial,
-				killCount = item.Kills,
-				isLocked = item.Locked,
-				isFavorited = item.Favorited,
-				itemUUID = item.UUID,
-				onItemClicked = setSelectedUUID,
-				gradient = Color3.fromRGB(0, 255, 127), -- override the rarity gradient for equipped items
-			})
+			itemElements[item.UUID] = e(
+				ItemTemplate,
+				{
+					layoutOrder = nextOrder(),
+					image = string.format("rbxassetid://%d", itemInfo.Image),
+					rarity = itemInfo.Rarity,
+					itemName = itemInfo.Name,
+					itemSerial = item.Serial,
+					killCount = item.Kills,
+					isLocked = item.Locked,
+					isFavorited = item.Favorited,
+					itemUUID = item.UUID,
+					onItemClicked = setSelectedUUID,
+					gradient = Color3.fromRGB(0, 255, 127), -- override the rarity gradient for equipped items
+					stacks = false,
+					stackAmount = 0,
+				} :: any
+			)
 		end
 
 		-- then show the storage items
+
+		local itemTypesInserted = {}
+
 		for _, item in storageItems do
 			local itemInfo = ItemUtils.GetItemInfoFromId(item.Id)
 			if not StringUtils.MatchesSearch(itemInfo.Name, searchQuery) then
@@ -121,18 +139,30 @@ local function Inventory(_props: InventoryProps)
 			then
 				continue
 			end
-			itemElements[item.UUID] = e(ItemTemplate, {
-				layoutOrder = nextOrder(),
-				image = string.format("rbxassetid://%d", itemInfo.Image),
-				rarity = itemInfo.Rarity,
-				itemName = itemInfo.Name,
-				isFavorited = item.Favorited,
-				isLocked = item.Locked,
-				itemSerial = item.Serial,
-				itemUUID = item.UUID,
-				killCount = item.Kills,
-				onItemClicked = setSelectedUUID,
-			}) :: any
+			if not itemTypesInserted[itemInfo.Type] then
+				itemTypesInserted[itemInfo.Type] = {}
+			end
+			if itemTypeInfo.Stacks and itemTypesInserted[itemInfo.Type][itemInfo.Id] then
+				continue
+			else
+				itemTypesInserted[itemInfo.Type][itemInfo.Id] = true
+			end
+			itemElements[item.UUID] = e(
+				ItemTemplate,
+				{
+					layoutOrder = nextOrder(),
+					image = string.format("rbxassetid://%d", itemInfo.Image),
+					rarity = itemInfo.Rarity,
+					itemName = itemInfo.Name,
+					isFavorited = item.Favorited,
+					isLocked = item.Locked,
+					itemSerial = item.Serial,
+					itemUUID = item.UUID,
+					killCount = item.Kills,
+					onItemClicked = setSelectedUUID,
+					stackAmount = itemTypeInfo.Stacks and getAmountOfItemId(storageItems, itemInfo.Id) or 0,
+				} :: any
+			)
 		end
 	end
 
@@ -153,10 +183,13 @@ local function Inventory(_props: InventoryProps)
 		Position = styles.position,
 		Size = UDim2.fromOffset(848, 608),
 	}, {
-		separator = e(Separator, {
-			position = UDim2.fromOffset(26, 188),
-			size = UDim2.fromOffset(797, 3),
-		}),
+		separator = e(
+			Separator,
+			{
+				position = UDim2.fromOffset(26, 188),
+				size = UDim2.fromOffset(797, 3),
+			} :: any
+		),
 
 		yourItems = e("TextLabel", {
 			FontFace = Font.new(

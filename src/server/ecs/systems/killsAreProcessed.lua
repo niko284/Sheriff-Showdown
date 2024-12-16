@@ -31,14 +31,24 @@ end
 
 local function killsAreProcessed(world: Matter.World)
 	-- killed components are removed when they expire
-	for eid, killed: Components.Killed in world:query(Components.Killed) do
+	for eid, killed: MatterTypes.ComponentInstance<Components.Killed> in world:query(Components.Killed) do
 		local renderable = world:get(eid, Components.Renderable) :: Components.Renderable<Model>?
 		if os.time() >= killed.expiry then
+			killed = killed:patch({ processRemoval = Matter.None })
+			world:insert(eid, killed)
+			print("Killed expired for ", renderable.instance.Name)
 			local plrFromRenderable: Components.PlayerComponent? = world:get(eid, Components.Player)
+			print("Plr from renderable initial", plrFromRenderable)
+			if not plrFromRenderable then
+				plrFromRenderable = { player = Players:GetPlayerFromCharacter(renderable.instance) }
+				print("Trying to get player from character instead:", plrFromRenderable)
+			end
 			if plrFromRenderable then
+				print("Respawning ", plrFromRenderable.player.Name)
 				task.spawn(plrFromRenderable.player.LoadCharacter, plrFromRenderable.player)
 			else
 				if renderable and renderable.instance:IsDescendantOf(game) then
+					print("Destroying ", renderable.instance.Name)
 					renderable.instance:Destroy()
 				end
 			end
@@ -78,4 +88,7 @@ local function killsAreProcessed(world: Matter.World)
 	end
 end
 
-return killsAreProcessed
+return {
+	priority = 0,
+	system = killsAreProcessed,
+}

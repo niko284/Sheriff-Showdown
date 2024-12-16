@@ -25,6 +25,7 @@ type ItemProps = Types.FrameProps & {
 	gradient: Color3?,
 	killCount: number?,
 	hideOptions: boolean?, -- show or hide the favorite and lock options
+	stackAmount: number,
 }
 
 local function Item(props: ItemProps)
@@ -75,6 +76,25 @@ local function Item(props: ItemProps)
 				Position = UDim2.fromScale(0.262, 0.0833),
 				Size = UDim2.fromScale(0.738, 0.917),
 			}),
+		}),
+
+		stackAmount = props.stackAmount and props.stackAmount > 0 and e("TextLabel", {
+			FontFace = Font.new(
+				"rbxasset://fonts/families/GothamSSm.json",
+				Enum.FontWeight.SemiBold,
+				Enum.FontStyle.Normal
+			),
+			Text = string.format("x%d", props.stackAmount),
+			TextColor3 = Color3.fromRGB(255, 255, 255),
+			TextSize = 30,
+			TextWrapped = true,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			BackgroundTransparency = 1,
+			Position = UDim2.fromScale(-0.0411, -0.137),
+			Size = UDim2.fromScale(0.713, 0.308),
+			ZIndex = 2,
+		}, {
+			stroke = e("UIStroke"),
 		}),
 
 		clickButton = e("ImageButton", {

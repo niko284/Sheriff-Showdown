@@ -468,10 +468,12 @@ function AchievementService:CompleteRequirement(
 		if Achievement.UUID == AchievementUUID then
 			local newActiveAchievements = table.clone(playerAchievements.ActiveAchievements)
 			local newAchievement = table.clone(Achievement)
+			local newRequirements = table.clone(newAchievement.Requirements)
 			local requirement = newAchievement.Requirements[requirementIndex]
 			requirement = table.clone(requirement)
 			requirement.Progress = NewValue
-			newAchievement.Requirements[requirementIndex] = requirement
+			newRequirements[requirementIndex] = requirement
+			newAchievement.Requirements = newRequirements
 			newActiveAchievements[index] = newAchievement
 			playerDocument:write(
 				Freeze.Dictionary.setIn(

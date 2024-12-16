@@ -27,6 +27,7 @@ export type ItemTypeInfo = {
 	CanSell: boolean,
 	CanTrade: boolean,
 	EquippedAtOnce: (number | (ItemInfo) -> number)?,
+	Stacks: boolean,
 }
 
 type GunProps = {
@@ -226,6 +227,7 @@ export type PlayerlistPlayer = {
 export type NetworkResponse = {
 	Success: boolean,
 	Message: string?,
+	Response: any,
 }
 
 export type Currency = "Coins" | "Gems"
@@ -487,13 +489,10 @@ export type GunChildren = {
 
 export type PurchaseType = "Gems" | "Coins" | "Robux"
 
-
 export type CratePurchaseInfo = {
 	ProductId: number?, -- for robux
 	Price: number?, -- for gems and coins
 	PurchaseType: PurchaseType,
 }
-
-export type CrateType = "Standard" | "Standard"
 
 return nil

@@ -26,6 +26,7 @@ local Remotes = require(ReplicatedStorage.network.Remotes)
 local TradeContext = require(Contexts.TradeContext)
 local Types = require(ReplicatedStorage.constants.Types)
 local UUIDSerde = require(Serde.UUIDSerde)
+local ShopController = require(PlayerScripts.controllers.ShopController)
 
 local InventoryNamespace = Remotes.Client:GetNamespace("Inventory")
 local TradingNamespace = Remotes.Client:GetNamespace("Trading")
@@ -193,12 +194,15 @@ local function ItemDisplay(props: ItemDisplayProps)
 		local newInventory = InventoryUtils.RemoveItem(inventory, props.itemUUID)
 
 		InventoryController.InventoryChanged:Fire(newInventory)
+		InterfaceController.InterfaceChanged:Fire(nil)
 
 		OpenCrate:CallServerAsync(serializedUUID)
 			:andThen(function(response: Types.NetworkResponse)
 				if response.Success == false then
 					warn(response.Message)
 					InventoryController.InventoryChanged:Fire(inventory) -- rollback
+				else
+					ShopController:OpenCrate(props.itemName :: Types.Crate, response.Response)
 				end
 			end)
 			:catch(function(err)

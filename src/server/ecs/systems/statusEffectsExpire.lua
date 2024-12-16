@@ -13,7 +13,12 @@ local STATUS_EFFECT_COMPONENTS = {
 local function statusEffectsExpire(world: Matter.World)
 	for _, statusEffectComponent in ipairs(STATUS_EFFECT_COMPONENTS) do
 		for eid, statusEffect: Components.StatusEffect in world:query(statusEffectComponent) do
-			if statusEffect.expiry and (DateTime.now().UnixTimestampMillis / 1000) >= statusEffect.expiry then
+			if
+				statusEffect.expiry
+				and (DateTime.now().UnixTimestampMillis / 1000) >= statusEffect.expiry
+				and statusEffect.processRemoval ~= false
+			then
+				print("Expiring status effect ", tostring(statusEffectComponent), " for entity ", eid)
 				world:remove(eid, statusEffectComponent)
 			end
 		end

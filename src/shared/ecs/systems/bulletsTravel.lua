@@ -3,6 +3,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Components = require(ReplicatedStorage.ecs.components)
+local EffectUtils = require(ReplicatedStorage.utils.EffectUtils)
+local ItemUtils = require(ReplicatedStorage.utils.ItemUtils)
 local Matter = require(ReplicatedStorage.packages.Matter)
 local MatterReplication = require(ReplicatedStorage.packages.MatterReplication)
 
@@ -35,6 +37,13 @@ local function bulletsTravel(world: Matter.World, _state)
 			local raycastResult = workspace:Raycast(transform.cframe.Position, positionChange, raycastParams)
 
 			if raycastResult then
+				local gunItem: Components.Item? =
+					world:get(MatterReplication.resolveServerId(world, bullet.gunId :: number), Components.Item)
+
+				local ownerChar = owner.OwnedBy.Character :: Model
+				local gunItemInfo = gunItem and ItemUtils.GetItemInfoFromId(gunItem.Id) or nil
+				EffectUtils.BulletBeam(ownerChar, raycastResult.Position, gunItem and gunItemInfo.Name or nil)
+
 				world:insert(eid, Components.Collided({ raycastResult = raycastResult }))
 			end
 		end

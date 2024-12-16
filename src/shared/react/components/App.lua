@@ -39,6 +39,7 @@ local Trading = require(Components.trading.Trading)
 local TradingPlayerList = require(Components.trading.TradingPlayerList)
 local Voting = require(Components.voting.Voting)
 local StatusText = require(Components.round.StatusText)
+local CrateClaim = require(Components.shop.crates.CrateClaim)
 
 local e = React.createElement
 local useState = React.useState
@@ -136,6 +137,7 @@ local function App()
 			trading = e(Trading),
 			settings = e(Settings),
 			dailyRewards = e(DailyRewards),
+			crateClaim = e(CrateClaim),
 			--confirmationPrompt = e(ConfirmationPrompt),
 		}),
 	})

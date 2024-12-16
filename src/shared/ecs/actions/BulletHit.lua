@@ -110,10 +110,6 @@ return {
 						return
 					end
 
-					local myEntityId = myChar:GetAttribute("serverEntityId")
-
-					print(`Dealt {damage} damage to {actionPayload.targetEntityId} from {myEntityId}`)
-
 					local newHealth = health.health - damage
 					world:insert(
 						actionPayload.targetEntityId,
