@@ -9,14 +9,6 @@
       "packages": {
         "$path": "Packages",
         "$ignoreUnknownInstances": true
-      },
-      "vendor": {
-        "$path": "vendor", 
-        "$ignoreUnknownInstances": true
-      },
-      "comm": {
-        "$className": "Folder",
-        "$ignoreUnknownInstances": true
       }
     },
 

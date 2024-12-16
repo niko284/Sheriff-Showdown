@@ -1,109 +1,56 @@
 --!strict
 
--- Resource Service
--- February 25th, 2022
--- Nick
-
--- // Variables \\
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
-local Packages = ReplicatedStorage.packages
 local Services = ServerScriptService.services
+local Packages = ReplicatedStorage.packages
 
-local DataService = require(Services.DataService)
-local ProfileSchema = require(ServerScriptService.services.DataService.ProfileSchema)
+local PlayerDataService = require(Services.PlayerDataService)
+local Schema = require(Services.PlayerDataService.Schema)
 local ServerComm = require(ServerScriptService.ServerComm)
 local Sift = require(Packages.Sift)
 local Signal = require(Packages.Signal)
 
-local ResourceTemplate = ProfileSchema.Resources
+local PlayerResourcesProperty = ServerComm:CreateProperty("PlayerResources", nil)
 
--- // Service Variables \\
+local ResourceService = { Name = "ResourceService", ResourceSignals = {} :: { [string]: Signal.Signal<Player, any> } }
 
-local ResourceService = {
-	Name = "ResourceService",
-	PlayerResources = ServerComm:CreateProperty("PlayerResources", nil),
-	ResourceSignals = {},
-}
-
-for ResourceName, _ in pairs(ResourceTemplate) do
-	ResourceService.ResourceSignals[ResourceName] = Signal.new()
-end
-
--- // Functions \\
-
-function ResourceService:Init()
-	DataService.PlayerDataLoaded:Connect(function(Player: Player, PlayerProfile: DataService.PlayerProfile)
-		local Resources = PlayerProfile.Data.Resources
-		for ResourceName, _ in pairs(ResourceTemplate) do
-			self.ResourceSignals[ResourceName]:Fire(Player, Resources[ResourceName])
-		end
-		self.PlayerResources:SetFor(Player, Resources)
+function ResourceService:OnInit()
+	for ResourceName, _ in pairs(Schema.Resources) do
+		ResourceService.ResourceSignals[ResourceName] = Signal.new()
+	end
+	PlayerDataService.DocumentLoaded:Connect(function(Player, Document)
+		local Data = Document:read()
+		PlayerResourcesProperty:SetFor(Player, Data.Resources)
 	end)
 end
 
-function ResourceService:SetResource(Player: Player, ResourceName: string, Value: any, sendNetworkEvent: boolean?)
-	local playerProfile = DataService:GetData(Player)
-	if playerProfile then
-		local oldValue = playerProfile.Data.Resources[ResourceName]
-		playerProfile.Data.Resources = Sift.Dictionary.set(playerProfile.Data.Resources, ResourceName, Value)
-		self.ResourceSignals[ResourceName]:Fire(Player, Value, oldValue)
-		if sendNetworkEvent ~= false then
-			self.PlayerResources:SetFor(Player, {
-				[ResourceName] = Value,
-			})
-		end
-	end
+function ResourceService:GetResourceChangedSignal(ResourceName: string): Signal.Signal<Player, any>
+	return ResourceService.ResourceSignals[ResourceName]
 end
 
-function ResourceService:InsertResource(Player: Player, ResourceName: string, Value: any)
-	local playerProfile = DataService:GetData(Player)
-	if playerProfile then
-		playerProfile.Data.Resources = Sift.Dictionary.set(
-			playerProfile.Data.Resources,
-			ResourceName,
-			Sift.Array.push(playerProfile.Data.Resources[ResourceName], Value)
-		)
-		self.ResourceSignals[ResourceName]:Fire(Player, playerProfile.Data.Resources[ResourceName])
-		self.PlayerResources:SetFor(Player, {
-			[ResourceName] = playerProfile.Data.Resources[ResourceName],
-		})
-	end
+function ResourceService:SetResource(Player: Player, Resource: string, Value: any): ()
+	local document = PlayerDataService:GetDocument(Player)
+	local newData = table.clone(document:read())
+	newData.Resources = Sift.Dictionary.set(newData.Resources, Resource, Value)
+	document:write(newData)
+	PlayerResourcesProperty:SetFor(Player, newData.Resources)
 end
 
-function ResourceService:IncrementResource(
-	Player: Player,
-	ResourceName: string,
-	Value: number,
-	sendNetworkEvent: boolean?
-)
-	local playerProfile = DataService:GetData(Player)
-	if playerProfile then
-		local oldValue = playerProfile.Data.Resources[ResourceName]
-		playerProfile.Data.Resources = Sift.Dictionary.set(
-			playerProfile.Data.Resources,
-			ResourceName,
-			Value + playerProfile.Data.Resources[ResourceName]
-		)
-		self.ResourceSignals[ResourceName]:Fire(Player, playerProfile.Data.Resources[ResourceName], oldValue)
-		if sendNetworkEvent ~= false then
-			self.PlayerResources:SetFor(Player, {
-				[ResourceName] = playerProfile.Data.Resources[ResourceName],
-			})
-		end
-	end
+function ResourceService:IncrementResource(Player: Player, Resource: string, Amount: number): ()
+	local document = PlayerDataService:GetDocument(Player)
+	local newData = table.clone(document:read())
+	newData.Resources = Sift.Dictionary.set(newData.Resources, Resource, (newData.Resources[Resource] or 0) + Amount)
+	document:write(newData)
+	PlayerResourcesProperty:SetFor(Player, newData.Resources)
 end
 
-function ResourceService:GetResource(Player: Player, ResourceName: string): any
-	local playerProfile = DataService:GetData(Player)
-	if not playerProfile then
-		return nil
-	else
-		return playerProfile.Data.Resources[ResourceName]
-	end
+function ResourceService:GetResource(Player: Player, Resource: string): any
+	local document = PlayerDataService:GetDocument(Player)
+	local data = document:read()
+	return data.Resources[Resource]
 end
 
 function ResourceService:ObserveResourceChanged(
@@ -113,9 +60,10 @@ function ResourceService:ObserveResourceChanged(
 	-- fire signal for plrs who are already in game.
 	local resourceSignal = ResourceService.ResourceSignals[ResourceName]
 	for _, Player in Players:GetPlayers() do
-		local playerProfile = DataService:GetData(Player)
-		if playerProfile then
-			Callback(Player, playerProfile.Data.Resources[ResourceName])
+		local playerDocument = PlayerDataService:GetDocument(Player)
+		if playerDocument then
+			local documentData = playerDocument:read()
+			Callback(Player, documentData.Resources[ResourceName])
 		end
 	end
 	return resourceSignal:Connect(Callback)

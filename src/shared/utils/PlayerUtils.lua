@@ -1,11 +1,5 @@
 --!strict
 
--- Player Utils
--- September 12th, 2022
--- Nick
-
--- // Variables \\
-
 local GroupService = game:GetService("GroupService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -15,8 +9,6 @@ local UserService = game:GetService("UserService")
 local Packages = ReplicatedStorage.packages
 
 local Promise = require(Packages.Promise)
-
--- // Utils \\
 
 local PlayerUtils = {}
 
@@ -35,8 +27,6 @@ type Group = {
 	IsPrimary: boolean,
 	IsInClan: boolean,
 }
-
--- // Functions \\
 
 function PlayerUtils.GetFriendsAsync(UserId: number)
 	return Promise.new(function(resolve, reject)

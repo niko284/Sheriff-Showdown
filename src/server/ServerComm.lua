@@ -1,9 +1,3 @@
--- Server Comm
--- January 27th, 2024
--- Nick
-
--- // Variables \\
-
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Packages = ReplicatedStorage.packages

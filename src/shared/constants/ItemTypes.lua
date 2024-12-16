@@ -1,15 +1,26 @@
--- Item Types
--- January 27th, 2024
--- Nick
+--!strict
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Constants = ReplicatedStorage.constants
-
-local Types = require(Constants.Types)
+local Types = require(ReplicatedStorage.constants.Types)
 
 return {
 	Gun = {
-		StackAmount = 1,
+		TagWithSerial = false,
+		UniqueProps = {
+			Kills = 0, -- amount of kills with this gun
+		},
+		EquippedAtOnce = 1, -- how many guns can be equipped at once
+		CanEquip = true,
+		CanSell = true,
+		CanTrade = true,
+		Stacks = false,
 	},
-}
+	Crate = {
+		TagWithSerial = false,
+		CanEquip = false,
+		CanSell = false,
+		CanTrade = true,
+		Stacks = true, -- does it show as x1, etc in inventory
+	},
+} :: { [Types.ItemType]: Types.ItemTypeInfo }

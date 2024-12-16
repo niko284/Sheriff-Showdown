@@ -1,17 +1,32 @@
 --!strict
--- Gamepasses
--- March 9th, 2024
--- Nick
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Constants = ReplicatedStorage.constants
-
-local Types = require(Constants.Types)
+local Types = require(ReplicatedStorage.constants.Types)
 
 return {
 	{
-		GamepassId = 738532594,
-		Name = "Multiple Crates",
+		GamepassId = 52316442,
+		Featured = true,
 	},
-} :: { Types.GamepassInfo }
+	{
+		GamepassId = 52316520,
+		Featured = true,
+	},
+	{
+		GamepassId = 52316801,
+		Featured = false,
+	},
+	{
+		GamepassId = 52316852,
+		Featured = false,
+	},
+	{
+		GamepassId = 52316881,
+		Featured = false,
+	},
+	{
+		GamepassId = 52316915,
+		Featured = false,
+	},
+} :: { Types.Gamepass }

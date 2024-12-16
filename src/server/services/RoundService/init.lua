@@ -1,9 +1,4 @@
 -- !strict
--- Round Service
--- January 22nd, 2024
--- Nick
-
--- // Variables \\
 
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -15,23 +10,18 @@ local ServerStorage = game:GetService("ServerStorage")
 local Assets = ServerStorage.assets
 local Constants = ReplicatedStorage.constants
 local Packages = ReplicatedStorage.packages
-local Services = ServerScriptService.services
-local Utils = ReplicatedStorage.utils
-local ActionShared = ReplicatedStorage.ActionShared
-local SharedAssets = ReplicatedStorage:FindFirstChild("assets") :: Folder
 
-local ActionService = require(Services.ActionService)
-local EquipmentHandler = require(Services.EquipmentService.EquipmentHandler)
-local InventoryService = require(Services.InventoryService)
-local ItemUtils = require(Utils.ItemUtils)
+local Components = require(ReplicatedStorage.ecs.components)
 local Maps = require(Constants.Maps)
+local Matter = require(Packages.Matter)
 local Promise = require(Packages.Promise)
-local Remotes = require(ReplicatedStorage.Remotes)
+local RagdollService = require(ServerScriptService.services.RagdollService)
+local Remotes = require(ReplicatedStorage.network.Remotes)
 local RoundModes = require(Constants.RoundModes)
 local ServerComm = require(ServerScriptService.ServerComm)
 local Sift = require(Packages.Sift)
 local Signal = require(Packages.Signal)
-local StatusModule = require(ActionShared.StatusModule)
+local StatisticsService = require(ServerScriptService.services.StatisticsService)
 local Teams = require(Constants.Teams)
 local Types = require(Constants.Types)
 
@@ -44,14 +34,12 @@ local EndMatchClient = RoundNamespace:Get("EndMatch")
 local ApplyTeamIndicator = RoundNamespace:Get("ApplyTeamIndicator")
 
 local MAPS_FOLDER = Assets:WaitForChild("maps", 3)
-local EFFECTS_FOLDER = SharedAssets:FindFirstChild("effects") :: Folder
 local ExtensionsFolder = script.ModeExtensions
-local VOTING_DURATION = 16
+local VOTING_DURATION = 25
 local MINIMUM_PLAYERS = 2
 local MAP_VOTING_COUNT = 3
 local ROUND_MODE_VOTING_COUNT = 3
-local WINNER_CELEBRATION_DURATION = 4
-local GLOW_LIGHT = EFFECTS_FOLDER:FindFirstChild("GlowLight") :: PointLight
+local WINNER_CELEBRATION_DURATION = 5
 
 -- // Service \\
 
@@ -60,18 +48,27 @@ local RoundService = {
 	MatchFinished = Signal.new(),
 	RoundExtensions = {} :: { [Types.RoundMode]: Types.RoundModeExtension },
 	CurrentRound = nil :: Types.Round?,
-	RoundStatus = ServerComm:CreateProperty("RoundStatus", nil),
 	VotingPoolClient = ServerComm:CreateProperty("VotingPoolClient", nil),
 	StartMatchTimestamp = ServerComm:CreateProperty("StartMatchTimestamp", nil),
+	RoundStatus = ServerComm:CreateProperty("RoundStatus", nil),
 	VotingPool = nil :: Types.VotingPool?,
+	World = nil :: Matter.World, -- injected by our ECS system
 }
 
 -- // Functions \\
 
-function RoundService:Init()
+function RoundService:OnStart()
 	-- load our round extensions
 	for _, extension in ExtensionsFolder:GetChildren() do
 		local extensionModule = require(extension) :: Types.RoundModeExtension
+		if not extensionModule.Data then
+			warn("Round extension " .. extension.Name .. " does not have a Data property.")
+			continue
+		end
+		if not extensionModule.Data.Name then
+			warn("Round extension " .. extension.Name .. " does not have a Name property.")
+			continue
+		end
 		RoundService.RoundExtensions[extensionModule.Data.Name] = extensionModule
 	end
 
@@ -82,40 +79,14 @@ function RoundService:Init()
 		RoundService:ProcessVote(Player, VotingField, VotingChoice)
 	end)
 
-	StatusModule.StatusApplied:Connect(function(Entity: Types.Entity, StatusName: Types.EntityStatus)
-		local playerKilled = Players:GetPlayerFromCharacter(Entity)
-
-		if StatusName == "Killed" and playerKilled then -- we need to check if the entity killed is a part of any ongoing matches.
-			local round = RoundService:GetRound()
-			if round then
-				for _, match in round.Matches do
-					for _, team in match.Teams do
-						local isInTeam = table.find(team.Players, playerKilled)
-						if isInTeam then
-							table.insert(team.Killed, playerKilled)
-
-							EndMatchClient:SendToPlayer(playerKilled)
-
-							local winningTeam = RoundService:GetWinningTeam(match)
-							if winningTeam then
-								RoundService.MatchFinished:Fire(match.MatchUUID, winningTeam)
-							end
-						end
-					end
-				end
-			end
-		end
-	end)
-
 	Players.PlayerRemoving:Connect(function(Player: Player)
 		-- if we have an ongoing round, count the player as killed in the round.
 		local round = RoundService:GetRound()
 		if round then
 			for _, match in round.Matches do
 				for _, team in match.Teams do
-					local playerIndex = table.find(team.Players, Player)
-					if playerIndex then
-						table.insert(team.Killed, Player)
+					if RoundService:IsPlayerInTeam(Player, team) then
+						table.insert(team.Killed, RoundService:GetEntityIdFromPlayer(Player))
 
 						local winningTeam = RoundService:GetWinningTeam(match)
 
@@ -137,9 +108,13 @@ function RoundService:Init()
 							-- we want to cancel the entire promise chain if there are not enough players to start a round after voting or intermission.
 							return Promise.reject("Not enough players to start a round.")
 						end),
-						RoundService:DoIntermission():andThen(function()
-							return RoundService:DoVoting()
-						end),
+						RoundService:DoIntermission()
+							:andThen(function()
+								return RoundService:DoVoting()
+							end)
+							:tap(function()
+								return Promise.delay(2)
+							end),
 					})
 				end)
 				:andThen(function(FieldWinners)
@@ -147,31 +122,7 @@ function RoundService:Init()
 					RoundService.CurrentRound = roundInstance
 					return RoundService:DoRound(roundInstance)
 				end)
-				:andThen(function(winningPlayers: { Player })
-					local winnerString = "Winners: "
-					for index, player in winningPlayers do
-						if index == #winningPlayers then
-							winnerString = winnerString .. player.Name
-						else
-							winnerString = winnerString .. player.Name .. ", "
-						end
-					end
-
-					RoundService:SetStatus(winnerString)
-
-					-- destroy the map
-					local round = RoundService:GetRound()
-					if round then
-						round.Map:Destroy()
-					end
-
-					-- teleport winning players to the lobby
-
-					--[[task.wait(5)
-					for _, player in winningPlayers do
-						player:LoadCharacter()
-					end--]]
-
+				:andThen(function(_winningPlayers: { Player })
 					return Promise.delay(8)
 				end)
 				:catch(function(err)
@@ -184,10 +135,6 @@ end
 
 function RoundService:GetRoundModeExtension(RoundMode: Types.RoundMode): Types.RoundModeExtension?
 	return RoundService.RoundExtensions[RoundMode]
-end
-
-function RoundService:SetStatus(Status: string)
-	RoundService.RoundStatus:Set(Status)
 end
 
 function RoundService:ProcessVote(Player: Player, VotingField: string, VotingChoice: string)
@@ -219,7 +166,7 @@ function RoundService:ProcessVote(Player: Player, VotingField: string, VotingCho
 end
 
 function RoundService:DoIntermission()
-	RoundService:SetStatus("Intermission")
+	RoundService.RoundStatus:Set("Intermission...")
 	return Promise.delay(10)
 end
 
@@ -234,12 +181,27 @@ function RoundService:NotEnoughPlayersPromise()
 	end
 end
 
-function RoundService:DoVoting()
-	RoundService:SetStatus("Voting in progress")
+function RoundService:GetPlayersInTeam(Team: Types.Team): { Player }
+	local players = {}
+	for _, entityId in Team.Entities do
+		local playerComponent: Components.PlayerComponent? = RoundService.World:get(entityId, Components.Player)
+		if playerComponent then
+			table.insert(players, playerComponent.player)
+		end
+	end
+	return players
+end
 
+function RoundService:IsPlayerInTeam(Player: Player, Team: Types.Team): boolean
+	return table.find(RoundService:GetPlayersInTeam(Team), Player) ~= nil
+end
+
+function RoundService:DoVoting()
 	-- shuffle maps and round modes
 	local shuffledMaps = Sift.Array.shuffle(Maps)
 	local shuffledRoundModes = Sift.Array.shuffle(RoundModes)
+
+	RoundService.RoundStatus:Set("Voting in progress...")
 
 	-- pick MAP_VOTING_COUNT maps and ROUND_MODE_VOTING_COUNT round modes
 
@@ -323,6 +285,8 @@ function RoundService:DoVoting()
 			fieldsWithWinningChoices[field] = winningChoice
 		end
 
+		RoundService.RoundStatus:Set("Chosen game mode: " .. fieldsWithWinningChoices.RoundModes.Name)
+
 		RoundService.VotingPoolClient:Set(nil) -- close the voting interface
 
 		return fieldsWithWinningChoices
@@ -330,8 +294,8 @@ function RoundService:DoVoting()
 end
 
 function RoundService:WaitForPlayers(PlayerCount: number)
-	RoundService:SetStatus("Waiting for players")
 	local playerCount = #Players:GetPlayers()
+	RoundService.RoundStatus:Set("Waiting for players...")
 	if playerCount >= PlayerCount then
 		return Promise.resolve()
 	else
@@ -355,18 +319,19 @@ function RoundService:LoadMap(MapName: string)
 	end
 	local mapModel = MAPS_FOLDER:FindFirstChild(map.Name)
 	if mapModel == nil then
-		error("Map " .. map .. " does not exist!")
+		error("Map " .. MapName .. " does not exist!")
 		return
 	end
 
 	local mapClone = mapModel:Clone()
 	mapClone.Parent = workspace -- add the map to the workspace (load it in)
 
-	return mapClone
+	return Promise.delay(3):andThen(function()
+		return mapClone
+	end)
 end
 
 function RoundService:DoRound(RoundInstance: Types.Round)
-	RoundService:SetStatus("Round in progress")
 	return RoundService:RunMatches(RoundInstance)
 end
 
@@ -393,29 +358,12 @@ function RoundService:RunMatches(RoundInstance: Types.Round)
 	end)
 end
 
-function RoundService:PlayersLeftFromSameTeam(PlayerPool: { Player }): boolean
-	local round = RoundService:GetRound()
-	if round then
-		for _, match in round.Matches do
-			for _, team in match.Teams do
-				for _, player in team.Players do
-					if table.find(PlayerPool, player) == nil then
-						break
-					end
-				end
-			end
-		end
-	end
-	return true
-end
-
 function RoundService:GetAllPlayersInMatch(Match: Types.Match): { Player }
 	local playersInMatch = {}
-	for _, team in pairs(Match.Teams) do
-		for _, player in team.Players do
-			if not table.find(team.Killed, player) then
-				table.insert(playersInMatch, player)
-			end
+	for _, team in Match.Teams do
+		local playersInTeam = RoundService:GetPlayersInTeam(team)
+		for _, player in playersInTeam do
+			table.insert(playersInMatch, player)
 		end
 	end
 	return playersInMatch
@@ -425,6 +373,10 @@ function RoundService:StartMatch(RoundInstance: Types.Round, Match: Types.Match)
 	-- teleport players to their spawn points
 	local mapFolder = RoundInstance.Map
 
+	RoundService.RoundStatus:Set("Match in progress...")
+
+	local world = RoundService.World :: Matter.World
+
 	local roundModeInfo = RoundService:GetRoundModeData(RoundInstance.RoundMode)
 
 	local mapGameModeFolder = mapFolder:FindFirstChild(roundModeInfo.UseSpawnType or RoundInstance.RoundMode)
@@ -432,51 +384,67 @@ function RoundService:StartMatch(RoundInstance: Types.Round, Match: Types.Match)
 
 	local teamPlayerColors = {}
 
+	local randomSpawnLocations = {}
+	local spawnTotals = {}
+	for _, spawnLocation in mapGameModeFolder:GetDescendants() do
+		if spawnLocation:IsA("BasePart") and spawnLocation.Name == "Spawner" then
+			table.insert(randomSpawnLocations, spawnLocation)
+			spawnTotals[spawnLocation] = 0
+		end
+	end
+
 	for _index, team in pairs(Match.Teams) do
 		local spawnPoints = mapGameModeFolder:FindFirstChild(team.Name)
-		local spawners = spawnPoints:GetChildren()
 
-		StartMatchClient:SendToPlayers(team.Players)
+		local spawners = nil
+		if not spawnPoints then -- if there are no spawn points for the team, use the random spawn locations
+			spawners = randomSpawnLocations
+		else
+			spawners = spawnPoints:GetChildren()
+		end
+
+		local teamPlayers = RoundService:GetPlayersInTeam(team)
+
+		StartMatchClient:SendToPlayers(teamPlayers)
 		RunService.Heartbeat:Wait()
 
 		teamPlayerColors[team.Name] = {
-			Players = team.Players,
-			Color = team.Color,
+			Players = teamPlayers,
 		}
 
-		for _, player in team.Players do
-			local randomSpawnerIndex = math.random(1, #spawners)
-			local spawnPoint = spawners[randomSpawnerIndex]
-			local character = player.Character or player.CharacterAdded:Wait()
+		for _, entityId in team.Entities do
+			local randomSpawnerIndex = 1
 
-			character:PivotTo(spawnPoint.CFrame * CFrame.new(0, 5, 0))
-			local pointLight = GLOW_LIGHT:Clone()
-			pointLight.Parent = character:FindFirstChild("UpperTorso")
+			if spawners == randomSpawnLocations then
+				-- pick the spawner with the least amount of players
+				for index, spawner in ipairs(spawners) do
+					if spawnTotals[spawner] < spawnTotals[spawners[randomSpawnerIndex]] then
+						randomSpawnerIndex = index
+					end
+				end
 
-			player:SetAttribute("IsInMatch", true)
-
-			table.remove(spawners, randomSpawnerIndex) -- we don't want to spawn two players at the same spawn point
-
-			-- give player hand-held equipment (their guns)
-			local equippedGuns = InventoryService:GetItemsOfType(player, "Gun", true)
-			local primaryGun = equippedGuns[1]
-			if primaryGun then
-				-- show on waist
-				EquipmentHandler.EquipGun(
-					character :: Types.Entity,
-					ItemUtils.GetItemInfoFromId(primaryGun.Id),
-					"Hands"
-				)
+				spawnTotals[spawners[randomSpawnerIndex]] += 1
+			else
+				randomSpawnerIndex = math.random(1, #spawners)
 			end
+
+			local spawnPoint = spawners[randomSpawnerIndex]
+
+			local renderable: Components.Renderable<Model>? = world:get(entityId, Components.Renderable)
+
+			if renderable and renderable.instance:IsA("PVInstance") then
+				renderable.instance:PivotTo(spawnPoint.CFrame * CFrame.new(0, 5, 0))
+				table.remove(spawners, randomSpawnerIndex) -- we don't want to spawn two players at the same spawn point
+			end
+
+			RoundService.World:insert(entityId, Components.Target())
 		end
 	end
 
 	ApplyTeamIndicator:SendToPlayers(RoundService:GetAllPlayersInMatch(Match), teamPlayerColors)
 
 	local roundModeExtension = RoundService:GetRoundModeExtension(RoundInstance.RoundMode)
-	if roundModeExtension then
-		roundModeExtension.StartMatch(Match, RoundInstance)
-	end
+	roundModeExtension.StartMatch(Match, RoundInstance, world)
 end
 
 function RoundService:GetRound(): Types.Round?
@@ -486,16 +454,18 @@ end
 
 function RoundService:OnSameTeam(Player1: Player, Player2: Player): boolean
 	-- loop through all matches and teams to see if the players are on the same team
-	local round = RoundService:GetRound()
-	if round then
-		for _, match in ipairs(round.Matches) do
-			for _, team in ipairs(match.Teams) do
-				if table.find(team.Players, Player1) ~= nil and table.find(team.Players, Player2) ~= nil then
-					return true
-				end
-			end
+	local plr1EntityId = RoundService:GetEntityIdFromPlayer(Player1)
+	local plr2EntityId = RoundService:GetEntityIdFromPlayer(Player2)
+
+	if plr1EntityId and plr2EntityId then
+		local plr1Team: Components.Team? = RoundService.World:get(plr1EntityId, Components.Team)
+		local plr2Team: Components.Team? = RoundService.World:get(plr2EntityId, Components.Team)
+
+		if plr1Team and plr2Team then
+			return plr1Team.name == plr2Team.name
 		end
 	end
+
 	return false
 end
 
@@ -512,34 +482,44 @@ function RoundService:WaitForMatchesToFinish(RoundInstance: Types.Round)
 
 					for _, team in match.Teams do
 						if team ~= WinningTeam then
-							for _, player in team.Players do
-								player:SetAttribute("IsInMatch", false)
-								local playerPoolIndex = table.find(RoundInstance.Players, player)
-								if playerPoolIndex ~= nil then
-									table.remove(RoundInstance.Players, playerPoolIndex)
+							for _, entityId in team.Entities do
+								local playerComponent: Components.PlayerComponent? =
+									RoundService.World:get(entityId, Components.Player)
+								if playerComponent then
+									local playerPoolIndex = table.find(RoundInstance.Players, playerComponent.player)
+									if playerPoolIndex ~= nil then
+										table.remove(RoundInstance.Players, playerPoolIndex)
+									end
 								end
 							end
 						else
 							-- respawn the winning team's players and disable combat system
 							winningTeam = team
-							for _, winningPlayer in team.Players do
-								winningPlayer:SetAttribute("IsInMatch", false)
-								ActionService:ToggleCombatSystem(false, winningPlayer)
-							end
 						end
 					end
 
 					-- start the next match in the RoundInstance (if there are any left)
 
 					task.delay(WINNER_CELEBRATION_DURATION, function()
-						for _, winningPlayer in winningTeam.Players do
+						for _, winningPlayer in RoundService:GetPlayersInTeam(winningTeam) do
+							if winningPlayer:IsDescendantOf(game) == false then
+								continue
+							end
+							StatisticsService:IncrementStatistic(winningPlayer, "TotalWins", 1)
 							EndMatchClient:SendToPlayer(winningPlayer)
 							winningPlayer:LoadCharacter()
 						end
+
 						local nextMatch = RoundInstance.Matches[index + 1]
 						if nextMatch then
 							task.wait(2)
 							RoundService:StartMatch(RoundInstance, nextMatch) -- start it after the winning team respawns.
+						else
+							-- destroy the map
+							local round = RoundService:GetRound()
+							if round then
+								round.Map:Destroy()
+							end
 						end
 					end)
 
@@ -557,7 +537,7 @@ end
 function RoundService:GetWinningTeam(Match: Types.Match): Types.Team?
 	local teamsWithPlayers = {}
 	for _, team in pairs(Match.Teams) do
-		if #team.Killed ~= #team.Players then
+		if #team.Killed ~= #team.Entities then
 			table.insert(teamsWithPlayers, team)
 		end
 	end
@@ -575,7 +555,7 @@ function RoundService:CreateRound(RoundMode: Types.RoundMode, MapName: string): 
 		Players = playerPool,
 		Matches = RoundService:AllocateMatches(playerPool, RoundMode),
 		RoundMode = RoundMode,
-		Map = RoundService:LoadMap(MapName),
+		Map = RoundService:LoadMap(MapName):expect(),
 	}
 
 	local roundModeExtension = RoundService:GetRoundModeExtension(RoundMode)
@@ -600,22 +580,48 @@ function RoundService:GetRoundModeData(RoundMode: Types.RoundMode): Types.RoundM
 	return roundModeData
 end
 
+-- mostly for NPC/Target dummies
+function RoundService:GetEntityIdFromRenderable(RenderableInstance: Instance): number?
+	for eid, renderable: Components.Renderable<Model>, _target in
+		RoundService.World:query(Components.Renderable, Components.Target)
+	do
+		if (renderable.instance :: Instance) == RenderableInstance then
+			return eid
+		end
+	end
+	return nil
+end
+
+function RoundService:GetEntityIdFromPlayer(Player: Player): number?
+	return Player:GetAttribute("serverEntityId") :: number?
+end
+
 function RoundService:AllocateMatches(PlayerPool: { Player }, RoundMode: Types.RoundMode): { Types.Match }
 	-- create a table of matches to return where each team in a match has TeamSize number of players.
 	-- leave extra players in the player pool if there are not enough players to fill a match.
 
-	local Matches = {}
+	local Matches: { Types.Match } = {}
 	-- shuffle the player pool
 	local shuffledPool = Sift.Array.shuffle(PlayerPool)
 
 	local RoundModeData = RoundService:GetRoundModeData(RoundMode)
 	local RoundModeExtension = RoundService:GetRoundModeExtension(RoundMode)
 
+	if RoundModeExtension and RoundModeExtension.AllocateMatches then
+		-- if the round mode extension has a allocate matches function, use that instead of the default allocation
+		return RoundModeExtension.AllocateMatches(PlayerPool)
+	end
+
 	-- create a match for each team
 
-	local numberOfMatches = math.ceil(#shuffledPool / (RoundModeData.TeamSize * RoundModeData.TeamsPerMatch))
+	local teamsPerMatch = typeof(RoundModeData.TeamsPerMatch) == "function" and RoundModeData.TeamsPerMatch()
+		or RoundModeData.TeamsPerMatch
+	local teamSize = typeof(RoundModeData.TeamSize) == "function" and RoundModeData.TeamSize(PlayerPool)
+		or RoundModeData.TeamSize
 
-	for _i = 1, numberOfMatches do
+	local numberOfMatches = teamsPerMatch and math.ceil(#shuffledPool / (teamSize * teamsPerMatch)) or 1
+
+	for i = 1, numberOfMatches do
 		local match = {
 			Teams = {},
 			MatchUUID = HttpService:GenerateGUID(false),
@@ -630,17 +636,16 @@ function RoundService:AllocateMatches(PlayerPool: { Player }, RoundMode: Types.R
 		end
 
 		if #shuffledPool <= 1 then
-			break -- no match should have only 1 player (uneven number of players in the pool). they will play in the next round.
+			--	break -- no match should have only 1 player (uneven number of players in the pool). they will play in the next round.
 		end
-		for j = 1, RoundModeData.TeamsPerMatch do
-			local teamName = RoundModeData.TeamNames[j]
-			local teamInfo = Teams[teamName]
+		for j = 1, teamsPerMatch do
+			local teamName = RoundModeData.TeamNames and RoundModeData.TeamNames[j]
+				or string.format("Team %s", tostring(i .. j))
 
-			local team = {
-				Players = {},
+			local team: Types.Team = {
+				Entities = {},
 				Killed = {},
 				Name = teamName,
-				Color = teamInfo.Color,
 			}
 			table.insert(match.Teams, team)
 		end
@@ -648,12 +653,17 @@ function RoundService:AllocateMatches(PlayerPool: { Player }, RoundMode: Types.R
 		-- put a player in each team one by one until we run out of players in the pool or we fill all teams in the match
 		local playersInMatch = 0
 		local teamIndex = 1
-		while playersInMatch < (RoundModeData.TeamSize * RoundModeData.TeamsPerMatch) and #shuffledPool > 0 do
+		while playersInMatch < (teamSize * teamsPerMatch) and #shuffledPool > 0 do
 			local player = table.remove(shuffledPool, 1)
-			table.insert(match.Teams[teamIndex].Players, player)
+			local entityId = RoundService:GetEntityIdFromPlayer(player)
+			if not entityId then
+				warn("Player " .. player.Name .. " does not have an entity id.")
+				continue
+			end
+			table.insert(match.Teams[teamIndex].Entities, entityId)
 			playersInMatch += 1
 			teamIndex += 1
-			if teamIndex > RoundModeData.TeamsPerMatch then
+			if teamIndex > teamsPerMatch then
 				teamIndex = 1
 			end
 		end

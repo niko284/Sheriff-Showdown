@@ -1,44 +1,260 @@
--- Types
--- January 22nd, 2024
--- Nick
-
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Packages = ReplicatedStorage.packages
+local Comm = require(ReplicatedStorage.packages.Comm)
+local Matter = require(ReplicatedStorage.packages.Matter)
+local React = require(ReplicatedStorage.packages.React)
+local Signal = require(ReplicatedStorage.packages.Signal)
 
-local JanitorModule = require(Packages.Janitor)
-local Net = require(Packages.Net)
-local Promise = require(Packages.Promise)
-local Signal = require(Packages.Signal)
+export type ItemRarity = "Basic" | "Rare" | "Epic" | "Legendary" | "Exotic"
+export type ItemType = "Gun" | "Crate"
+type ItemGunData = {
+	GunStatisticalData: any,
+}
+export type ItemInfo = {
+	Id: number,
+	Name: string,
+	Rarity: ItemRarity?,
+	Type: ItemType,
+	Image: number,
+	Default: (boolean | (Player) -> boolean)?,
+	TagWithSerial: boolean?,
+	CanTrade: boolean?, -- some guns can't be traded even if they're of an item type that can be traded (like your default gun)
+} & ItemGunData
 
--- >> Network Types
+export type ItemTypeInfo = {
+	UniqueProps: { [string]: any }?,
+	CanEquip: boolean,
+	CanSell: boolean,
+	CanTrade: boolean,
+	EquippedAtOnce: (number | (ItemInfo) -> number)?,
+	Stacks: boolean,
+}
+
+type GunProps = {
+	Kills: number?,
+}
+export type Item = {
+	Id: number,
+	UUID: string,
+	Locked: boolean,
+	Favorited: boolean,
+	Serial: number?,
+	Level: number?,
+} & GunProps
+
+export type RarityInfo = {
+	TagWithSerial: boolean,
+	Color: Color3,
+	Weight: number,
+}
+
+export type PlayerInventory = {
+	Storage: { Item },
+	Equipped: { Item },
+	GrantedDefaults: { number }, -- list of item ids that the player has been granted by default (to avoid duplicates)
+}
+export type PlayerResources = {
+	Coins: number,
+	Gems: number,
+	Level: number,
+	Experience: number,
+}
+export type PlayerStatistics = {}
+export type PlayerAchievements = {
+	LastDailyRotation: number,
+	ActiveAchievements: { Achievement },
+}
+
+export type DataSchema = {
+	Inventory: PlayerInventory,
+	Resources: PlayerResources,
+	CodesRedeemed: { string },
+	Settings: PlayerDataSettings,
+	ProcessingTrades: { ProcessingTrade },
+	Statistics: PlayerStatistics,
+	Achievements: PlayerAchievements,
+}
+
+-- >> Leaderboard Types
+
+export type LeaderboardValueType = "Resource" | "Statistic" -- Leaderboard value types
+export type LeaderboardEntry = {
+	key: string, -- Where key is the player's userId
+	value: number, -- Where value is the player's datastore value
+}
+export type LeaderboardInfo = {
+	LeaderboardName: string,
+	DisplaySlots: number,
+	ValueType: LeaderboardValueType,
+	LeaderboardKey: string | () -> string,
+	DisplayName: string?, -- If nil, uses LeaderboardName
+	DisplayColor: Color3?,
+	Resource: string?,
+	Statistic: (string | { string })?,
+	RewardItems: {
+		{
+			ItemName: string,
+			MinimumPlacement: number,
+		}
+	}?,
+	Mapper: ((...any) -> any)?, -- A function that maps the value to a different value
+}
+
+export type RoundMode =
+	"Singles"
+	| "Duos"
+	| "Distraction"
+	| "Free For All"
+	| "Red vs Blue"
+	| "Revolver Relay"
+	| "Hot Potato"
+	| "Juggernaut"
+export type RoundModeData = {
+	Name: RoundMode,
+	Image: number,
+	TeamSize: ((() -> number) | number)?,
+	TeamsPerMatch: ((() -> number) | number)?,
+	TeamNames: { string }?,
+}
+export type Team = {
+	Entities: { number }, -- list of entity ids in this team.
+	Killed: { number }, -- list of entity ids that have been killed in this team.
+	Name: string,
+}
+export type Match = {
+	Teams: { Team },
+	MatchUUID: string,
+}
+export type Round = {
+	Matches: { Match },
+	RoundMode: RoundMode,
+	Players: { Player },
+	Map: Folder,
+}
+export type RoundModeExtension = {
+	IsGameOver: (Round) -> boolean,
+	StartMatch: (Match, Round, Matter.World) -> (),
+	AllocateMatches: (({ Player }) -> { Match })?,
+	Data: RoundModeData,
+	ExtraRoundProperties: { [string]: any },
+	ExtraMatchProperties: { [string]: any },
+}
+
+export type VotingPoolField = {
+	Choices: { string },
+	Votes: { [Player]: string },
+}
+export type VotingPool = {
+	Maps: VotingPoolField,
+	RoundModes: VotingPoolField,
+}
+
+-- just the choices for each voting pool field
+export type VotingPoolClient = {
+	VotingEndTime: number,
+	VotingFields: { -- we keep this as an array because it's easier for the client to route through each field and display it.
+		{
+			Field: string,
+			Choices: {
+				{
+					Name: string,
+					Image: number,
+				}
+			},
+		}
+	},
+}
+
+export type Distraction = "Car" | "Eagle" | "Draw"
+export type DistractionData = {
+	AudioId: number,
+}
+
+export type TeamData = {
+	Color: Color3,
+}
+
+export type Status = "Killed" | "Slowed"
+
+export type FrameProps = {
+	anchorPoint: Vector2?,
+	autoButtonColor: boolean?,
+	active: boolean?,
+	backgroundColor3: Color3?,
+	backgroundTransparency: number?,
+	borderSizePixel: number?,
+	size: UDim2?,
+	position: UDim2?,
+	sizeConstraint: Enum.SizeConstraint?,
+	visible: boolean?,
+	zIndex: number?,
+	layoutOrder: number?,
+	clipsDescendants: boolean?,
+	rotation: number?,
+}
+
+export type MiddlewareFn<T> = (world: Matter.World, player: Player, actionPayload: T) -> boolean
+export type AfterProcessFn<T> = (world: Matter.World, player: Player, actionPayload: T) -> ()
+
+-- >> action types ecs
+export type GenericPayload = {
+	action: string,
+	actionId: string,
+}
+
+export type Action<T> = {
+	process: (world: Matter.World, player: Player, actionPayload: T) -> (),
+	middleware: { MiddlewareFn<T> }?,
+	validatePayload: (sentPayload: any) -> boolean,
+	afterProcess: { AfterProcessFn<T> },
+}
+
+export type VisualEffect<T> = {
+	name: string,
+	visualize: (world: Matter.World, effectPayload: T) -> (),
+}
+
+export type PlayerlistPlayer = {
+	Player: Player,
+	Level: number,
+	Kills: number,
+	Playtime: number,
+	Deaths: number,
+	LongestKillStreak: number,
+	Wins: number,
+}
 
 export type NetworkResponse = {
 	Success: boolean,
+	Message: string?,
 	Response: any,
-} & { [string]: any } -- other key/value pairs
-
--- >> Audio Types
-
-export type Audio = {
-	AudioId: string,
-	Looped: boolean,
-	Volume: number?,
-	SoundGroupName: string?,
-	Materials: { string }?,
 }
 
--- >> Transaction Types
-
-export type ProductReceipt = {
-	PurchaseId: string,
-	PlayerId: number,
-	ProductId: number,
-	CurrencySpent: number,
-	CurrencyType: Enum.CurrencyType,
-	PlaceIdWherePurchased: number,
+export type Currency = "Coins" | "Gems"
+export type CurrencyData = {
+	CanPurchase: boolean,
+	Color: Color3,
+	Packs: {
+		{
+			Amount: number,
+			ProductId: number,
+			Image: number,
+		}
+	},
 }
-export type PurchaseType = "Gems" | "Coins" | "Robux"
+
+export type Interface =
+	"Shop"
+	| "Inventory"
+	| "GiftingSelection"
+	| "Settings"
+	| "Voting"
+	| "Trading"
+	| "ActiveTrade"
+	| "TradeProcessed"
+	| "Achievements"
+	| "DailyRewards"
+
 export type ProductInfo = {
 	Name: string,
 	Description: string,
@@ -68,541 +284,215 @@ export type ProductInfo = {
 	ProductId: number,
 	IconImageAssetId: number,
 }
-export type GamepassInfo = {
-	GamepassId: number,
-	Name: string,
-}
 
--- >> Crate Types
-
-export type CratePurchaseInfo = {
-	ProductId: number?, -- for robux
-	Price: number?, -- for gems and coins
-	PurchaseType: PurchaseType,
-}
+export type Crate = "Standard" | "Classic"
 export type CrateInfo = {
 	OpenAnimation: number,
 	ShopImage: number,
 	ShopLayoutOrder: number,
 	ItemContents: { string },
-	PurchaseInfo: { CratePurchaseInfo },
-}
-export type CrateType = "Standard" | "Standard"
-
--- >> Rarity Types
-
-export type Rarity = "Basic" | "Rare" | "Epic" | "Legendary" | "Exotic"
-export type RarityInfo = {
-	Color: Color3,
-	Weight: number,
-	TagWithSerial: boolean,
+	PurchaseMethods: {
+		{
+			Type: "Coins" | "Gems" | "Robux",
+			Price: number?,
+			ProductId: number?,
+		}
+	},
+	Weights: { [ItemRarity]: number },
 }
 
--- >> Item Types
-
-export type ItemType = "Gun"
-export type WeaponStyle = "OneHandedDefault"
-type ItemWeaponInfo = {
-	Style: WeaponStyle,
-	ShootAudio: number?,
-}
-export type ItemInfo = {
-	Name: string,
+export type Gamepass = {
 	Featured: boolean,
-	Rarity: Rarity,
-	Image: number,
-	Id: number,
-	Type: ItemType,
-	Default: (boolean | (Player) -> boolean)?,
-	EquipOnDefault: boolean?, -- do we equip the item as soon as it is granted?
-} & ItemWeaponInfo
-export type Item = {
-	Id: number,
-	UUID: string,
-	Favorited: boolean,
-	Locked: boolean,
-	Serial: number?,
-	Level: number?,
-} & {
-	[string]: any, -- This is for unique props like StatisticMultipliers, etc.
-}
-
--- >> Package Types
-
-export type Signal = Signal.Signal<any>
-export type Janitor = JanitorModule.Janitor
-export type Promise = typeof(Promise.new())
-
--- >> Action Types
-
-export type ActionState = "Draw" | "Bird" | "Mikey"
-
--- >> Frame Types
-
-export type FrameProps = {
-	anchorPoint: Vector2?,
-	autoButtonColor: boolean?,
-	active: boolean?,
-	backgroundColor3: Color3?,
-	backgroundTransparency: number?,
-	borderSizePixel: number?,
-	size: UDim2?,
-	position: UDim2?,
-	sizeConstraint: Enum.SizeConstraint?,
-	visible: boolean?,
-	zIndex: number?,
-	layoutOrder: number?,
-	clipsDescendants: boolean?,
-	rotation: number?,
-}
-
--- >> Popup Types
-
-export type ActionPopup = {
-	State: ActionState,
-}
-
--- >> Inventory Types
-
-export type Inventory = {
-	Items: { Item },
-	Equipped: { string },
-	Capacity: number,
-	GrantedDefaults: { number },
+	GamepassId: number,
 }
 
 -- >> Setting Types
 
-export type SettingValue = boolean | string | number
-export type SettingType = "Keybind" | "Slider" | "Toggle" | "Dropdown" | "List"
-export type Device = "Touch" | "Gamepad" | "MouseKeyboard"
+export type SettingValue = boolean | string | number | KeybindMap
+export type SettingType = "Slider" | "Toggle" | "Dropdown" | "List" | "Input" | "Keybind"
 export type SettingChoiceInfo = {
 	Color: Color3,
 	LayoutOrder: number,
 }
 export type Setting = {
 	Name: string,
+	Description: string,
 	Type: SettingType,
 	Category: string,
 	Icon: string,
-	Default: { [Device]: string } | number | boolean | string, -- Keybinds, sliders, toggles, dropdowns respectively.
+	Default: SettingValue, --sliders, toggles, dropdowns/input respectively.
 	Choices: { string }?, -- List setting type
 	ChoiceColors: { [string]: Color3 }?, -- List setting type
 	ChoiceInfo: { [string]: SettingChoiceInfo }?, -- List setting type
-	Maximum: number?,
-	Minimum: number?,
-	Increment: number?,
+	Maximum: number?, -- sliders
+	Minimum: number?, -- sliders
+	Increment: number?, -- sliders
 	Selections: { string }?, -- Dropdowns
-	ActionItemType: string?,
-	ActionItemNumber: number?,
-	ShowInMenu: boolean?,
+	InputVerifiers: { (string) -> boolean }?, -- Input setting type
 }
-
--- >> Data Types
 
 export type SettingInternal = {
 	Value: SettingValue,
 }
 
 export type PlayerDataSettings = {
-	[string]: SettingInternal | {
-		-- our nested key string here is our device type for keybind settings
-		[string]: SettingInternal,
-	},
+	[string]: SettingInternal,
 }
 
-export type PlayerData = {
-	Resources: { [string]: any },
-	Inventory: Inventory,
-	Settings: PlayerDataSettings,
+export type DeviceType = "MouseKeyboard" | "Gamepad"
+export type KeybindMap = {
+	[DeviceType]: string,
 }
 
--- >> Round Types
-
-export type TeamData = {
-	Color: Color3,
+export type ShopContext = {
+	giftRecipient: Player?,
+	crateToView: Crate?,
 }
 
-export type RoundMode = "Singles" | "Duos" | "Distraction"
-export type RoundModeData = {
-	Name: RoundMode,
-	UseSpawnType: RoundMode?,
-	TeamSize: number,
-	TeamsPerMatch: number,
-	TeamNames: { string },
-}
-export type RoundModeExtension = {
-	IsGameOver: (Round) -> boolean,
-	StartMatch: (Match, Round) -> (),
-	VerifyActionRequest: ((Player, ActionStateInfo) -> boolean)?,
-	Data: RoundModeData,
-	ExtraRoundProperties: { [string]: any },
-	ExtraMatchProperties: { [string]: any },
-}
-export type Team = {
-	Players: { Player }, -- list of players in this team.
-	Killed: { Player }, -- list of players eliminated from the round in this team.
-	Name: string,
-	Color: Color3,
-}
-export type Match = {
-	Teams: { Team },
-	MatchUUID: string,
-} & { [string]: any } -- other key/value pairs (for things like extension's ExtraMatchProperties)
-export type Round = {
-	Matches: { Match },
-	RoundMode: RoundMode,
-	Players: { Player },
-	Map: Folder,
-} & { [string]: any } -- other key/value pairs (for things like extension's ExtraRoundProperties)
-
--- >> Distraction Round Mode Types
-
-export type Distraction = "Car" | "Eagle" | "Draw"
-export type DistractionData = {
-	AudioId: number,
-}
-
--- >> Map Types
-
-export type Map = {
-	Name: string,
-	Image: number,
-}
-
--- >> Action System Types
-
-type Action = {
-	StateInternal: ActionStateInfo?,
-	Processes: {},
-	Events: { [string]: BindableEvent },
-}
-
-export type ActionStateMetaData = { [string]: any }
-
--- >> Entity Types
-
-export type Entity = Model & { HumanoidRootPart: BasePart, Humanoid: Humanoid }
-export type EntityStatus = "Killed"
-export type EntityStatusState = {
-	Status: EntityStatus,
-	EndMillis: number?,
-}
-export type ActionStateInfo = {
-	Finished: boolean,
-	TimestampMillis: number,
-	Interruptable: boolean,
-	GlobalCooldownFinishTimeMillis: number,
-	CooldownFinishTimeMillis: number,
-	ActionHandlerName: string,
-	CancelPreviousAction: boolean?,
-	Sustaining: boolean,
-	Priority: string,
-	ActionSpecific: {
-		Combo: number?,
-		Direction: string?,
-		MaxCombo: number?,
-		BeforeSpeed: number?,
-		Target: Entity?,
-		[string]: any,
-	},
+export type TradeStatus = "Confirming" | "Pending" | "Started" | "Completed"
+export type Trade = {
+	Sender: Player,
+	Receiver: Player,
+	SenderOffer: { Item },
+	ReceiverOffer: { Item },
+	Accepted: { Player },
+	Confirmed: { Player },
 	UUID: string,
-	MetaData: ActionStateMetaData?,
+	Status: TradeStatus,
+	MaximumItems: number,
+	CooldownEnd: number?,
 }
 
-export type EntityState = {
-	DefenseLevel: number,
-	AttackLevel: number,
-	ActionHistory: { [string]: ActionStateInfo },
-	LastActionState: ActionStateInfo?,
-	Statuses: { [EntityStatus]: EntityStatusState },
+export type ProcessingTrade = {
+	Giving: { Item },
+	Receiving: { Item },
+	TradeUUID: string,
 }
 
--- >> Style Types
-
-export type AnimationInfo = {
-	StyleDictionary: Style,
-	StyleName: string,
-	CurrentPassive: Animation?,
-	PlayingTrack: AnimationTrack?,
-	Animations: { [Animation]: AnimationTrack },
-}
-export type PlayingAnimation = {
-	Animation: Animation,
-	Track: AnimationTrack,
-	AnimationId: number,
-}
-
-export type StylesTable = { [string]: Style }
-export type Style = {
-	PassiveAnimations: {
-		walk: Animation?,
-		run: Animation?,
-		idle: Animation?,
-		fall: Animation?,
-		jump: Animation?,
-		climb: Animation?,
-	}?,
-	LightAttack: { Animation }?,
-	HeavyAttack: Animation?,
-	Block: Animation?,
-	BlockBroken: Animation?,
-	Parried: Animation?,
-	Grip: Animation?,
-	GotGripped: Animation?,
-	Pulling: Animation?,
-	FishingIdle: Animation?,
-	Cast: Animation?,
-	Dodge: {
-		Front: Animation?,
-		Right: Animation?,
-		Left: Animation?,
-		Back: Animation?,
-	}?,
-	Abilities: {
-		[string]: Animation,
-	}?,
-	Death: Animation?,
-	CasterCombos: { { string } }?,
-}
-
--- >> Hit Types
-
-export type HitProps = {
-	DelayedDamage: { DelayedDamageProps }?,
-	Initial: GenericHitProps,
-	StoreInHitQueue: boolean?, -- Do we store the entity we hit in a hit queue for later processing? (used for things like animation marker damage), where we want synced damage.
-}
-export type Verifier = "Zone" | "Caster" | "Projectile" | "Decay"
-export type CasterEntry = {
-	HitPart: PVInstance?,
-	RaycastResult: RaycastResult?,
-	Entity: Entity?,
-	HitPosition: Vector3?,
-	DetectionType: Verifier,
-	ZoneCFrame: CFrame?,
-	Timestamp: number?,
-}
-export type VFXArguments = {
-	CFrame: CFrame?,
-	Direction: Vector3?,
-	Origin: Vector3?,
-	Actor: Entity?,
-	HitPart: Instance?,
-	State: ActionStateInfo?,
-	TargetEntity: Entity?,
-	ArgPack: ProcessArgs?, -- LOCAL CLIENT USE ONLY,
-	[string]: any, -- any other key/value pairs.
-}
-export type GenericHitProps = {
-	ParryTime: number?,
-	CanBlockBreak: boolean?,
-	CanKnock: ((
-		TargetEntity: Entity,
-		ActorEntity: Entity,
-		TargetState: EntityState,
-		ActorState: EntityState
-	) -> (boolean?, number?))?,
-	RegisterWhileActorStunned: boolean?,
-	NoStun: (boolean | (Entity, Entity, EntityState, EntityState) -> boolean)?,
-	ApplyCustomStatus: ((TargetEntity: Entity, ActorEntity: Entity) -> ())?,
-}
-
-export type DelayedDamageProps = {
-	Delay: number,
-	BaseDamage: number?,
-} & GenericHitProps -- GeneralHitProps are also in delayed damage and dealt with separately from the initial hit.
-export type HitVerifier = (CasterEntry) -> boolean
-export type InputType = "Touch" | "Gamepad" | "MouseKeyboard"
-
--- >> Status Types
-
-export type StatusData = {
-	Name: EntityStatus,
-	DurationMillis: number?,
-	CompatibleStatuses: ({ EntityStatus } | boolean)?, -- If true, all statuses are compatible with this one.
-	-- If false, no statuses are compatible with this one. If a table, only the statuses in the table are compatible with this one.
-	OverlapWithSelf: boolean?, -- If true, this status can overlap with itself (extend the duration of itself if re-applied).
-	Exceptions: { EntityStatus }?, -- If a status is in this table, it will not be cleared when this status is applied.
-}
-
-export type StatusHandler = {
-	Data: StatusData,
-	Apply: (Entity) -> (boolean, Janitor?, { any }?),
-	ApplyFX: ((Entity) -> boolean)?,
-	Clear: (Entity, Janitor?) -> boolean,
-	Process: ((Entity, EntityState) -> ())?,
-	ProcessClient: ((Entity, EntityState) -> ())?,
-}
-
--- >> Handler Types
-
-export type Handlers = {
-	[string]: ActionHandler,
-}
-export type ProcessArgs = {
-	Entity: Entity,
-	Store: { [string]: any },
-	HitVerifiers: { [string]: HitVerifier },
-	Callbacks: {
-		[string]: (any) -> any,
-		MetaDataBuilder: ((ProcessArgs, ActionStateInfo) -> { [string]: any })?,
-		VerifyActionPayload: ((actionPayload: { [string]: any }) -> boolean)?,
-		VerifyHits: ((ArgPack: ProcessArgs, VerifierType: Verifier, Entry: CasterEntry) -> boolean)?,
-	},
-	Janitor: Janitor,
-	HandlerData: ActionHandlerData,
-	Handler: ActionHandler,
-	Finished: Signal.Signal<boolean, string, boolean?>,
-	Interfaces: { Client: Interface, Server: Interface, Comm: { [string]: any } },
-	InputObject: InputObject?, -- LOCAL CLIENT USE ONLY
-	ActionPayload: {
-		[string]: any,
-	}?,
-}
-
-export type Delegate = (ProcessArgs, ActionStateInfo) -> (boolean, string?)
-
-export type Process = {
-	ProcessName: string,
-	OnServer: boolean,
-	OnClient: boolean,
-	OnAI: boolean?, -- If true, process will run on AI entities on the server.
-	Async: boolean,
-	Delegate: Delegate,
-}
-export type ActionSettingsData = {
-	InputData: {
-		[InputType]: { Enum.UserInputType | Enum.KeyCode | Enum.SwipeDirection }
-			| (Enum.UserInputType | Enum.KeyCode | Enum.SwipeDirection)?,
-	}?,
-	Held: ({ Enum.KeyCode } | true)?,
-	DoubleTap: { Enum.KeyCode }?,
-	Name: string,
-	Icon: string?,
-}
-export type ActionHandlerData = {
-	Name: string,
-	GlobalCooldownMillis: number,
-	CooldownMillis: number,
-	Interruptable: boolean?, -- can this action be stopped by status effects?
-	OverlappableActions: { string }?, -- can any action keep playing while this one is playing?
-	BaseDamage: number? | ((CasterEntry) -> number)?,
-	AttackLevel: number?,
-	DefenseLevel: number?,
-	Cancellable: boolean?,
-	AlwaysOn: (() -> boolean)?,
-	IsBaseAction: boolean,
-	ServerFinish: boolean?, -- If true, action finishes on server.
-	Sustained: boolean,
-	Priority: string,
-	SettingsData: ActionSettingsData,
-}
-export type ActionHandler = {
-	Data: ActionHandlerData,
-	Callbacks: { [string]: (...any) -> ...any }, -- note we use the variadic type here because we don't know the number of arguments per callback
-	ProcessStack: { VerifyStack: { Process }, ActionStack: { Process } },
-}
-export type Interface = { [string]: { [any]: any } }
-
-export type Effect = {
-	Name: string,
-	ApplyKillEffect: (Entity) -> (),
-}
-
--- >> Shop Interface Types
-
-export type ShopViewInfo = {
-	Name: string,
-	Image: number,
-	Type: "Crate" | "Item",
-}
-
--- >> Currency Types
-
-export type Currency = "Gems" | "Coins"
-export type CurrencyInfo = {
-	Image: number,
-	GradientColor: ColorSequence,
-}
-
--- >> Net Types
-
-export type ServerNamespace = {
-	Get: (
-		self: ServerNamespace,
-		name: string
-	) -> Net.ServerSenderEvent & Net.ServerListenerEvent & Net.ServerAsyncCallback & Net.ServerAsyncCaller,
-}
-
-export type ClientNamespace = {
-	Get: (
-		self: ClientNamespace,
-		name: string
-	) -> Net.ClientAsyncCallback & Net.ClientAsyncCaller & Net.ClientSenderEvent & Net.ClientListenerEvent,
-}
-
-export type ServerDefinitionBuilder = {
-	GetNamespace: (self: ServerDefinitionBuilder, namespace: string) -> ServerNamespace,
-}
-
-export type ClientDefinitionBuilder = {
-	GetNamespace: (self: ClientDefinitionBuilder, namespace: string) -> ClientNamespace,
-}
-
-export type DefinitionBuilder = {
-	Server: ServerDefinitionBuilder,
-	Client: ClientDefinitionBuilder,
-}
-
--- >> Serializer Types
-
-export type Serializer = {
-	Serialize: (any) -> string,
-	Deserialize: (string) -> any,
-}
-export type NextMiddleware = (Player: Player, ...any) -> any
+export type ServerRemoteProperty = typeof(Comm.ServerComm.new(Instance.new("Folder")):CreateProperty(nil, "string"))
 
 -- >> Notification Types
 
-export type NotificationType = "Toast" | "Text"
 export type Notification = {
-	Title: string?,
+	Title: string,
 	Description: string,
 	UUID: string,
 	Duration: number,
+	Component: React.ComponentType<any>,
+	Props: { [string]: any }?,
 	ClickToDismiss: boolean?,
-	Options: { any }?,
 	OnFade: (() -> ())?,
 	OnDismiss: (() -> ())?,
-	OnHeartbeat: (() -> string)?,
+}
+export type NotificationElementPropsGeneric = {
+	creationTime: number,
+	padding: UDim,
+	removeNotification: (string) -> (),
+	closeNotification: (string) -> (),
+	onFade: () -> (),
+	onDismiss: () -> (),
+	title: string,
+	id: string,
+	duration: number,
+	clickToDismiss: boolean,
+	description: string,
+	isActive: boolean,
 }
 
--- >> Voting Types
-
-export type VotingPoolField = {
-	Choices: { string },
-	Votes: { [Player]: string },
-}
-export type VotingPool = {
-	Maps: VotingPoolField,
-	RoundModes: VotingPoolField,
+export type RewardType = "Daily"
+export type Reward = {
+	RewardType: RewardType,
 }
 
--- just the choices for each voting pool field
-export type VotingPoolClient = {
-	VotingEndTime: number,
-	VotingFields: { -- we keep this as an array because it's easier for the client to route through each field and display it.
-		{
-			Field: string,
-			Choices: {
-				{
-					Name: string,
-					Image: number,
-				}
-			},
-		}
+export type DailyRewardType = "Coins" | "Gems" | "Item" | "Badge"
+export type DailyReward = {
+	Day: number,
+	Type: DailyRewardType,
+	Amount: (number | (DailyReward, Player) -> number)?,
+	Icon: string?,
+	ItemId: number?,
+} & Reward
+
+export type AchievementReward = {
+	Type: "Currency" | "Item" | "Badge",
+	Currency: Currency,
+	ItemId: number?, -- only used if we're giving an item as a reward
+	BadgeId: number?, -- only used if we're giving a badge as a reward
+	Amount: number | (claimCount: number) -> number,
+}
+
+export type AchievementType = "Progressive" | "Daily" | "Event"
+export type AchievementRequirementAction = "Resource" | "Statistic" | "Custom" | "Signal"
+
+export type AchievementRequirementInfo = {
+	BaseName: string,
+
+	Action: AchievementRequirementAction,
+	[AchievementRequirementAction]: string | (
+		Achievement
+	) -> string | {
+		SignalInstance: Signal.Signal<...any>,
+		Filter: (Achievement, Player, ...any) -> boolean,
+		Name: string,
 	},
+	Resource: string?,
+	Statistic: string?,
+
+	Signal: { SignalInstance: Signal.Signal<...any>, Filter: (...any) -> boolean, Name: string }?, -- repeat of the above, but so we can index .Signal directly.
+
+	Increment: number? | ((number) -> number)?,
+	ResetProgressOnIncrement: boolean?,
+	UseDelta: boolean?, -- do we take the difference between the current value and the previous value as our increment?
+	Progress: number?,
+	Goal: number | (Achievement) -> number,
+	Maximum: number?,
+
+	StrokeColor: Color3?,
 }
 
-return {}
+export type AchievementInfo = {
+	Id: number,
+	Type: string,
+	GetUniqueProps: ((Player: Player, PlayerData: DataSchema) -> { [string]: any })?,
+	ExpirationTime: number?,
+	Requirements: { AchievementRequirementInfo },
+	Rewards: { AchievementReward },
+	Deprecated: boolean?,
+}
+
+export type AchievementRequirement = {
+	Progress: number, -- How much progress we have made towards our goal?
+	Goal: number, -- How much progress we need to make to complete our goal?
+}
+export type Achievement = {
+	Id: number,
+	TimesClaimed: number,
+	UUID: string,
+	Claimed: boolean, -- Was our achievement claimed?
+	Requirements: { AchievementRequirement }, -- Our requirements
+}
+
+export type Character = {
+	Humanoid: Humanoid,
+	PrimaryPart: BasePart,
+	HumanoidRootPart: BasePart,
+} & { [string]: any }
+
+export type TargetChildren = {
+	gunEntityId: number?,
+	waistRenderableGunId: number?,
+}
+
+export type GunChildren = {
+	handRenderableId: number?,
+}
+
+export type PurchaseType = "Gems" | "Coins" | "Robux"
+
+export type CratePurchaseInfo = {
+	ProductId: number?, -- for robux
+	Price: number?, -- for gems and coins
+	PurchaseType: PurchaseType,
+}
+
+return nil

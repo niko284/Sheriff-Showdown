@@ -1,8 +1,4 @@
--- Dependency Array
--- January 22nd, 2024
--- Nick
-
--- // Variables \\
+--!strict
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 

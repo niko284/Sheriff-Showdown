@@ -1,7 +1,4 @@
 --!strict
--- Crates
--- February 19th, 2024
--- Nick
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -11,7 +8,7 @@ local Types = require(Constants.Types)
 
 return {
 	Standard = {
-		OpenAnimation = 16440704773,
+		OpenAnimation = 103475632191659,
 		ShopLayoutOrder = 1,
 		ShopImage = 16417980472,
 		ItemContents = {
@@ -32,19 +29,22 @@ return {
 			"Grayscale",
 			"Pixel",
 		},
-		PurchaseInfo = {
+		PurchaseMethods = {
 			{
-				PurchaseType = "Gems",
-				Price = 100,
-			},
-			{
-				PurchaseType = "Coins",
+				Type = "Coins",
 				Price = 100,
 			},
 		},
+		Weights = {
+			Basic = 50,
+			Rare = 25,
+			Epic = 15,
+			Legendary = 8,
+			Exotic = 2,
+		},
 	},
 	Classic = {
-		OpenAnimation = 16440704773,
+		OpenAnimation = 103475632191659,
 		ShopLayoutOrder = 2,
 		ShopImage = 16560968952,
 		ItemContents = {
@@ -65,15 +65,18 @@ return {
 			"Revolver",
 			"Colt 45",
 		},
-		PurchaseInfo = {
+		PurchaseMethods = {
 			{
-				PurchaseType = "Gems",
-				Price = 100,
-			},
-			{
-				PurchaseType = "Coins",
+				Type = "Coins",
 				Price = 100,
 			},
 		},
+		Weights = {
+			Basic = 50,
+			Rare = 25,
+			Epic = 15,
+			Legendary = 8,
+			Exotic = 2,
+		},
 	},
-} :: { [Types.CrateType]: Types.CrateInfo }
+} :: { [Types.Crate]: Types.CrateInfo }

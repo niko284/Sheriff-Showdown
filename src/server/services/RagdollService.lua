@@ -1,38 +1,32 @@
--- Ragdoll Service
--- March 11th, 2023
--- Nick
+--!strict
 
--- // Variables \\
-
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
-local Constants = ReplicatedStorage.constants
 local Services = ServerScriptService.services
 
 local NevermoreService = require(Services.NevermoreService)
-local Types = require(Constants.Types)
-
--- // Service \\
 
 local RagdollService = {
 	Name = "RagdollService",
 }
 
--- // Functions \\
-
-function RagdollService:Start()
+function RagdollService:OnStart()
 	NevermoreService:GetPackage("RagdollService")
 end
 
-function RagdollService:Ragdoll(Entity: Types.Entity)
+function RagdollService:Ragdoll(Model: Model & { Humanoid: Humanoid })
 	local ragdollBinders = NevermoreService:GetPackage("RagdollBindersServer")
-	ragdollBinders.Ragdoll:Bind(Entity.Humanoid)
+	ragdollBinders.Ragdoll:Bind(Model.Humanoid)
 end
 
-function RagdollService:Unragdoll(Entity: Types.Entity)
+function RagdollService:Unragdoll(Model: Model & { Humanoid: Humanoid })
 	local ragdollBinders = NevermoreService:GetPackage("RagdollBindersServer")
-	ragdollBinders.Ragdoll:Unbind(Entity.Humanoid)
+	ragdollBinders.Ragdoll:Unbind(Model.Humanoid)
+end
+
+function RagdollService:IsRagdolled(Model: Model & { Humanoid: Humanoid }): boolean
+	local ragdollBinders = NevermoreService:GetPackage("RagdollBindersServer")
+	return ragdollBinders.Ragdoll:HasTag(Model.Humanoid)
 end
 
 return RagdollService

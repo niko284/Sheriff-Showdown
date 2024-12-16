@@ -16,14 +16,12 @@ local Packages = ReplicatedStorage.packages
 local Assets = ReplicatedStorage:FindFirstChild("assets") :: Folder
 local Guns = Assets:FindFirstChild("guns") :: Folder
 local Constants = ReplicatedStorage.constants
-local Effects = Assets:FindFirstChild("effects") :: Folder
-local BulletBeam = Effects:FindFirstChild("Shot") :: Beam
+local Other = Assets:FindFirstChild("other") :: Folder
+local BulletBeam = Other:FindFirstChild("Shot") :: Beam
 
 local Janitor = require(Packages.Janitor)
 local Promise = require(Packages.Promise)
 local Types = require(Constants.Types)
-
-local debris = require(ReplicatedStorage.utils.Debris)
 
 function Util.weldBetween(a: BasePart, b: BasePart): WeldConstraint
 	local weld = Instance.new("WeldConstraint")
@@ -61,7 +59,7 @@ function Util.CreatePointingBeam(FromPart: BasePart, ToPart: BasePart): (Beam, A
 	return Beam, FromAttachment, ToAttachment
 end
 
-function Util.ApplyTeamIndicator(Entity: Types.Entity, HighlightColor: Color3)
+function Util.ApplyTeamIndicator(Entity, HighlightColor: Color3)
 	local highlight = Instance.new("Highlight")
 	highlight.FillTransparency = 0.4
 	highlight.DepthMode = Enum.HighlightDepthMode.Occluded
@@ -70,7 +68,7 @@ function Util.ApplyTeamIndicator(Entity: Types.Entity, HighlightColor: Color3)
 	CollectionService:AddTag(highlight, "TeamIndicator")
 end
 
-function Util.ToggleWeaponTransparency(Entity: Types.Entity, toggle: boolean)
+function Util.ToggleWeaponTransparency(Entity: Instance, toggle: boolean)
 	local oldParents = {}
 	local parentToSet = toggle and Entity or nil
 	for _, Descendant in Entity:GetDescendants() do
@@ -91,9 +89,10 @@ type HitboxProps = {
 	SizeTime: number?,
 }
 
-function Util.FindPlayingAnimationTrackOfId(AnimationId: string, Entity: Types.Entity): AnimationTrack?
+function Util.FindPlayingAnimationTrackOfId(AnimationId: string, Entity: Instance): AnimationTrack?
 	local otherAnimationId = tonumber(AnimationId:match("%d+"))
-	local animator = Entity.Humanoid:FindFirstChildOfClass("Animator")
+	local Humanoid = Entity:FindFirstChildOfClass("Humanoid") :: Humanoid
+	local animator = Humanoid:FindFirstChildOfClass("Animator")
 	if animator then
 		for _, track in pairs(animator:GetPlayingAnimationTracks()) do
 			local extractedId = tonumber(track.Animation.AnimationId:match("%d+"))
@@ -117,7 +116,7 @@ function Util.NPCAttackHitboxNew(CFrame: CFrame, Size: Vector3, Shape: string, D
 		Transparency = 0.65,
 	})
 	hitbox:AddTag("Zone")
-	debris.AddSingle(hitbox, Duration + 1.5)
+	Debris:AddItem(hitbox, Duration + 1.5)
 
 	local colorTween =
 		TweenService:Create(hitbox, TweenInfo.new(Duration, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {
@@ -196,7 +195,7 @@ function Util.Part(properties: { [string]: any }, DebrisTime: number?, Tags: { s
 	end
 
 	if properties.DebrisClear == nil then
-		debris.AddSingle(part, DebrisTime or 10)
+		Debris:AddItem(part, DebrisTime or 10)
 	end
 
 	part.Parent = properties.Parent or workspace -- Assign parent last to optimize
@@ -209,7 +208,7 @@ function Util.HandleAbilityTween(
 	Target: Instance,
 	TweenInfo: TweenInfo,
 	Properties: { [string]: any },
-	TweenJanitor: Types.Janitor
+	TweenJanitor: Janitor.Janitor
 ): Tween
 	local tween = TweenService:Create(Target, TweenInfo, Properties)
 	if Janitor.Is(TweenJanitor) then
@@ -329,7 +328,7 @@ function Util.TweenTransparencySequence(object: Beam, fromValue: number, toValue
 	end)
 end
 
-function Util.BulletBeam(Entity: Types.Entity, HitPosition: Vector3, EquippedGunName: string?): ()
+function Util.BulletBeam(Entity: Instance, HitPosition: Vector3, EquippedGunName: string?): ()
 	local rightHand = Entity:FindFirstChild("RightHand") :: BasePart
 	if not rightHand then
 		return
@@ -406,7 +405,7 @@ function Util.preFab(ogMesh: BasePart, properties: { [string]: any }, debrisTime
 	end
 
 	if debrisTime then
-		debris.AddSingle(mesh, debrisTime)
+		Debris:AddItem(mesh, debrisTime)
 	end
 
 	if properties.weldPart then
@@ -500,7 +499,8 @@ function Util.Emit(thing: Instance, particleInfo: { [string]: number }?): Instan
 		if not particle:IsA("ParticleEmitter") then
 			continue
 		else
-			local emitCount = particleInfo and particleInfo[particle.Name] or particle:GetAttribute("EmitCount")
+			local emitCount = particleInfo and particleInfo[particle.Name]
+				or particle:GetAttribute("EmitCount") :: number
 			if not emitCount then
 				continue
 			end
@@ -515,7 +515,7 @@ function Util.Emit(thing: Instance, particleInfo: { [string]: number }?): Instan
 			TweenService:Create(
 				light,
 				TweenInfo.new(
-					light:GetAttribute("TweenTime") or 0.2,
+					(light:GetAttribute("TweenTime") or 0.2) :: number,
 					Enum.EasingStyle.Quad,
 					Enum.EasingDirection.InOut,
 					0,
@@ -530,9 +530,9 @@ function Util.Emit(thing: Instance, particleInfo: { [string]: number }?): Instan
 	return thing
 end
 
-function Util.LockCharacter(Entity: Types.Entity)
-	local humanoid = Entity.Humanoid
-	local rootPart = Entity.HumanoidRootPart
+function Util.LockCharacter(Entity: Instance)
+	local humanoid = Entity:FindFirstChildOfClass("Humanoid") :: Humanoid
+	local rootPart = Entity:FindFirstChild("HumanoidRootPart") :: BasePart
 	if humanoid then
 		humanoid.AutoRotate = false
 	end
@@ -558,7 +558,8 @@ function Util.UnlockCharacter(Character: Model)
 	end
 end
 
-function Util.RaycastDownwards(Entity: Types.Entity)
+function Util.RaycastDownwards(Entity: Instance)
+	local HumanoidRootPart = Entity:FindFirstChild("HumanoidRootPart") :: BasePart
 	local params = RaycastParams.new()
 	params.FilterDescendantsInstances = {
 		Entity,
@@ -566,7 +567,7 @@ function Util.RaycastDownwards(Entity: Types.Entity)
 		unpack(CollectionService:GetTagged("Entity")),
 	}
 	params.FilterType = Enum.RaycastFilterType.Exclude
-	return workspace:Raycast(Entity.HumanoidRootPart.Position, Vector3.new(0, -100, 0), params)
+	return workspace:Raycast(HumanoidRootPart.Position, Vector3.new(0, -100, 0), params)
 end
 
 function Util.RaycastDownwardsCFrame(CFrame: CFrame)

@@ -18,7 +18,7 @@ local Distractions = require(Constants.Distractions)
 local Generic = require(script.Parent.Parent.Generic)
 local HitFXSerde = require(Serde.HitFXSerde)
 local Promise = require(Packages.Promise)
-local Remotes = require(ReplicatedStorage.Remotes)
+local Remotes = require(ReplicatedStorage.network.Remotes)
 local RoundService = require(Services.RoundService)
 local Sift = require(Packages.Sift)
 local Types = require(Constants.Types)
@@ -45,7 +45,7 @@ function DistractionExtension.StartMatch(Match: Types.Match, _RoundInstance: Typ
 	local matchDistractions = DistractionExtension.GetDistractions()
 
 	-- loop through the distractions and send them to the clients to display every 2 seconds.
-	local playersInMatch = Generic.GetPlayersInMatch(Match)
+	local playersInMatch = RoundService:GetAllPlayersInMatch(Match)
 
 	-- if our match finishes early, we want to stop the distractions from being sent to the clients.
 	Promise.any({

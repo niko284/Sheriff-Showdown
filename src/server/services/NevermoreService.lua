@@ -1,8 +1,4 @@
--- Nevermore Service
--- March 6th, 2023
--- Nick
-
--- // Variables \\
+--!strict
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
@@ -11,18 +7,16 @@ local Packages = ReplicatedStorage.packages
 
 local Promise = require(Packages.Promise)
 
--- // Service \\
-
 local NevermoreService = {
 	Name = "NevermoreService",
 }
 
 -- // Functions \\
 
-function NevermoreService:Init()
+function NevermoreService:OnInit()
 	NevermoreService:LoadNevermore()
 		:andThen(function(_clientPackages, serverPackages, _sharedPackages)
-			NevermoreService.ServiceBag = require(serverPackages.ServiceBag).new()
+			NevermoreService.ServiceBag = require(serverPackages.ServiceBag).new() :: any
 		end)
 		:catch(function(error: any)
 			warn(tostring(error))
@@ -40,7 +34,7 @@ end
 function NevermoreService:LoadNevermore()
 	return Promise.new(function(resolve, _reject, _onCancel)
 		local NevermoreLoaderUtilsModule = ServerScriptService.nodeModules:FindFirstChild("LoaderUtils", true)
-		local NevermoreLoaderUtils = require(NevermoreLoaderUtilsModule)
+		local NevermoreLoaderUtils = require(NevermoreLoaderUtilsModule) :: any
 
 		local client, server, shared = NevermoreLoaderUtils.toWallyFormat(ServerScriptService.nodeModules, false)
 		client.Name = "NevermoreClientPackages"

@@ -1,10 +1,4 @@
--- Math Utils
--- September 25th, 2022
--- Nick
-
--- // Variables \\
-
--- // Util \\
+--!strict
 
 local MathUtils = {}
 

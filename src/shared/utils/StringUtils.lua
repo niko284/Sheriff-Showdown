@@ -1,22 +1,44 @@
--- String Utils
--- June 23rd, 2022
--- Nick
+--!strict
 
--- // Variables \\
-
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Packages = ReplicatedStorage.packages
-
-local Promise = require(Packages.Promise)
-local Sift = require(Packages.Sift)
-
--- // Util Variables \\
+local Freeze = require(ReplicatedStorage.packages.Freeze)
 
 local StringUtils = {}
 
--- // Functions \\
+function StringUtils.GetFirstStringInAlphabet(StringList: { string }): (string, number)
+	local alphabeticSort = Freeze.List.sort(StringList, function(a: string, b: string)
+		return a:lower() < b:lower()
+	end)
+	return alphabeticSort[1], table.find(StringList, alphabeticSort[1]) :: number
+end
+
+function StringUtils.ContainsOnlySpaces(String: string): ...string?
+	return String:match("^%s*$")
+end
+
+function StringUtils.GetReadingTime(str: string): number
+	return math.max(1, math.min(10, #str / 10))
+end
+
+function StringUtils.MatchesSearch(Word: string, SearchPattern: string): boolean
+	if StringUtils.ContainsOnlySpaces(SearchPattern) then
+		return true
+	end
+	local patternIndex = 1
+	local patternLength = #SearchPattern
+	local strIndex = 1
+	local strLength = #Word
+	while patternIndex <= patternLength and strIndex <= strLength do
+		local patternChar = SearchPattern:sub(patternIndex, patternIndex):lower()
+		local strChar = Word:sub(strIndex, strIndex):lower()
+		if patternChar == strChar then
+			patternIndex = patternIndex + 1
+		end
+		strIndex = strIndex + 1
+	end
+	return patternLength > 0 and strLength > 0 and (patternIndex - 1) == patternLength
+end
 
 function StringUtils.RichTextToNormal(RichTextString: string): string?
 	return RichTextString:match("<.*>(.*)<.*>")
@@ -44,62 +66,6 @@ function StringUtils.MapSecondsToStringTime(Seconds: number): string
 	else
 		return StringUtils.SecondsToHMS(Seconds)
 	end
-end
-
-function StringUtils.MatchesSearch(Word: string, SearchPattern: string): boolean
-	if StringUtils.ContainsOnlySpaces(SearchPattern) then
-		return true
-	end
-	local patternIndex = 1
-	local patternLength = #SearchPattern
-	local strIndex = 1
-	local strLength = #Word
-	while patternIndex <= patternLength and strIndex <= strLength do
-		local patternChar = SearchPattern:sub(patternIndex, patternIndex):lower()
-		local strChar = Word:sub(strIndex, strIndex):lower()
-		if patternChar == strChar then
-			patternIndex = patternIndex + 1
-		end
-		strIndex = strIndex + 1
-	end
-	return patternLength > 0 and strLength > 0 and (patternIndex - 1) == patternLength
-end
-
-function StringUtils.ContainsOnlySpaces(String: string): ...string?
-	return String:match("^%s*$")
-end
-
-function StringUtils.GetPlayerFromString(Pattern: string, Exclude: { Player }): Player?
-	for _, Player in Players:GetPlayers() do
-		if Pattern:lower() == Player.Name:lower() then
-			if Exclude and table.find(Exclude, Player) then
-				continue
-			end
-			return Player -- Exact match
-		end
-		if Player.Name:sub(1, Pattern:len()):lower() == Pattern:lower() then
-			if Exclude and table.find(Exclude, Player) then
-				continue
-			end
-			return Player
-		end
-	end
-	return nil
-end
-
-function StringUtils.GetReadTime(String: string): number
-	return math.max(String:len() / 10, 5)
-end
-
-function StringUtils.PromiseReadTime(String: string)
-	return Promise.delay(StringUtils.GetReadTime(String))
-end
-
-function StringUtils.GetFirstStringInAlphabet(StringList: { string }): (string, number)
-	local alphabeticSort = Sift.Array.sort(StringList, function(a: string, b: string)
-		return a:lower() < b:lower()
-	end)
-	return alphabeticSort[1], table.find(StringList, alphabeticSort[1]) :: number
 end
 
 return StringUtils

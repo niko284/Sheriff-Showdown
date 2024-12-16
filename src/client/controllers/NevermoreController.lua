@@ -1,25 +1,17 @@
--- Nevermore Controller
--- March 6th, 2023
--- Nick
-
--- // Variables \\
+--!strict
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
--- // Controller \\
 
 local NevermoreController = {
 	Name = "NevermoreController",
 }
 
--- // Functions \\
-
-function NevermoreController:Init()
-	NevermoreController.ClientPackages = ReplicatedStorage:WaitForChild("NevermoreClientPackages")
-	NevermoreController.ServiceBag = require(NevermoreController.ClientPackages.ServiceBag).new()
+function NevermoreController:OnInit()
+	NevermoreController.ClientPackages = ReplicatedStorage:WaitForChild("NevermoreClientPackages") :: any
+	NevermoreController.ServiceBag = require(NevermoreController.ClientPackages.ServiceBag).new() :: any
 end
 
-function NevermoreController:Start() end
+function NevermoreController:OnStart() end
 
 function NevermoreController:GetServiceBag()
 	return self.ServiceBag
