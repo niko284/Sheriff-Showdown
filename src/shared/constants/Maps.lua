@@ -29,16 +29,20 @@ return {
 		Name = "Bridge",
 		Image = 136163376232235,
 	},
-	{
+	--[[{
 		Name = "Castle",
 		Image = 17335347405,
-	},
+	},--]]
 	{
 		Name = "Playground",
 		Image = 104298847591808,
 	},
 	{
 		Name = "Construction",
-		Image = 0,
+		Image = 102390198750762,
+	},
+	{
+		Name = "Rooftops",
+		Image = 124557891971037,
 	},
 }

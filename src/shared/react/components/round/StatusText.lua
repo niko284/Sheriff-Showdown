@@ -1,15 +1,15 @@
 --!strict
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local LocalPlayer = Players.LocalPlayer
 
 local Controllers = LocalPlayer.PlayerScripts.controllers
 
 local React = require(ReplicatedStorage.packages.React)
-local RoundController = require(Controllers.RoundController)
 local ReactSpring = require(ReplicatedStorage.packages.ReactSpring)
+local RoundController = require(Controllers.RoundController)
 
 local useState = React.useState
 local e = React.createElement
@@ -50,6 +50,25 @@ local function StatusText()
 		local updateStatusConnection = RoundController:ObserveStatusChanged(
 			function(newStatus: string, shouldAnimate: boolean)
 				alternating.current = not alternating.current
+
+				if newStatus == "StartMatch" then
+					local endTime = os.time() + 8 -- 8 seconds
+
+					while os.time() < endTime do
+						local timeLeft = endTime - os.time()
+						setStatus(function(oldStatus)
+							oldStatusText.current = oldStatus.status
+							return {
+								status = "Match starts in " .. timeLeft,
+								shouldAnimate = false,
+							}
+						end)
+						task.wait()
+					end
+
+					return
+				end
+
 				setStatus(function(oldStatus)
 					oldStatusText.current = oldStatus.status
 					return {

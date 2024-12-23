@@ -19,6 +19,7 @@ export type Gun = {
 	ReloadTime: number,
 	CurrentCapacity: number,
 	LocalCooldownMillis: number,
+	ReloadTimeMillis: number,
 	BulletSpeed: number,
 	BulletLifeTime: number,
 	BulletSoundId: number,

@@ -1,35 +1,33 @@
--- Distraction Extension
--- April 12th, 2024
--- Nick
-
--- // Variables \\
+--!strict
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local Packages = ReplicatedStorage.packages
 local Constants = ReplicatedStorage.constants
-local Serde = ReplicatedStorage.serde
 local Services = ServerScriptService.services
 
-local ActionService = require(Services.ActionService)
-local AudioService = require(Services.AudioService)
+local Actions = require(ReplicatedStorage.ecs.actions)
+local Components = require(ReplicatedStorage.ecs.components)
 local Distractions = require(Constants.Distractions)
 local Generic = require(script.Parent.Parent.Generic)
-local HitFXSerde = require(Serde.HitFXSerde)
+local Matter = require(Packages.Matter)
+local Net = require(Packages.Net)
 local Promise = require(Packages.Promise)
 local Remotes = require(ReplicatedStorage.network.Remotes)
 local RoundService = require(Services.RoundService)
 local Sift = require(Packages.Sift)
 local Types = require(Constants.Types)
 
-local EntityNamespace = Remotes.Server:GetNamespace("Entity")
 local RoundNamespace = Remotes.Server:GetNamespace("Round")
-local SendDistraction = RoundNamespace:Get("SendDistraction")
-local ProcessFX = EntityNamespace:Get("ProcessFX")
+local SendDistraction = RoundNamespace:Get("SendDistraction") :: Net.ServerSenderEvent
 
 local DISTRACTION_KEYS = Sift.Dictionary.keys(Distractions)
 local DISTRACTION_STOP_FLAG = "ImmediateStop"
+
+local DISALLOWED_ACTIONS_DURING_DISTRACTION = {
+	"Shoot",
+}
 
 local DistractionExtension = {
 	Data = RoundService:GetRoundModeData("Distraction"),
@@ -37,21 +35,54 @@ local DistractionExtension = {
 		-- we can add extra properties here for newly created rounds if we need to.
 		DistractionsFinished = false,
 	},
-} :: Types.RoundModeExtension
+} :: Types.RoundModeExtension & {
+	GetDistractions: () -> { Types.Distraction },
+}
 
-function DistractionExtension.StartMatch(Match: Types.Match, _RoundInstance: Types.Round)
-	Generic.StartMatch(Match)
+function DistractionExtension.StartMatch(Match: Types.Match, RoundInstance: Types.Round, World: Matter.World)
+	Generic.StartMatch(Match, RoundInstance, World)
 
 	local matchDistractions = DistractionExtension.GetDistractions()
 
+	local distractionsActive = true
+
 	-- loop through the distractions and send them to the clients to display every 2 seconds.
 	local playersInMatch = RoundService:GetAllPlayersInMatch(Match)
+
+	-- we need a stable reference to the function so we can remove it from the middleware table after the distractions end.
+	local distractionMiddleware = function(_world, player: Player, _actionPayload: any)
+		if distractionsActive and table.find(playersInMatch, player) then
+			local playerEntityId = RoundService:GetEntityIdFromPlayer(player)
+			local playerKilled = World:get(playerEntityId, Components.Killed)
+
+			if playerKilled == nil then
+				World:insert(
+					playerEntityId,
+					Components.Killed({
+						killerEntityId = playerEntityId,
+						expiry = os.time() + 6, -- 6 seconds duration
+						processRemoval = false,
+					})
+				)
+			end
+
+			return false
+		end
+		return true
+	end
+
+	for _, action in DISALLOWED_ACTIONS_DURING_DISTRACTION do
+		local actionType = Actions[action]
+		local actionMiddlewares = actionType.middleware or {}
+		table.insert(actionMiddlewares, distractionMiddleware)
+	end
 
 	-- if our match finishes early, we want to stop the distractions from being sent to the clients.
 	Promise.any({
 		Generic.MatchFinishedPromise(Match):andThen(function()
 			-- notify the client to stop the distractions if the match finishes early.
 			SendDistraction:SendToPlayers(playersInMatch, DISTRACTION_STOP_FLAG)
+			distractionsActive = false
 			return DISTRACTION_STOP_FLAG
 		end),
 		Promise.new(function(resolve, _reject, onCancel)
@@ -75,58 +106,32 @@ function DistractionExtension.StartMatch(Match: Types.Match, _RoundInstance: Typ
 			resolve("Success")
 		end),
 	}):finally(function(result: "Success" | "ImmediateStop")
+		distractionsActive = false
 		task.spawn(function()
 			task.wait(1)
 			SendDistraction:SendToPlayers(playersInMatch, nil) -- clear the draw distraction after 1 second.
 		end)
+
+		for _, action in DISALLOWED_ACTIONS_DURING_DISTRACTION do
+			local actionType = Actions[action]
+			local actionMiddlewares = actionType.middleware or {}
+			local index = table.find(actionMiddlewares, distractionMiddleware)
+			if index then
+				table.remove(actionMiddlewares, index)
+			end
+		end
 
 		-- if the match finishes early, there's nothing left to do.
 		if result == DISTRACTION_STOP_FLAG then
 			return
 		end
 		-- since the draw distraction is the last one, we can now disable the distraction flag.
-
-		Match.DistractionsFinished = true
 	end)
-end
-
-function DistractionExtension.VerifyActionRequest(ActionPlayer: Player, StateInfo: Types.ActionStateInfo): boolean
-	if not ActionPlayer.Character then
-		return false
-	end
-
-	local humanoid = ActionPlayer.Character:FindFirstChildOfClass("Humanoid")
-	if not humanoid then
-		return false
-	end
-
-	if StateInfo.ActionHandlerName == "Shoot" then
-		local actionPlayerMatch = Generic.GetCurrentMatchForPlayer(ActionPlayer)
-		if actionPlayerMatch and actionPlayerMatch.DistractionsFinished == false then
-			-- here, we need to instantly kill the player if they shoot during the distraction phase.
-			ActionService:DamageEntity(ActionPlayer.Character :: Types.Entity, humanoid.Health)
-
-			local vfxArgs: Types.VFXArguments = {
-				TargetEntity = ActionPlayer.Character,
-			}
-
-			ProcessFX:SendToAllPlayers(
-				StateInfo.ActionHandlerName,
-				"ExplosionDistraction",
-				HitFXSerde.Serialize(vfxArgs)
-			)
-			AudioService:PlayPreset("DistractionExplosion", ActionPlayer.Character.PrimaryPart)
-
-			return false
-		end
-	end
-
-	return true
 end
 
 function DistractionExtension.GetDistractions(): { Types.Distraction }
 	-- put a random amount of distractions in a list
-	local distractions = {}
+	local distractions: { Types.Distraction } = {}
 	local distractionsBeforeDraw = math.random(0, 6)
 
 	for _i = 1, distractionsBeforeDraw do

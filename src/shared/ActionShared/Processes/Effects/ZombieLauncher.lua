@@ -28,7 +28,7 @@ local RANDOM_PRESETS = {
 	"Zombie5",
 }
 
-function ZombieLauncher.ApplyKillEffect(KilledEntity: Types.Entity)
+function ZombieLauncher.ApplyKillEffect(KilledEntity: Model)
 	local zombie = ZOMBIE_MESH:Clone()
 	zombie:PivotTo(KilledEntity:GetPivot() * CFrame.new(0, 5, 0))
 	zombie.Parent = workspace

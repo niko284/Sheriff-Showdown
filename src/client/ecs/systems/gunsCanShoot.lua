@@ -11,6 +11,7 @@ local Utils = ReplicatedStorage.utils
 local Components = require(ReplicatedStorage.ecs.components)
 local Matter = require(Packages.Matter)
 local MatterReplication = require(Packages.MatterReplication)
+local MatterTypes = require(ReplicatedStorage.ecs.MatterTypes)
 local Remotes = require(ReplicatedStorage.network.Remotes)
 local Types = require(ReplicatedStorage.constants.Types)
 local UUIDSerde = require(Utils.UUIDSerde)
@@ -29,11 +30,11 @@ local function gunsCanShoot(world: Matter.World, state)
 
 	local isShooting = actions:pressed("shoot")
 
-	for eid, gun, owner: Components.Owner, serverEntity in
+	for eid, gun: MatterTypes.ComponentInstance<Components.Gun>, owner: Components.Owner, serverEntity in
 		world:query(Components.Gun, Components.Owner, MatterReplication.ServerEntity):without(Components.Cooldown)
 	do
 		if isShooting then
-			if gun.CurrentCapacity > -math.huge and owner.OwnedBy == Players.LocalPlayer and gun.Disabled ~= true then
+			if owner.OwnedBy == Players.LocalPlayer and gun.Disabled ~= true then
 				local mouseLocation = UserInputService:GetMouseLocation() - GuiService:GetGuiInset()
 				local viewportPointRay = workspace.CurrentCamera:ScreenPointToRay(mouseLocation.X, mouseLocation.Y)
 
@@ -58,16 +59,20 @@ local function gunsCanShoot(world: Matter.World, state)
 					local velocity = dirFromRightHand * gun.BulletSpeed
 					local bulletCFrame = CFrame.lookAt(origin, origin + dirFromRightHand)
 
+					local newCapacity = gun.CurrentCapacity - 1
+
 					gun = gun:patch({
-						CurrentCapacity = gun.CurrentCapacity - 1,
+						CurrentCapacity = newCapacity == 0 and gun.MaxCapacity or newCapacity,
 					})
 					world:insert(eid, gun)
 
 					local timeNow = DateTime.now()
+					local cooldownMillis = newCapacity == 0 and gun.ReloadTimeMillis or gun.LocalCooldownMillis
+
 					world:insert(
 						eid,
 						Components.Cooldown({
-							expiry = timeNow.UnixTimestampMillis + gun.LocalCooldownMillis,
+							expiry = timeNow.UnixTimestampMillis + cooldownMillis,
 						})
 					)
 

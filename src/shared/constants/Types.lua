@@ -125,6 +125,19 @@ export type Match = {
 	Teams: { Team },
 	MatchUUID: string,
 }
+
+export type Effect = {
+	Name: string,
+	ApplyKillEffect: (Model) -> (),
+}
+
+export type Audio = {
+	AudioId: string,
+	Looped: boolean,
+	Volume: number?,
+	SoundGroupName: string?,
+}
+
 export type Round = {
 	Matches: { Match },
 	RoundMode: RoundMode,

@@ -3,6 +3,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Components = require(ReplicatedStorage.ecs.components)
+local MatterTypes = require(ReplicatedStorage.ecs.MatterTypes)
 local Middlewares = require(ReplicatedStorage.ecs.Middlewares)
 local Types = require(ReplicatedStorage.constants.Types)
 local t = require(ReplicatedStorage.packages.t)
@@ -39,7 +40,8 @@ return {
 			return false
 		end
 
-		local gunComponent = world:get(actionPayload.fromGun, Components.Gun) :: Components.Gun
+		local gunComponent =
+			world:get(actionPayload.fromGun, Components.Gun) :: MatterTypes.ComponentInstance<Components.Gun>
 
 		if gunComponent.Disabled == true then
 			warn("Gun is disabled")
@@ -61,10 +63,18 @@ return {
 			return false
 		end
 
+		local newCapacity = gunComponent.CurrentCapacity - 1
+
+		gunComponent = gunComponent:patch({
+			CurrentCapacity = newCapacity == 0 and gunComponent.MaxCapacity or newCapacity,
+		})
+
 		local timeNow = DateTime.now()
+		local cooldownMillis = newCapacity == 0 and gunComponent.ReloadTimeMillis or gunComponent.LocalCooldownMillis
+
 		world:insert(
 			actionPayload.fromGun,
-			Components.Cooldown({ expiry = timeNow.UnixTimestampMillis + gunComponent.LocalCooldownMillis })
+			Components.Cooldown({ expiry = timeNow.UnixTimestampMillis + cooldownMillis })
 		)
 
 		-- we're not actually spawning a bullet here, we're just making the server also aware of the bullet that was shot.

@@ -469,7 +469,7 @@ function AchievementService:CompleteRequirement(
 			local newActiveAchievements = table.clone(playerAchievements.ActiveAchievements)
 			local newAchievement = table.clone(Achievement)
 			local newRequirements = table.clone(newAchievement.Requirements)
-			local requirement = newAchievement.Requirements[requirementIndex]
+			local requirement = newRequirements[requirementIndex]
 			requirement = table.clone(requirement)
 			requirement.Progress = NewValue
 			newRequirements[requirementIndex] = requirement

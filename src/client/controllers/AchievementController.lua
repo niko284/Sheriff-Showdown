@@ -80,7 +80,7 @@ function AchievementController:GetRequirementName(Achievement: Types.Achievement
 	local requirementName = requirementInfo.BaseName
 	local newName = string.gsub(requirementName, "%b[]", function(wrappedString)
 		local stringToReplace = string.sub(wrappedString, 2, #wrappedString - 1)
-		local value = requirement[stringToReplace] or requirementInfo[stringToReplace]
+		local value = requirement[stringToReplace] or requirementInfo[stringToReplace :: any]
 		if value then
 			return value
 		end

@@ -2,12 +2,12 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local React = require(ReplicatedStorage.packages.React)
 local Currencies = require(ReplicatedStorage.constants.Currencies)
+local FormatNumber = require(ReplicatedStorage.utils.FormatNumber)
+local Freeze = require(ReplicatedStorage.packages.Freeze)
+local React = require(ReplicatedStorage.packages.React)
 local Types = require(ReplicatedStorage.constants.Types)
 local useProductInfoFromIds = require(ReplicatedStorage.react.hooks.useProductInfoFromIds)
-local Freeze = require(ReplicatedStorage.packages.Freeze)
-local FormatNumber = require(ReplicatedStorage.utils.FormatNumber)
 
 local NumberFormatter = FormatNumber.NumberFormatter
 
@@ -28,7 +28,6 @@ local function CurrencyPage(props: CurrencyPageProps)
 
 	local productInfo = useProductInfoFromIds(productIds)
 
-	print("rerender")
 	return e("Frame", {
 		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 		BackgroundTransparency = 1,

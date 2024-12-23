@@ -15,14 +15,13 @@ local Components = require(ReplicatedStorage.ecs.components)
 local Maps = require(Constants.Maps)
 local Matter = require(Packages.Matter)
 local Promise = require(Packages.Promise)
-local RagdollService = require(ServerScriptService.services.RagdollService)
 local Remotes = require(ReplicatedStorage.network.Remotes)
 local RoundModes = require(Constants.RoundModes)
 local ServerComm = require(ServerScriptService.ServerComm)
+local SettingsService = require(ServerScriptService.services.SettingsService)
 local Sift = require(Packages.Sift)
 local Signal = require(Packages.Signal)
 local StatisticsService = require(ServerScriptService.services.StatisticsService)
-local Teams = require(Constants.Teams)
 local Types = require(Constants.Types)
 
 local RoundNamespace = Remotes.Server:GetNamespace("Round")
@@ -39,7 +38,7 @@ local VOTING_DURATION = 25
 local MINIMUM_PLAYERS = 2
 local MAP_VOTING_COUNT = 3
 local ROUND_MODE_VOTING_COUNT = 3
-local WINNER_CELEBRATION_DURATION = 5
+local WINNER_CELEBRATION_DURATION = 6
 
 -- // Service \\
 
@@ -293,16 +292,45 @@ function RoundService:DoVoting()
 	end)
 end
 
-function RoundService:WaitForPlayers(PlayerCount: number)
-	local playerCount = #Players:GetPlayers()
+function RoundService:WaitForPlayers(MinimumPlayers: number)
+	local playerCount = #RoundService:GetPotentialRoundPlayers()
 	RoundService.RoundStatus:Set("Waiting for players...")
-	if playerCount >= PlayerCount then
+	if playerCount >= MinimumPlayers then
 		return Promise.resolve()
 	else
-		return Promise.fromEvent(Players.PlayerAdded, function()
-			return #Players:GetPlayers() >= PlayerCount
-		end)
+		return Promise.any({
+			Promise.fromEvent(Players.PlayerAdded, function()
+				return #Players:GetPlayers() >= MinimumPlayers
+			end),
+			Promise.fromEvent(
+				SettingsService.SettingChanged,
+				function(_Player: Player, SettingName: string, Value: Types.SettingValue)
+					return SettingName == "AFK Mode"
+							and Value == false
+							and #RoundService:GetPotentialRoundPlayers() >= MinimumPlayers
+						or false
+				end
+			),
+		})
 	end
+end
+
+-- Returns the number of players in the game that are able to play in the round. (No AFK status)
+function RoundService:GetPotentialRoundPlayers()
+	local potentialPlayers = {}
+
+	for _, player in Players:GetPlayers() do
+		local playerSettings = SettingsService:GetSettings(player)
+		if playerSettings then
+			local afkMode = playerSettings["AFK Mode"]
+			if afkMode and afkMode.Value == true then
+				continue
+			end
+			table.insert(potentialPlayers, player)
+		end
+	end
+
+	return potentialPlayers
 end
 
 function RoundService:LoadMap(MapName: string)
@@ -373,7 +401,7 @@ function RoundService:StartMatch(RoundInstance: Types.Round, Match: Types.Match)
 	-- teleport players to their spawn points
 	local mapFolder = RoundInstance.Map
 
-	RoundService.RoundStatus:Set("Match in progress...")
+	RoundService.RoundStatus:Set("StartMatch")
 
 	local world = RoundService.World :: Matter.World
 

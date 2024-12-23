@@ -1,3 +1,4 @@
 {
-    "stylua.targetReleaseVersion": "latest"
+  "stylua.targetReleaseVersion": "latest",
+  "luau-lsp.require.mode": "relativeToFile"
 }

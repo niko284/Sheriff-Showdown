@@ -6,13 +6,12 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TweenService = game:GetService("TweenService")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerScripts = LocalPlayer.PlayerScripts
 
 local Packages = ReplicatedStorage.packages
-local Components = ReplicatedStorage.components
+local Components = ReplicatedStorage.react.components
 local FrameComponents = Components.frames
 local Controllers = PlayerScripts.controllers
 local Constants = ReplicatedStorage.constants
