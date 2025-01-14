@@ -27,7 +27,7 @@ local NotificationController = {
 
 -- // Functions \\
 
-function NotificationController:Init()
+function NotificationController:OnInit()
 	AddNotification:Connect(function(Notification: string)
 		self:AddNotification(NotificationSerde.Deserialize(Notification))
 	end)

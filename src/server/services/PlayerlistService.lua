@@ -46,7 +46,7 @@ function PlayerlistService:OnInit()
 	end)
 end
 
-function PlayerlistService:Start()
+function PlayerlistService:OnStart()
 	-- update kills and deaths and level in live time, and longest kill streak.
 
 	StatisticsService:GetStatisticChangedSignal("TotalKills"):Connect(function(Player: Player, Kills: number)

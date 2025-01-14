@@ -1,11 +1,14 @@
 --!strict
 
+local ContentProvider = game:GetService("ContentProvider")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
 local CrateData = require(ReplicatedStorage.constants.Crates)
 local EffectUtils = require(ReplicatedStorage.utils.EffectUtils)
+local Freeze = require(ReplicatedStorage.packages.Freeze)
 local ItemUtils = require(ReplicatedStorage.utils.ItemUtils)
+local Janitor = require(ReplicatedStorage.packages.Janitor)
 local Promise = require(ReplicatedStorage.packages.Promise)
 local Signal = require(ReplicatedStorage.packages.Signal)
 local Types = require(ReplicatedStorage.constants.Types)
@@ -14,6 +17,9 @@ local Assets = ReplicatedStorage:FindFirstChild("assets") :: Folder
 local CurrentCamera = workspace.CurrentCamera
 local Guns = Assets:FindFirstChild("guns") :: Folder
 local Crates = Assets:FindFirstChild("crates") :: Folder
+local Other = Assets:FindFirstChild("other") :: Folder
+
+local CRATE_MAP = Other:FindFirstChild("CrateMap") :: Model
 local GUN_TWEEN_UP_INFO = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 local CRATE_DOWN_MARKER_NAME = "CrateDown"
 local PARTICLE_MARKER_NAME = "ParticleEnabled"
@@ -21,6 +27,7 @@ local PARTICLE_MARKER_NAME = "ParticleEnabled"
 local ShopController = {
 	Name = "ShopController",
 	CrateOpened = Signal.new() :: Signal.Signal<Types.Crate, number, () -> ()>,
+	OpenAnimations = {},
 }
 
 local function getGunModel(gunFolder: Folder): Model
@@ -38,6 +45,16 @@ local function getGunModel(gunFolder: Folder): Model
 		handleClone.Parent = mod
 		return mod
 	end
+end
+
+function ShopController:OnInit()
+	for crateType, crateInfo in CrateData do
+		local openAnimationId = string.format("rbxassetid://%d", crateInfo.OpenAnimation)
+		local openAnimation = Instance.new("Animation")
+		openAnimation.AnimationId = openAnimationId
+		ShopController.OpenAnimations[crateType] = openAnimation
+	end
+	ContentProvider:PreloadAsync(Freeze.Dictionary.values(ShopController.OpenAnimations))
 end
 
 function ShopController:OpenMultipleCrates(Crate: Types.Crate, GunInfo: { Types.Item })
@@ -66,11 +83,22 @@ function ShopController:OpenCrate(CrateType: Types.Crate, GunId: number): any
 		return
 	end
 
+	local crateJanitor = Janitor.new()
+
+	local crateMapCF = CFrame.new(-4.267, -27822.162, -11.591)
+
+	local crateMap = crateJanitor:Add(CRATE_MAP:Clone(), "Destroy")
+	crateMap:PivotTo(crateMapCF)
+	crateMap.Parent = workspace
+
+	local cratePlacementPart = crateMap:WaitForChild("CrateSpawn") :: BasePart
+	local cratePivot = cratePlacementPart:GetPivot()
+
 	local crate = crateModel:Clone() :: Model
-	crate:PivotTo(CFrame.new(-4.267, -27822.162, -11.591) * CFrame.Angles(math.rad(90), 0, 0))
+	crate:PivotTo(cratePivot * CFrame.Angles(0, math.rad(90), 0))
 	crate.Parent = workspace
 
-	EffectUtils.DisableParticles(crate)
+	EffectUtils.SetDescendantsProperty(crate, "ParticleEmitter", "Enabled", false)
 	EffectUtils.DisableBeams(crate)
 
 	-- position the camera to face the front of the crate
@@ -86,19 +114,16 @@ function ShopController:OpenCrate(CrateType: Types.Crate, GunId: number): any
 		return
 	end
 
-	local openAnimationId = string.format("rbxassetid://%d", crateInfo.OpenAnimation)
-	local openAnimation = Instance.new("Animation")
-	openAnimation.AnimationId = openAnimationId
+	local openAnimation = ShopController.OpenAnimations[CrateType]
 
 	local track = animationController:LoadAnimation(openAnimation) :: AnimationTrack
 	track:Play()
 	track.TimePosition = 0.03
-	track:AdjustSpeed(0)
 
 	task.delay(0.03, function()
-		CurrentCamera.CFrame = CFrame.new(cratePosition + crateCFrame.RightVector * 3.75, cratePosition)
+		CurrentCamera.CFrame =
+			CFrame.lookAt(cratePivot.Position + cratePivot.LookVector * 8 + Vector3.new(0, 2, 0), cratePosition)
 		-- angle the camera down slightly to look at the crate, and also move the camera up a bit
-		CurrentCamera.CFrame = CurrentCamera.CFrame * CFrame.Angles(math.rad(-15), 0, 0) * CFrame.new(0, 1, 0)
 	end)
 
 	track:AdjustSpeed(1)
@@ -110,7 +135,7 @@ function ShopController:OpenCrate(CrateType: Types.Crate, GunId: number): any
 		return
 	end
 
-	local gunModel = getGunModel(gunFolder)
+	local gunModel = crateJanitor:Add(getGunModel(gunFolder), "Destroy")
 
 	gunModel:PivotTo(CFrame.new(crateCFrame.Position))
 
@@ -118,7 +143,7 @@ function ShopController:OpenCrate(CrateType: Types.Crate, GunId: number): any
 
 	track:GetMarkerReachedSignal(PARTICLE_MARKER_NAME):Once(function()
 		-- enable particles
-		EffectUtils.EnableParticles(crate)
+		EffectUtils.SetDescendantsProperty(crate, "ParticleEmitter", "Enabled", true)
 		EffectUtils.EnableBeams(crate)
 
 		gunModel.Parent = workspace
@@ -134,13 +159,26 @@ function ShopController:OpenCrate(CrateType: Types.Crate, GunId: number): any
 		EffectUtils.DisableBeams(crate)
 		task.wait(0.2)
 		local gunSlightDownTween = TweenService:Create(gunModel.PrimaryPart :: BasePart, GUN_TWEEN_UP_INFO, {
-			CFrame = primaryPart.CFrame * CFrame.new(0, -1, 0) * CFrame.Angles(0, math.rad(195), 0),
+			CFrame = primaryPart.CFrame * CFrame.new(0, -1, 0) * CFrame.Angles(0, math.rad(45), 0),
 		})
 		gunSlightDownTween:Play()
 		gunSlightDownTween.Completed:Once(function()
+			EffectUtils.SetDescendantsProperty(cratePlacementPart, "ParticleEmitter", "Enabled", true)
+
+			local tween = crateJanitor:Add(
+				TweenService:Create(
+					CurrentCamera,
+					TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirection.In, 0, false, 0.2),
+					{
+						CFrame = CurrentCamera.CFrame * CFrame.new(0, 0, -3),
+					}
+				),
+				"Destroy"
+			)
+			tween:Play()
+
 			ShopController.CrateOpened:Fire(CrateType, GunId, function()
-				gunModel:Destroy()
-				--crate:Destroy()
+				crateJanitor:Destroy()
 			end)
 		end)
 	end)

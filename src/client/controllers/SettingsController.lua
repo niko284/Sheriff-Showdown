@@ -49,7 +49,7 @@ local SettingsController = {
 
 -- // Functions \\
 
-function SettingsController:Init()
+function SettingsController:OnInit()
 	PlayerSettingsProperty:Observe(function(playerSettings: Types.PlayerDataSettings?)
 		if playerSettings then
 			SettingsController.CurrentSettings = playerSettings

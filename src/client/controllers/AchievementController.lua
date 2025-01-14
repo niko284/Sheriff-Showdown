@@ -32,7 +32,7 @@ local AchievementController = {
 
 -- // Functions \\
 
-function AchievementController:Init()
+function AchievementController:OnInit()
 	AchievementsChanged:Connect(function(partialAchievementState)
 		AchievementController.PartialAchievementsChanged:Fire(partialAchievementState)
 	end)
