@@ -65,10 +65,6 @@ return {
 
 		local newCapacity = gunComponent.CurrentCapacity - 1
 
-		gunComponent = gunComponent:patch({
-			CurrentCapacity = newCapacity == 0 and gunComponent.MaxCapacity or newCapacity,
-		})
-
 		local timeNow = DateTime.now()
 		local cooldownMillis = newCapacity == 0 and gunComponent.ReloadTimeMillis or gunComponent.LocalCooldownMillis
 
@@ -76,6 +72,12 @@ return {
 			actionPayload.fromGun,
 			Components.Cooldown({ expiry = timeNow.UnixTimestampMillis + cooldownMillis })
 		)
+
+		gunComponent = gunComponent:patch({
+			CurrentCapacity = newCapacity == 0 and gunComponent.MaxCapacity or newCapacity,
+		})
+
+		world:insert(actionPayload.fromGun, gunComponent)
 
 		-- we're not actually spawning a bullet here, we're just making the server also aware of the bullet that was shot.
 		-- the actual bullet is spawned on the client side.

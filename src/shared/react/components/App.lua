@@ -14,10 +14,12 @@ local Achievements = require(Components.achievements.Achievements)
 local AchievementsProvider = require(Providers.AchievementsProvider)
 local AutoUIScale = require(Components.other.AutoUIScale)
 local ContextStack = require(ReplicatedStorage.utils.ContextStack)
+local CrateClaim = require(Components.shop.crates.CrateClaim)
 local CurrentInterfaceProvider = require(Providers.CurrentInterfaceProvider)
 local DailyRewards = require(Components.dailyRewards.DailyRewards)
 local DistractionViewport = require(Components.round.DistractionViewport)
 local GiftingSelectionList = require(Components.shop.GiftingSelectionList)
+local GunCounter = require(Components.combat.GunCounter)
 local Inventory = require(Components.inventory.Inventory)
 local InventoryProvider = require(Providers.InventoryProvider)
 local NotificationController = require(Controllers.NotificationController)
@@ -33,13 +35,13 @@ local Shop = require(Components.shop.Shop)
 local ShopProvider = require(Providers.ShopProvider)
 local SideButtonHUD = require(Components.other.SideButtonHUD)
 local StatisticsProvider = require(Providers.StatisticsProvider)
+local StatusText = require(Components.round.StatusText)
 local TradeProvider = require(Providers.TradeProvider)
 local TradeResults = require(Components.trading.TradeResults)
 local Trading = require(Components.trading.Trading)
 local TradingPlayerList = require(Components.trading.TradingPlayerList)
 local Voting = require(Components.voting.Voting)
-local StatusText = require(Components.round.StatusText)
-local CrateClaim = require(Components.shop.crates.CrateClaim)
+local WorldProvider = require(Providers.WorldProvider)
 
 local e = React.createElement
 local useState = React.useState
@@ -91,6 +93,7 @@ local function App()
 			e(TradeProvider),
 			e(StatisticsProvider),
 			e(RewardsProvider),
+			e(WorldProvider),
 		},
 	}, {
 		App = e("ScreenGui", {
@@ -110,6 +113,7 @@ local function App()
 			distractionViewport = e(DistractionViewport),
 			playerList = e(Playerlist),
 			tradingList = e(TradingPlayerList),
+			gunCounter = e(GunCounter),
 			achievements = e(Achievements),
 			globalNotifications = e(NotificationManager, {
 				componentSize = UDim2.fromOffset(345, 81),

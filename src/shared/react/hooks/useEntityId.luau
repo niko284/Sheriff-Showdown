@@ -32,6 +32,7 @@ local function usePlayerEntityId(player: Player, world: Matter.World?)
 		local detectPlayerComponent
 		detectPlayerComponent = RunService.RenderStepped:Connect(function()
 			for playerEid, playerComponent in world:query(Components.Player) do
+				print(playerEid)
 				if playerComponent.OwnedBy == player then
 					setEntityId(playerEid)
 					detectPlayerComponent:Disconnect()
@@ -45,7 +46,7 @@ local function usePlayerEntityId(player: Player, world: Matter.World?)
 				detectPlayerComponent:Disconnect()
 			end
 		end
-	end, { player, serverEntityId } :: { any })
+	end, { player, serverEntityId, world } :: { any })
 
 	return entityId
 end

@@ -47,6 +47,14 @@ function EffectUtils.SetDescendantsProperty(instance: Instance, className: strin
 	end
 end
 
+function EffectUtils.EmitParticleCount(instance: Instance, count: number)
+	for _, descendant in instance:GetDescendants() do
+		if descendant:IsA("ParticleEmitter") then
+			descendant:Emit(count)
+		end
+	end
+end
+
 function EffectUtils.DisableBeams(instance: Instance)
 	for _, beam in instance:GetDescendants() do
 		if beam:IsA("Beam") then

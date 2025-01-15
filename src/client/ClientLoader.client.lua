@@ -54,9 +54,12 @@ local function loadClient()
 
 			return controllers
 		end)
-		:andThen(function()
+		:andThen(function(controllers)
 			local world = ecsStart(SYSTEM_CONTAINERS)
 			BootstrapCollections(world, COLLECTION_COMPONENTS, { workspace })
+
+			controllers.InterfaceController.WorldCreated:Fire(world)
+			controllers.InterfaceController.World = world
 		end)
 end
 

@@ -9,20 +9,24 @@ local EffectUtils = require(ReplicatedStorage.utils.EffectUtils)
 local Freeze = require(ReplicatedStorage.packages.Freeze)
 local ItemUtils = require(ReplicatedStorage.utils.ItemUtils)
 local Janitor = require(ReplicatedStorage.packages.Janitor)
+local MathUtils = require(ReplicatedStorage.utils.MathUtils)
 local Promise = require(ReplicatedStorage.packages.Promise)
+local Rarities = require(ReplicatedStorage.constants.Rarities)
 local Signal = require(ReplicatedStorage.packages.Signal)
 local Types = require(ReplicatedStorage.constants.Types)
 
 local Assets = ReplicatedStorage:FindFirstChild("assets") :: Folder
+local Particles = Assets:FindFirstChild("particles") :: Folder
 local CurrentCamera = workspace.CurrentCamera
 local Guns = Assets:FindFirstChild("guns") :: Folder
 local Crates = Assets:FindFirstChild("crates") :: Folder
 local Other = Assets:FindFirstChild("other") :: Folder
 
 local CRATE_MAP = Other:FindFirstChild("CrateMap") :: Model
-local GUN_TWEEN_UP_INFO = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+local GUN_TWEEN_UP_INFO = TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 local CRATE_DOWN_MARKER_NAME = "CrateDown"
 local PARTICLE_MARKER_NAME = "ParticleEnabled"
+local ATTACHMENTS_PARTICLES = Particles:FindFirstChild("Attachments") :: BasePart
 
 local ShopController = {
 	Name = "ShopController",
@@ -83,7 +87,15 @@ function ShopController:OpenCrate(CrateType: Types.Crate, GunId: number): any
 		return
 	end
 
+	local rarityInfo = Rarities[GunInfo.Rarity :: any]
+
+	if not rarityInfo then
+		return
+	end
+
 	local crateJanitor = Janitor.new()
+
+	local particleAttachment = ATTACHMENTS_PARTICLES:FindFirstChild(GunInfo.Rarity :: any) :: Attachment?
 
 	local crateMapCF = CFrame.new(-4.267, -27822.162, -11.591)
 
@@ -126,6 +138,12 @@ function ShopController:OpenCrate(CrateType: Types.Crate, GunId: number): any
 		-- angle the camera down slightly to look at the crate, and also move the camera up a bit
 	end)
 
+	if rarityInfo.CrateFOV then
+		TweenService:Create(CurrentCamera, TweenInfo.new(0.1, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+			FieldOfView = rarityInfo.CrateFOV,
+		}):Play()
+	end
+
 	track:AdjustSpeed(1)
 
 	-- pop the gun out of the crate
@@ -138,6 +156,10 @@ function ShopController:OpenCrate(CrateType: Types.Crate, GunId: number): any
 	local gunModel = crateJanitor:Add(getGunModel(gunFolder), "Destroy")
 
 	gunModel:PivotTo(CFrame.new(crateCFrame.Position))
+
+	if particleAttachment then
+		particleAttachment:Clone().Parent = gunModel.PrimaryPart
+	end
 
 	local primaryPart = gunModel.PrimaryPart :: BasePart
 
@@ -157,25 +179,51 @@ function ShopController:OpenCrate(CrateType: Types.Crate, GunId: number): any
 	track:GetMarkerReachedSignal(CRATE_DOWN_MARKER_NAME):Once(function()
 		EffectUtils.DisableBeams(crate)
 		EffectUtils.DisableBeams(crate)
+		TweenService:Create(CurrentCamera, TweenInfo.new(0.1, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+			FieldOfView = 70,
+		}):Play()
 		task.wait(0.2)
 		local gunSlightDownTween = TweenService:Create(gunModel.PrimaryPart :: BasePart, GUN_TWEEN_UP_INFO, {
 			CFrame = primaryPart.CFrame * CFrame.new(0, -1, 0) * CFrame.Angles(0, math.rad(45), 0),
 		})
 		gunSlightDownTween:Play()
 		gunSlightDownTween.Completed:Once(function()
-			EffectUtils.SetDescendantsProperty(cratePlacementPart, "ParticleEmitter", "Enabled", true)
+			EffectUtils.SetDescendantsProperty(
+				cratePlacementPart,
+				"ParticleEmitter",
+				"Color",
+				ColorSequence.new(rarityInfo.Color)
+			)
+			EffectUtils.EmitParticleCount(cratePlacementPart, rarityInfo.ImpactEmit)
+
+			local minCamDistance = MathUtils.GetModelCornerDistance(gunModel)
 
 			local tween = crateJanitor:Add(
 				TweenService:Create(
 					CurrentCamera,
 					TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirection.In, 0, false, 0.2),
 					{
-						CFrame = CurrentCamera.CFrame * CFrame.new(0, 0, -3),
+						CFrame = CFrame.lookAt(
+							cratePivot.Position + cratePivot.LookVector * (minCamDistance * 2),
+							cratePosition
+						),
 					}
 				),
 				"Destroy"
 			)
 			tween:Play()
+
+			local bobTween = crateJanitor:Add(
+				TweenService:Create(
+					gunModel.PrimaryPart :: BasePart,
+					TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true, 0),
+					{
+						Position = (gunModel.PrimaryPart :: BasePart).Position + Vector3.new(0, 0.5, 0),
+					}
+				),
+				"Destroy"
+			)
+			bobTween:Play()
 
 			ShopController.CrateOpened:Fire(CrateType, GunId, function()
 				crateJanitor:Destroy()

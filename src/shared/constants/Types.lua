@@ -46,6 +46,8 @@ export type RarityInfo = {
 	TagWithSerial: boolean,
 	Color: Color3,
 	Weight: number,
+	CrateFOV: number?,
+	ImpactEmit: number,
 }
 
 export type PlayerInventory = {

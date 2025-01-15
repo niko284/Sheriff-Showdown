@@ -25,6 +25,7 @@ export type Gun = {
 	BulletSoundId: number,
 	KnockStrength: number,
 	CriticalDamage: { [string]: number },
+	Reloading: boolean?,
 }
 export type Parent = {
 	id: number,

@@ -61,11 +61,6 @@ local function gunsCanShoot(world: Matter.World, state)
 
 					local newCapacity = gun.CurrentCapacity - 1
 
-					gun = gun:patch({
-						CurrentCapacity = newCapacity == 0 and gun.MaxCapacity or newCapacity,
-					})
-					world:insert(eid, gun)
-
 					local timeNow = DateTime.now()
 					local cooldownMillis = newCapacity == 0 and gun.ReloadTimeMillis or gun.LocalCooldownMillis
 
@@ -75,6 +70,12 @@ local function gunsCanShoot(world: Matter.World, state)
 							expiry = timeNow.UnixTimestampMillis + cooldownMillis,
 						})
 					)
+
+					gun = gun:patch({
+						CurrentCapacity = newCapacity == 0 and gun.MaxCapacity or newCapacity,
+						Reloading = cooldownMillis == gun.ReloadTimeMillis,
+					})
+					world:insert(eid, gun)
 
 					local actionUUID = HttpService:GenerateGUID(false)
 					world:spawn(

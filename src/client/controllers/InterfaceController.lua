@@ -8,6 +8,7 @@ local LocalPlayer = Players.LocalPlayer
 local Packages = ReplicatedStorage.packages
 local Components = ReplicatedStorage.react.components
 
+local Matter = require(Packages.Matter)
 local React = require(Packages.React)
 local ReactRoblox = require(Packages.ReactRoblox)
 local Signal = require(Packages.Signal)
@@ -21,6 +22,8 @@ local InterfaceController = {
 	InterfaceChanged = Signal.new() :: Signal.Signal<Types.Interface?>,
 	UpdateShopState = Signal.new(),
 	ViewCrateContents = Signal.new() :: Signal.Signal<Types.Crate>,
+	WorldCreated = Signal.new() :: Signal.Signal<Matter.World>,
+	World = nil :: Matter.World?,
 }
 
 -- // Functions \\
