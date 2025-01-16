@@ -25,6 +25,8 @@ local Animations = Assets:FindFirstChild("animations") :: Folder
 
 local SHOOT_ANIMATION = Animations:FindFirstChild("gunshoot") :: Animation
 
+local useEvent = Matter.useEvent
+
 local function gunsCanShoot(world: Matter.World, state)
 	local actions = state.actions
 
@@ -111,6 +113,21 @@ local function gunsCanShoot(world: Matter.World, state)
 					})
 				end
 			end
+		end
+	end
+
+	-- detect gun shooting for mobile
+
+	for inputObject: InputObject in useEvent(UserInputService, "TouchStarted") do
+		if inputObject.UserInputState == Enum.UserInputState.Begin then
+			state.releaseTouch = state.actions:hold("shoot")
+		end
+	end
+
+	for inputObject: InputObject in useEvent(UserInputService, "TouchEnded") do
+		if inputObject.UserInputState == Enum.UserInputState.Begin and state.releaseTouch then
+			state.releaseTouch()
+			state.releaseTouch = nil
 		end
 	end
 end

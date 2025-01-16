@@ -6,7 +6,6 @@ local PlayerScripts = LocalPlayer.PlayerScripts
 local Packages = ReplicatedStorage.packages
 
 local BootstrapCollections = require(ReplicatedStorage.ecs.BootstrapCollections)
-local Components = require(ReplicatedStorage.ecs.components)
 local Promise = require(Packages.Promise)
 local ecsStart = require(PlayerScripts.ecs.start)
 
@@ -55,11 +54,10 @@ local function loadClient()
 			return controllers
 		end)
 		:andThen(function(controllers)
-			local world = ecsStart(SYSTEM_CONTAINERS)
+			local world = ecsStart(SYSTEM_CONTAINERS, controllers)
 			BootstrapCollections(world, COLLECTION_COMPONENTS, { workspace })
 
 			controllers.InterfaceController.WorldCreated:Fire(world)
-			controllers.InterfaceController.World = world
 		end)
 end
 

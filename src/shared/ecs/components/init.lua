@@ -116,4 +116,8 @@ export type Animation = {
 	speed: number,
 }
 
+export type ExtendedHitbox = {
+	hitbox: BasePart,
+}
+
 return Components

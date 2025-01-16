@@ -15,6 +15,7 @@ local REPLICATED_COMPONENTS = {
 	Components.Item,
 	Components.MerryGoRound,
 	Components.Team,
+	Components.Ragdolled,
 	Components.Renderable,
 }
 

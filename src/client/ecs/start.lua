@@ -24,7 +24,7 @@ function Actions:justReleased(action: string): boolean
 	return iterator() ~= nil
 end
 
-local function start(systemsContainers: { Instance })
+local function start(systemsContainers: { Instance }, controllers)
 	local state = {
 		inputState = InputState.new(),
 		actions = Actions.new({ "shoot" }),
@@ -44,6 +44,9 @@ local function start(systemsContainers: { Instance })
 		for _, system in systemContainer:GetChildren() do
 			table.insert(systems, require(system))
 		end
+	end
+	for _, controller in controllers do
+		controller.World = world -- inject the world into the controller for easy access
 	end
 
 	loop:scheduleSystems(systems)
