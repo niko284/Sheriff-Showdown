@@ -37,4 +37,5 @@ return {
 	},
 	Settings = {},
 	ProcessingTrades = {},
+	ReceiptHistory = {},
 } :: Types.DataSchema

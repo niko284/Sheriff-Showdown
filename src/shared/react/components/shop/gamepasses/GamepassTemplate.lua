@@ -1,10 +1,11 @@
 --!strict
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players = game:GetService("Players")
 local MarketplaceService = game:GetService("MarketplaceService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local React = require(ReplicatedStorage.packages.React)
+local UIStroke = require(ReplicatedStorage.react.components.other.UIStroke)
 local useProductInfoFromId = require(ReplicatedStorage.react.hooks.useProductInfoFromId)
 
 local e = React.createElement
@@ -36,8 +37,8 @@ local function GamepassTemplate(props: GamepassTemplateProps)
 			end,
 		}),
 
-		stroke = e("UIStroke", {
-			Color = Color3.fromRGB(255, 255, 255),
+		stroke = e(UIStroke, {
+			color = Color3.fromRGB(255, 255, 255),
 		}),
 
 		passIcon = e("ImageLabel", {
@@ -46,7 +47,8 @@ local function GamepassTemplate(props: GamepassTemplateProps)
 			BackgroundTransparency = 1,
 			BorderColor3 = Color3.fromRGB(0, 0, 0),
 			BorderSizePixel = 0,
-			Size = UDim2.fromOffset(161, 168),
+			Size = UDim2.fromOffset(150, 150),
+			Position = UDim2.fromOffset(80, 10),
 			ZIndex = 0,
 		}),
 
@@ -69,16 +71,20 @@ local function GamepassTemplate(props: GamepassTemplateProps)
 		passName = e("TextLabel", {
 			FontFace = Font.new(
 				"rbxasset://fonts/families/GothamSSm.json",
-				Enum.FontWeight.Bold,
+				Enum.FontWeight.ExtraBold,
 				Enum.FontStyle.Normal
 			),
 			Text = productInfo and productInfo.Name or "Unknown Gamepass",
 			TextColor3 = Color3.fromRGB(255, 255, 255),
-			TextSize = 16,
+			TextSize = 18,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			BackgroundTransparency = 1,
 			Position = UDim2.fromOffset(16, 110),
 			Size = UDim2.fromOffset(91, 12),
+		}, {
+			stroke = e(UIStroke, {
+				color = Color3.fromRGB(0, 0, 0),
+			}),
 		}),
 
 		robuxAmount = e("TextLabel", {
@@ -92,7 +98,7 @@ local function GamepassTemplate(props: GamepassTemplateProps)
 			TextSize = 16,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			BackgroundTransparency = 1,
-			Position = UDim2.fromOffset(165, 20),
+			Position = UDim2.fromOffset(15, 20),
 			Size = UDim2.fromOffset(28, 12),
 		}),
 	})

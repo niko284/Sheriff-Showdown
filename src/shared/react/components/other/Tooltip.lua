@@ -10,6 +10,7 @@ local AutomaticFrame = require(Components.frames.AutomaticFrame)
 local React = require(Packages.React)
 local ReactSpring = require(Packages.ReactSpring)
 local Types = require(Constants.Types)
+local UIStroke = require(script.Parent.UIStroke)
 
 local e = React.createElement
 
@@ -76,11 +77,11 @@ local function Tooltip(props: TooltipProps)
 			},
 			className = "TextLabel",
 		}, {
-			stroke = e("UIStroke", {
-				ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual,
-				Color = Color3.fromRGB(0, 0, 0),
-				Thickness = 2,
-				Transparency = styles.strokeTransparency,
+			stroke = e(UIStroke, {
+				applyStrokeMode = Enum.ApplyStrokeMode.Contextual,
+				color = Color3.fromRGB(0, 0, 0),
+				thickness = 2,
+				transparency = styles.strokeTransparency :: any,
 			}),
 		}),
 	})

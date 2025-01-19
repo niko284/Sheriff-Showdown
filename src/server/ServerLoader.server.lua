@@ -48,12 +48,6 @@ local function loadServer()
 					end
 				end
 			end
-
-			-- initialize and start the service bag for our nevermore packages.
-			local serviceBag = services.NevermoreService:GetServiceBag()
-			serviceBag:Init()
-			serviceBag:Start()
-
 			return services
 		end)
 		:andThen(function(services)

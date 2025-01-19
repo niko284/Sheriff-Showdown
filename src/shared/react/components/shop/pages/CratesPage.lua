@@ -36,7 +36,7 @@ local function CratePage(props: CratePageProps)
 	for crateName, crateInfo in Crates do
 		crateElements[crateName] = e(CrateTemplate, {
 			crateImage = string.format("rbxassetid://%d", crateInfo.ShopImage),
-			crateName = crateName,
+			crateName = crateName :: any,
 			crateDescription = string.format("Contains %d items", #crateInfo.ItemContents),
 			rotationTime = 1,
 			amountOfPreviewItems = 4,

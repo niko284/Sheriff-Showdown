@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Button = require(ReplicatedStorage.react.components.buttons.Button)
 local React = require(ReplicatedStorage.packages.React)
 local Types = require(ReplicatedStorage.constants.Types)
+local UIStroke = require(ReplicatedStorage.react.components.other.UIStroke)
 
 local e = React.createElement
 
@@ -29,9 +30,9 @@ local function DaySevenTemplate(props: DaySevenTemplateProps)
 			CornerRadius = UDim.new(0, 14),
 		}),
 
-		uIStroke = e("UIStroke", {
-			Color = Color3.fromRGB(255, 255, 255),
-			Thickness = 2,
+		uIStroke = e(UIStroke, {
+			color = Color3.fromRGB(255, 255, 255),
+			thickness = 2,
 		}),
 
 		uIGradient = e("UIGradient", {

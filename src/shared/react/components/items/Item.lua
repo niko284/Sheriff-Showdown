@@ -9,6 +9,7 @@ local React = require(ReplicatedStorage.packages.React)
 local ReactSpring = require(ReplicatedStorage.packages.ReactSpring)
 local Separator = require(Components.other.Separator)
 local Types = require(ReplicatedStorage.constants.Types)
+local UIStroke = require(ReplicatedStorage.react.components.other.UIStroke)
 
 local e = React.createElement
 local useState = React.useState
@@ -94,7 +95,7 @@ local function Item(props: ItemProps)
 			Size = UDim2.fromScale(0.713, 0.308),
 			ZIndex = 2,
 		}, {
-			stroke = e("UIStroke"),
+			stroke = e(UIStroke),
 		}),
 
 		clickButton = e("ImageButton", {
@@ -202,9 +203,9 @@ local function Item(props: ItemProps)
 			ZIndex = 2,
 		}),
 
-		stroke = e("UIStroke", {
-			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-			Color = Color3.fromRGB(255, 255, 255),
+		stroke = e(UIStroke, {
+			applyStrokeMode = Enum.ApplyStrokeMode.Border,
+			color = Color3.fromRGB(255, 255, 255),
 		}),
 
 		corner = e("UICorner", {

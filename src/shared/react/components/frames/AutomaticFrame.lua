@@ -50,7 +50,7 @@ local useEffect = React.useEffect
 
 type AutomaticFrameProps = Types.FrameProps & {
 	automaticSize: EnumItem?,
-	maxSize: Vector2,
+	maxSize: Vector2?,
 	textToRead: string?,
 	minSize: Vector2?,
 	instanceProps: { [string]: any },
@@ -77,7 +77,7 @@ local function AutomaticFrame(props: AutomaticFrameProps)
 		function(container: GuiObject, layout: UIGridStyleLayout)
 			local axis = props.automaticSize or Enum.AutomaticSize.XY
 			local maxSize = props.maxSize or Vector2.new(math.huge, math.huge)
-			local minSize = props.minSize
+			local minSize = props.minSize or Vector2.new(0, 0)
 			if typeof(maxSize) == "UDim2" then
 				if container.Parent == nil then
 					maxSize = Vector2.new(0, 0)

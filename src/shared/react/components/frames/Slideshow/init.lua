@@ -8,6 +8,7 @@ local React = require(ReplicatedStorage.packages.React)
 local Separator = require(Components.other.Separator)
 local Slide = require(script.Slide)
 local Types = require(ReplicatedStorage.constants.Types)
+local UIStroke = require(ReplicatedStorage.react.components.other.UIStroke)
 
 local e = React.createElement
 local useState = React.useState
@@ -97,8 +98,8 @@ local function Slideshow(props: SlideshowFrameProps)
 			Rotation = 90,
 		}),
 
-		stroke = e("UIStroke", {
-			Color = Color3.fromRGB(255, 255, 255),
+		stroke = e(UIStroke, {
+			color = Color3.fromRGB(255, 255, 255),
 		}),
 
 		panels = e("Frame", {

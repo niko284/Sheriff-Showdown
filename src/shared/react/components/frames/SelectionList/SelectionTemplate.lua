@@ -6,6 +6,7 @@ local Components = ReplicatedStorage.react.components
 
 local Button = require(Components.buttons.Button)
 local React = require(ReplicatedStorage.packages.React)
+local UIStroke = require(ReplicatedStorage.react.components.other.UIStroke)
 
 local e = React.createElement
 
@@ -26,9 +27,9 @@ local function SelectionTemplate(props: SelectionTemplateProps)
 		Position = UDim2.fromOffset(23, 213),
 		Size = UDim2.fromOffset(801, 73),
 	}, {
-		stroke = e("UIStroke", {
-			Color = Color3.fromRGB(84, 84, 84),
-			Thickness = 1,
+		stroke = e(UIStroke, {
+			color = Color3.fromRGB(84, 84, 84),
+			thickness = 1,
 		}),
 
 		corner = e("UICorner", {

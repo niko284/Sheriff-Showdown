@@ -9,6 +9,7 @@
   "author": "niko284",
   "license": "ISC",
   "dependencies": {
-    "@quenty/ragdoll": "^11.0.0"
+    "@quenty/ragdoll": "^11.0.0",
+    "@quenty/spring": "^10.7.1"
   }
 }

@@ -2,8 +2,10 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local Rarities = require(ReplicatedStorage.constants.Rarities)
 local React = require(ReplicatedStorage.packages.React)
 local Types = require(ReplicatedStorage.constants.Types)
+local UIStroke = require(ReplicatedStorage.react.components.other.UIStroke)
 
 local e = React.createElement
 
@@ -14,6 +16,8 @@ type LargeFeaturedItemProps = Types.FrameProps & {
 }
 
 local function LargeFeaturedItem(props: LargeFeaturedItemProps)
+	local rarityInfo = Rarities[props.rarity]
+
 	return e("Frame", {
 		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 		LayoutOrder = props.layoutOrder,
@@ -33,8 +37,8 @@ local function LargeFeaturedItem(props: LargeFeaturedItemProps)
 			Rotation = 90,
 		}),
 
-		stroke = e("UIStroke", {
-			Color = Color3.fromRGB(255, 255, 255),
+		stroke = e(UIStroke, {
+			color = Color3.fromRGB(255, 255, 255),
 		}),
 
 		featuredIcon = e("ImageLabel", {
@@ -58,16 +62,20 @@ local function LargeFeaturedItem(props: LargeFeaturedItemProps)
 			ZIndex = 2,
 			Position = UDim2.fromOffset(14, 102),
 			Size = UDim2.fromOffset(70, 11),
+		}, {
+			stroke = e(UIStroke, {
+				color = Color3.fromRGB(0, 0, 0),
+			}),
 		}),
 
 		rarity = e("TextLabel", {
 			FontFace = Font.new(
 				"rbxasset://fonts/families/GothamSSm.json",
-				Enum.FontWeight.Bold,
+				Enum.FontWeight.ExtraBold,
 				Enum.FontStyle.Normal
 			),
 			Text = props.rarity,
-			TextColor3 = Color3.fromRGB(255, 255, 255),
+			TextColor3 = rarityInfo.Color,
 			TextSize = 14,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			ZIndex = 2,

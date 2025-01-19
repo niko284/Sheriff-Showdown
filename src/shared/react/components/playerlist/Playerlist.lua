@@ -2,6 +2,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
 
 local LocalPlayer = Players.LocalPlayer
 local Components = ReplicatedStorage.react.components
@@ -10,8 +11,10 @@ local Constants = ReplicatedStorage.constants
 
 local AutomaticScrollingFrame = require(Components.frames.AutomaticScrollingFrame)
 local ClientComm = require(PlayerScripts.ClientComm)
+local CurrentInterfaceContext = require(ReplicatedStorage.react.contexts.CurrentInterfaceContext)
 local PlayerlistTemplate = require(Components.playerlist.PlayerlistTemplate)
 local React = require(ReplicatedStorage.packages.React)
+local ReactSpring = require(ReplicatedStorage.packages.ReactSpring)
 local Types = require(Constants.Types)
 
 local PlayerlistProperty = ClientComm:GetProperty("ReplicatedPlayerList")
@@ -19,11 +22,20 @@ local PlayerlistProperty = ClientComm:GetProperty("ReplicatedPlayerList")
 local e = React.createElement
 local useEffect = React.useEffect
 local useState = React.useState
+local useContext = React.useContext
 
 type PlayerlistProps = {}
 
 local function Playerlist(_props: PlayerlistProps)
 	local playerListData: { Types.PlayerlistPlayer }, setPlayerListData = useState({})
+	local isOpened, setIsOpened = useState(true)
+
+	local currentInterfaceContext = useContext(CurrentInterfaceContext)
+
+	local styles = ReactSpring.useSpring({
+		position = (currentInterfaceContext.hideHUD or not isOpened) and UDim2.fromScale(1.4, 0.2)
+			or UDim2.fromScale(0.92, 0.2),
+	}, { currentInterfaceContext.hideHUD, isOpened })
 
 	local playerTemplates = {}
 
@@ -32,8 +44,21 @@ local function Playerlist(_props: PlayerlistProps)
 			setPlayerListData(newPlayerListData)
 		end)
 
+		local toggleInput = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+			if
+				input.KeyCode == Enum.KeyCode.Tab
+				and not gameProcessed
+				and input.UserInputState == Enum.UserInputState.Begin
+			then
+				setIsOpened(function(open)
+					return not open
+				end)
+			end
+		end)
+
 		return function()
 			connection:Disconnect()
+			toggleInput:Disconnect()
 		end
 	end, {})
 
@@ -52,7 +77,7 @@ local function Playerlist(_props: PlayerlistProps)
 
 	return e("Frame", {
 		BackgroundTransparency = 1,
-		Position = UDim2.fromScale(0.92, 0.2),
+		Position = styles.position,
 		Size = UDim2.fromOffset(246, 449),
 		AnchorPoint = Vector2.new(0.5, 0.5),
 	}, {

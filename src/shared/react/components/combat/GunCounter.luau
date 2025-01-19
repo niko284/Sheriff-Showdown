@@ -8,6 +8,7 @@ local React = require(ReplicatedStorage.packages.React)
 local WorldContext = require(ReplicatedStorage.react.contexts.WorldContext)
 local Components = require(ReplicatedStorage.ecs.components)
 local MatterTypes = require(ReplicatedStorage.ecs.MatterTypes)
+local UIStroke = require(ReplicatedStorage.react.components.other.UIStroke)
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -86,7 +87,7 @@ local function GunCounter(_props)
 			Position = UDim2.fromScale(0.5, 0.5),
 			Size = UDim2.fromScale(0.8, 0.8),
 		}, {
-			uIStroke = e("UIStroke"),
+			uIStroke = e(UIStroke),
 		}),
 	})
 end

@@ -9,6 +9,7 @@ local AutomaticFrame = require(Components.frames.AutomaticFrame)
 local React = require(ReplicatedStorage.packages.React)
 local ReactSpring = require(ReplicatedStorage.packages.ReactSpring)
 local Types = require(ReplicatedStorage.constants.Types)
+local UIStroke = require(ReplicatedStorage.react.components.other.UIStroke)
 local usePlayerThumbnail = require(Hooks.usePlayerThumbnail)
 
 local e = React.createElement
@@ -45,9 +46,9 @@ local function PlayerlistTemplate(props: TemplateProps)
 		},
 		maxSize = Vector2.new(props.size.X.Offset, math.huge),
 	}, {
-		stroke = e("UIStroke", {
-			Color = Color3.fromRGB(173, 173, 173),
-			Thickness = 1,
+		stroke = e(UIStroke, {
+			color = Color3.fromRGB(173, 173, 173),
+			thickness = 1,
 		}),
 		gradient = e("UIGradient", {
 			Color = ColorSequence.new({

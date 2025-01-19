@@ -10,6 +10,7 @@ local Controllers = LocalPlayer.PlayerScripts.controllers
 local React = require(ReplicatedStorage.packages.React)
 local ReactSpring = require(ReplicatedStorage.packages.ReactSpring)
 local RoundController = require(Controllers.RoundController)
+local UIStroke = require(ReplicatedStorage.react.components.other.UIStroke)
 
 local useState = React.useState
 local e = React.createElement
@@ -109,8 +110,8 @@ local function StatusText()
 			Size = UDim2.fromScale(1, 0.5),
 			TextTransparency = styles.alternating1opacity,
 		}, {
-			stroke = e("UIStroke", {
-				Transparency = styles.alternating1opacity,
+			stroke = e(UIStroke, {
+				transparency = styles.alternating1opacity :: any,
 			}),
 		}),
 
@@ -132,8 +133,8 @@ local function StatusText()
 			TextTransparency = styles.alternating2opacity,
 			Size = UDim2.fromScale(1, 0.5),
 		}, {
-			stroke = e("UIStroke", {
-				Transparency = styles.alternating2opacity,
+			stroke = e(UIStroke, {
+				transparency = styles.alternating2opacity :: any,
 			}),
 		}),
 	})

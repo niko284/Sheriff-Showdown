@@ -347,8 +347,13 @@ function InventoryService:OpenCrateNetworkRequest(Player: Player, CrateUUID: str
 	end
 
 	local crateWeights = crateInfo.Weights
-	local rarity = RarityUtils.SelectRandomRarity(crateWeights)
 	local crateItems = CrateUtils.GetCrateContents(ItemInfo.Name :: Types.Crate)
+
+	local raritiesInCrate = Freeze.List.map(crateItems, function(itemInfo)
+		return itemInfo.Rarity
+	end) :: { Types.ItemRarity }
+
+	local rarity = RarityUtils.SelectRandomRarity(crateWeights, raritiesInCrate)
 
 	local filteredRarityItems = Freeze.List.filter(crateItems, function(info)
 		return info.Rarity == rarity

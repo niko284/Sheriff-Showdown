@@ -7,6 +7,7 @@ local Components = ReplicatedStorage.react.components
 local Button = require(Components.buttons.Button)
 local React = require(ReplicatedStorage.packages.React)
 local Types = require(ReplicatedStorage.constants.Types)
+local UIStroke = require(ReplicatedStorage.react.components.other.UIStroke)
 
 local e = React.createElement
 
@@ -30,9 +31,9 @@ local function VotingTemplate(props: VotingTemplateProps)
 			CornerRadius = UDim.new(0, 14),
 		}),
 
-		stroke = e("UIStroke", {
-			Color = Color3.fromRGB(255, 255, 255),
-			Thickness = 2,
+		stroke = e(UIStroke, {
+			color = Color3.fromRGB(255, 255, 255),
+			thickness = 2,
 		}),
 
 		gradient = e("UIGradient", {

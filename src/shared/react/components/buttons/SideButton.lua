@@ -14,6 +14,7 @@ local React = require(ReplicatedStorage.packages.React)
 local ReactSpring = require(ReplicatedStorage.packages.ReactSpring)
 local Tooltip = require(Components.other.Tooltip)
 local Types = require(ReplicatedStorage.constants.Types)
+local UIStroke = require(Components.other.UIStroke)
 
 local useContext = React.useContext
 local e = React.createElement
@@ -116,9 +117,9 @@ local function SideButton(props: SideButtonProps)
 			rotation = 0,
 		}),
 
-		stroke = e("UIStroke", {
-			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-			Color = Color3.fromRGB(255, 255, 255),
+		stroke = e(UIStroke, {
+			applyStrokeMode = Enum.ApplyStrokeMode.Border,
+			color = Color3.fromRGB(255, 255, 255),
 		}),
 
 		corner = e("UICorner", {

@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ItemUtils = require(ReplicatedStorage.utils.ItemUtils)
 local React = require(ReplicatedStorage.packages.React)
 local Types = require(ReplicatedStorage.constants.Types)
+local UIStroke = require(ReplicatedStorage.react.components.other.UIStroke)
 
 local e = React.createElement
 
@@ -36,8 +37,8 @@ local function ContentDisplay(props: ContentDisplayProps)
 				CornerRadius = UDim.new(0, 3),
 			}),
 
-			stroke = e("UIStroke", {
-				Color = Color3.fromRGB(158, 158, 158),
+			stroke = e(UIStroke, {
+				color = Color3.fromRGB(158, 158, 158),
 			}),
 		})
 	end

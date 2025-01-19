@@ -3,6 +3,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local React = require(ReplicatedStorage.packages.React)
+local UIStroke = require(ReplicatedStorage.react.components.other.UIStroke)
 
 local e = React.createElement
 
@@ -80,8 +81,8 @@ local function AchievementTemplate(props: AchievementTemplateProps)
 			Size = UDim2.fromScale(0.259, 0.0909),
 		}),
 
-		stroke = e("UIStroke", {
-			Color = Color3.fromRGB(255, 255, 255),
+		stroke = e(UIStroke, {
+			color = Color3.fromRGB(255, 255, 255),
 		}),
 	})
 end

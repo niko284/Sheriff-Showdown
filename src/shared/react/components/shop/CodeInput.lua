@@ -9,6 +9,7 @@ local React = require(ReplicatedStorage.packages.React)
 local ReactSpring = require(ReplicatedStorage.packages.ReactSpring)
 local Remotes = require(ReplicatedStorage.network.Remotes)
 local Types = require(ReplicatedStorage.constants.Types)
+local UIStroke = require(ReplicatedStorage.react.components.other.UIStroke)
 
 local useRef = React.useRef
 local e = React.createElement
@@ -26,8 +27,8 @@ type CodeInputProps = {
 	onCodeEntered: ((code: string) -> ())?,
 	position: UDim2,
 	codesPosition: UDim2,
-	inputRange: { number },
-	outputRange: { number },
+	inputRange: { number }?,
+	outputRange: { number }?,
 }
 
 local function CodeInput(props: CodeInputProps)
@@ -93,7 +94,7 @@ local function CodeInput(props: CodeInputProps)
 		})
 			:andThenCall(api.start, {
 				buttonColor = Color3.fromRGB(120, 120, 120),
-				size = UDim2.fromOffset(453, 72),
+				size = UDim2.fromOffset(433, 45),
 			})
 			:finally(function()
 				isShaking.current = false
@@ -126,8 +127,8 @@ local function CodeInput(props: CodeInputProps)
 		Position = props.position,
 		Size = UDim2.fromOffset(447, 163),
 	}, {
-		stroke = e("UIStroke", {
-			Color = Color3.fromRGB(255, 255, 255),
+		stroke = e(UIStroke, {
+			color = Color3.fromRGB(87, 255, 242),
 		}),
 
 		corner = e("UICorner", {
@@ -146,8 +147,13 @@ local function CodeInput(props: CodeInputProps)
 				if values[1] == 0 or values[2] == 0 then
 					return props.codesPosition
 				end
-				local xInterpolated =
-					MappedInterpolation(values[1], props.inputRange, props.outputRange, "identity", "identity")
+				local xInterpolated = MappedInterpolation(
+					values[1],
+					props.inputRange :: { number },
+					props.outputRange :: { number },
+					"identity",
+					"identity"
+				)
 				return UDim2.fromScale(props.codesPosition.X.Scale, props.codesPosition.Y.Scale)
 					+ UDim2.fromOffset(xInterpolated, 0)
 			end),
@@ -192,19 +198,25 @@ local function CodeInput(props: CodeInputProps)
 				ClipsDescendants = true,
 				Position = UDim2.fromOffset(17, 7),
 				Size = UDim2.fromOffset(344, 28),
+				[React.Event.FocusLost] = function(rbx: TextBox)
+					if props.onCodeEntered then
+						props.onCodeEntered(rbx.Text)
+					end
+					submitCode()
+				end,
 			}),
 		}),
 
 		description = e("TextLabel", {
 			FontFace = Font.new(
 				"rbxasset://fonts/families/GothamSSm.json",
-				Enum.FontWeight.Medium,
+				Enum.FontWeight.ExtraBold,
 				Enum.FontStyle.Normal
 			),
-			Text = "Follow us on Twitter for codes! @SheriffShowdown",
+			Text = "Follow us on X for codes! @SheriffShowdown",
 			TextColor3 = Color3.fromRGB(255, 255, 255),
 			TextSize = 14,
-			TextTransparency = 0.369,
+			TextTransparency = 0,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			BackgroundTransparency = 1,
 			Position = UDim2.fromOffset(16, 45),

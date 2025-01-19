@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local React = require(ReplicatedStorage.packages.React)
 local Types = require(ReplicatedStorage.constants.Types)
+local UIStroke = require(ReplicatedStorage.react.components.other.UIStroke)
 
 local e = React.createElement
 
@@ -33,10 +34,10 @@ local function AcceptIndicator(props: AcceptIndicatorProps)
 			Size = UDim2.fromOffset(160, 15),
 		}),
 
-		stroke = e("UIStroke", {
-			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-			Color = Color3.fromRGB(51, 51, 51),
-			Thickness = 2,
+		stroke = e(UIStroke, {
+			applyStrokeMode = Enum.ApplyStrokeMode.Border,
+			color = Color3.fromRGB(51, 51, 51),
+			thickness = 2,
 		}),
 
 		corner = e("UICorner", {

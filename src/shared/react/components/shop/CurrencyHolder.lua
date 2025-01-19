@@ -13,6 +13,7 @@ local ReactSpring = require(ReplicatedStorage.packages.ReactSpring)
 local ResourceContext = require(Contexts.ResourceContext)
 local Separator = require(Components.other.Separator)
 local Types = require(ReplicatedStorage.constants.Types)
+local UIStroke = require(ReplicatedStorage.react.components.other.UIStroke)
 
 local NumberFormatter = FormatNumber.NumberFormatter
 
@@ -22,6 +23,7 @@ local useRef = React.useRef
 
 type CurrencyHolderProps = Types.FrameProps & {
 	currency: Types.Currency,
+	buyMore: (() -> ())?,
 }
 
 local function CurrencyHolder(props: CurrencyHolderProps)
@@ -48,6 +50,7 @@ local function CurrencyHolder(props: CurrencyHolderProps)
 			Position = props.position,
 		},
 		maxSize = Vector2.new(math.huge, 42),
+		className = "Frame",
 	}, {
 		separator = currencyData.CanPurchase and e(Separator, {
 			image = "rbxassetid://18134633176",
@@ -94,15 +97,20 @@ local function CurrencyHolder(props: CurrencyHolderProps)
 			BackgroundTransparency = 1,
 			Position = UDim2.fromOffset(118, 11),
 			Size = UDim2.fromOffset(20, 20),
+			[React.Event.Activated] = function()
+				if props.buyMore then
+					props.buyMore()
+				end
+			end,
 		}),
 
-		uICorner = e("UICorner", {
+		corner = e("UICorner", {
 			CornerRadius = UDim.new(0, 5),
 		}),
 
-		uIStroke = e("UIStroke", {
-			Color = Color3.fromRGB(255, 255, 255),
-			Thickness = 1,
+		stroke = e(UIStroke, {
+			color = Color3.fromRGB(255, 255, 255),
+			thickness = 1,
 		}),
 	})
 end

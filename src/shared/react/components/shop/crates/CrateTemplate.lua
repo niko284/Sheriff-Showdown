@@ -12,6 +12,7 @@ local OptionButton = require(Components.buttons.OptionButton)
 local React = require(ReplicatedStorage.packages.React)
 local Timer = require(ReplicatedStorage.packages.Timer)
 local Types = require(ReplicatedStorage.constants.Types)
+local UIStroke = require(ReplicatedStorage.react.components.other.UIStroke)
 
 local e = React.createElement
 local useEffect = React.useEffect
@@ -122,9 +123,9 @@ local function CrateTemplate(props: CrateTemplateProps)
 			CornerRadius = UDim.new(0, 5),
 		}),
 
-		stroke = e("UIStroke", {
-			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-			Color = Color3.fromRGB(255, 255, 255),
+		stroke = e(UIStroke, {
+			applyStrokeMode = Enum.ApplyStrokeMode.Border,
+			color = Color3.fromRGB(255, 255, 255),
 		}),
 
 		crateImage = e("ImageLabel", {
@@ -183,15 +184,18 @@ local function CrateTemplate(props: CrateTemplateProps)
 			end,
 		}),
 
-		viewContents = e(OptionButton, {
-			anchorPoint = Vector2.new(0.5, 0.5),
-			size = UDim2.fromOffset(45, 45),
-			position = UDim2.fromScale(0.852, 0.901),
-			image = "rbxassetid://18141436407",
-			gradient = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(255, 255, 255)),
-			backgroundColor3 = Color3.fromRGB(255, 255, 255),
-			onActivated = props.onViewContents,
-		}),
+		viewContents = e(
+			OptionButton,
+			{
+				anchorPoint = Vector2.new(0.5, 0.5),
+				size = UDim2.fromOffset(45, 45),
+				position = UDim2.fromScale(0.852, 0.901),
+				image = "rbxassetid://18141436407",
+				gradient = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(255, 255, 255)),
+				backgroundColor3 = Color3.fromRGB(255, 255, 255),
+				onActivated = props.onViewContents,
+			} :: any
+		),
 
 		crateName = e("TextLabel", {
 			FontFace = Font.new(
@@ -206,18 +210,22 @@ local function CrateTemplate(props: CrateTemplateProps)
 			BackgroundTransparency = 1,
 			Position = UDim2.fromOffset(22, 35),
 			Size = UDim2.fromOffset(99, 13),
+		}, {
+			stroke = e(UIStroke, {
+				color = Color3.fromRGB(0, 0, 0),
+			}),
 		}),
 
 		description = e("TextLabel", {
 			FontFace = Font.new(
 				"rbxasset://fonts/families/GothamSSm.json",
-				Enum.FontWeight.Medium,
-				Enum.FontStyle.Normal
+				Enum.FontWeight.SemiBold,
+				Enum.FontStyle.Italic
 			),
 			Text = props.crateDescription,
 			TextColor3 = Color3.fromRGB(255, 255, 255),
-			TextSize = 14,
-			TextTransparency = 0.369,
+			TextSize = 15,
+			TextTransparency = 0.2,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			BackgroundTransparency = 1,
 			Position = UDim2.fromOffset(22, 53),

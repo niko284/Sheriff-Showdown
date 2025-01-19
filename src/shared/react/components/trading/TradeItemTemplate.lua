@@ -15,6 +15,7 @@ local Remotes = require(ReplicatedStorage.network.Remotes)
 local TradeContext = require(Contexts.TradeContext)
 local TradingController = require(Controllers.TradingController)
 local Types = require(ReplicatedStorage.constants.Types)
+local UIStroke = require(ReplicatedStorage.react.components.other.UIStroke)
 local UUIDSerde = require(ReplicatedStorage.network.serde.UUIDSerde)
 
 local TradingNamespace = Remotes.Client:GetNamespace("Trading")
@@ -116,9 +117,9 @@ local function TradeItemTemplate(props: TradeItemTemplateProps)
 			CornerRadius = UDim.new(0, 5),
 		}),
 
-		stroke = e("UIStroke", {
-			Color = Color3.fromRGB(255, 255, 255),
-			Thickness = 1,
+		stroke = e(UIStroke, {
+			color = Color3.fromRGB(255, 255, 255),
+			thickness = 1,
 		}),
 	})
 end

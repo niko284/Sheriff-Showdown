@@ -350,12 +350,14 @@ local Items: { Types.ItemInfo } = {
 		Name = "Standard",
 		Type = "Crate",
 		Image = 16417980472,
+		Rarity = "Basic",
 	},
 	{
 		Id = 37,
 		Name = "Classic",
 		Type = "Crate",
 		Image = 16560968952,
+		Rarity = "Epic",
 	},
 }
 

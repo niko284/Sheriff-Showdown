@@ -18,6 +18,7 @@ local React = require(ReplicatedStorage.packages.React)
 local TradeContext = require(Contexts.TradeContext)
 local TradingController = require(Controllers.TradingController)
 local Types = require(ReplicatedStorage.constants.Types)
+local UIStroke = require(ReplicatedStorage.react.components.other.UIStroke)
 local animateCurrentInterface = require(Hooks.animateCurrentInterface)
 
 local e = React.createElement
@@ -100,9 +101,9 @@ local function TradeResults(_props: TradeResultsProps)
 				CornerRadius = UDim.new(0, 5),
 			}),
 
-			stroke = e("UIStroke", {
-				Color = Color3.fromRGB(255, 255, 255),
-				Transparency = 0.58,
+			stroke = e(UIStroke, {
+				color = Color3.fromRGB(255, 255, 255),
+				transparency = 0.58,
 			}),
 
 			listLayout = e("UIListLayout", {

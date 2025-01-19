@@ -29,6 +29,7 @@ local TradeContext = require(Contexts.TradeContext)
 local TradeItemTemplate = require(Components.trading.TradeItemTemplate)
 local TradingController = require(Controllers.TradingController)
 local Types = require(ReplicatedStorage.constants.Types)
+local UIStroke = require(ReplicatedStorage.react.components.other.UIStroke)
 local UUIDSerde = require(ReplicatedStorage.network.serde.UUIDSerde)
 local animateCurrentInterface = require(Hooks.animateCurrentInterface)
 local createNextOrder = require(Hooks.createNextOrder)
@@ -485,9 +486,9 @@ local function Trading(_props: TradingProps)
 					}),
 					Rotation = 90,
 				}),
-				stroke = e("UIStroke", {
-					Color = Color3.fromRGB(27, 16, 18),
-					Thickness = 3,
+				stroke = e(UIStroke, {
+					color = Color3.fromRGB(27, 16, 18),
+					thickness = 3,
 				}),
 			}),
 			gradient = e("UIGradient", {

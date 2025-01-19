@@ -244,12 +244,15 @@ local function Shop(_props: ShopProps)
 			}),
 
 			coins = e(CurrencyHolder, {
-				currency = "Coins",
+				currency = "Coins" :: any,
 				position = UDim2.fromOffset(625, 24),
+				buyMore = function()
+					setCurrentCategory("Currency")
+				end,
 			}),
 
 			gems = e(CurrencyHolder, {
-				currency = "Gems",
+				currency = "Gems" :: any,
 				position = UDim2.fromOffset(510, 24),
 			}),
 		}),

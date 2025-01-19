@@ -2,6 +2,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterPlayer = game:GetService("StarterPlayer")
 
 local Components = ReplicatedStorage.react.components
 local Contexts = ReplicatedStorage.react.contexts

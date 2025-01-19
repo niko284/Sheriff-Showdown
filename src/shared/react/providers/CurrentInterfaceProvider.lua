@@ -17,12 +17,17 @@ local useState = React.useState
 
 local function CurrentInterfaceProvider(props)
 	local currentInterface, setCurrentInterface = useState(nil)
+	local hideHUD, setHideHUD = useState(false)
 
 	useEffect(function()
 		local interfaceChangedConnection = InterfaceController.InterfaceChanged:Connect(function(newInterface)
 			setCurrentInterface(newInterface)
 		end)
+		local hideHUDConnection = InterfaceController.HideHUD:Connect(function(shouldHide: boolean)
+			setHideHUD(shouldHide)
+		end)
 		return function()
+			hideHUDConnection:Disconnect()
 			interfaceChangedConnection:Disconnect()
 		end
 	end, {})
@@ -30,6 +35,7 @@ local function CurrentInterfaceProvider(props)
 	return e(CurrentInterfaceContext.Provider, {
 		value = {
 			current = currentInterface,
+			hideHUD = hideHUD,
 		},
 	}, props.children)
 end

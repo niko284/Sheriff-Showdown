@@ -32,10 +32,10 @@ local SMALL_FEATURED_ITEMS = {
 }
 local LARGE_FEATURED_ITEMS = {
 	{
-		id = 4,
+		id = 26,
 	},
 	{
-		id = 5,
+		id = 37,
 	},
 }
 
@@ -45,7 +45,7 @@ local function FeaturedPage(props: FeaturedPageProps)
 		local itemInfo = ItemUtils.GetItemInfoFromId(smallFeatured.id)
 		smallFeaturedItemElements[itemInfo.Name] = e(FeaturedItem, {
 			icon = string.format("rbxassetid://%d", itemInfo.Image),
-			rarity = itemInfo.Rarity,
+			rarity = itemInfo.Rarity :: any,
 			layoutOrder = index,
 			featuredName = itemInfo.Name,
 			size = UDim2.fromOffset(163, 163),
@@ -57,7 +57,7 @@ local function FeaturedPage(props: FeaturedPageProps)
 		local itemInfo = ItemUtils.GetItemInfoFromId(largeFeatured.id)
 		largeFeaturedItemElements[itemInfo.Name] = e(LargeFeaturedItem, {
 			icon = string.format("rbxassetid://%d", itemInfo.Image),
-			rarity = itemInfo.Rarity,
+			rarity = itemInfo.Rarity :: any,
 			layoutOrder = index,
 			featuredName = itemInfo.Name,
 			size = UDim2.fromOffset(259, 151),

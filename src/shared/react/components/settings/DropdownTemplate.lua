@@ -16,6 +16,7 @@ local BaseButton = require(Components.buttons.Button)
 local Dropdown = require(Components.frames.Dropdown)
 local React = require(Packages.React)
 local Types = require(Constants.Types)
+local UIStroke = require(ReplicatedStorage.react.components.other.UIStroke)
 
 local e = React.createElement
 local useBinding = React.useBinding
@@ -43,10 +44,10 @@ local function DropdownTemplate(props: DropdownSettingProps)
 			CornerRadius = UDim.new(0, 5),
 		}),
 
-		stroke = e("UIStroke", {
-			Color = Color3.fromRGB(255, 255, 255),
-			Thickness = 1,
-			Transparency = 0.67,
+		stroke = e(UIStroke, {
+			color = Color3.fromRGB(255, 255, 255),
+			thickness = 1,
+			transparency = 0.67,
 		}),
 
 		description = e("TextLabel", {

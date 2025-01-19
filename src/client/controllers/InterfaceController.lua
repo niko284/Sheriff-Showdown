@@ -23,6 +23,7 @@ local InterfaceController = {
 	UpdateShopState = Signal.new(),
 	ViewCrateContents = Signal.new() :: Signal.Signal<Types.Crate>,
 	WorldCreated = Signal.new() :: Signal.Signal<Matter.World>,
+	HideHUD = Signal.new() :: Signal.Signal<boolean>,
 	World = nil :: Matter.World?,
 }
 

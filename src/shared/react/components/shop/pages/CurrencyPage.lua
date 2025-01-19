@@ -1,5 +1,7 @@
 --!strict
 
+local MarketplaceService = game:GetService("MarketplaceService")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Currencies = require(ReplicatedStorage.constants.Currencies)
@@ -7,12 +9,16 @@ local FormatNumber = require(ReplicatedStorage.utils.FormatNumber)
 local Freeze = require(ReplicatedStorage.packages.Freeze)
 local React = require(ReplicatedStorage.packages.React)
 local Types = require(ReplicatedStorage.constants.Types)
+local UIStroke = require(ReplicatedStorage.react.components.other.UIStroke)
 local useProductInfoFromIds = require(ReplicatedStorage.react.hooks.useProductInfoFromIds)
 
 local NumberFormatter = FormatNumber.NumberFormatter
 
 local e = React.createElement
 local useRef = React.useRef
+local useMemo = React.useMemo
+
+local DEFAULT_RATIO = 10 -- 10:1 coin to robux ratio
 
 type CurrencyPageProps = {
 	pageRef: (ref: Frame) -> (),
@@ -27,6 +33,37 @@ local function CurrencyPage(props: CurrencyPageProps)
 	local formatter = useRef(NumberFormatter.with():Precision(FormatNumber.Precision.integer()))
 
 	local productInfo = useProductInfoFromIds(productIds)
+
+	local packData = useMemo(function()
+		local data = {}
+		for index, pack in currencyInfo.Packs do
+			local devProductInfo = productInfo[currencyInfo.Packs[index].ProductId]
+			local robuxPrice = devProductInfo and devProductInfo.PriceInRobux or 0
+			local defaultRatioAmount = robuxPrice * DEFAULT_RATIO
+
+			local gain = pack.Amount - defaultRatioAmount -- if we can't find a price our gain will just be equal to amount
+
+			local coinAmountText = nil
+			if gain ~= pack.Amount and gain > 0 then
+				coinAmountText = string.format(
+					`%s + <stroke color="#000000"><font weight="heavy" color="#83f28f">%s</font></stroke> Coins`,
+					formatter.current:Format(pack.Amount - gain),
+					formatter.current:Format(gain)
+				)
+			else
+				coinAmountText = string.format("%s Coins", formatter.current:Format(pack.Amount))
+			end
+
+			data[index] = {
+				coinAmount = coinAmountText,
+				packPrice = robuxPrice > 0 and string.format("%d", robuxPrice) or "???",
+				onActivated = function()
+					MarketplaceService:PromptProductPurchase(Players.LocalPlayer, pack.ProductId)
+				end,
+			}
+		end
+		return data
+	end, { productInfo })
 
 	return e("Frame", {
 		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
@@ -53,16 +90,18 @@ local function CurrencyPage(props: CurrencyPageProps)
 			Size = UDim2.fromOffset(77, 15),
 		}),
 
-		packOne = e("Frame", {
+		packOne = e("ImageButton", {
+			Image = "",
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			BackgroundColor3 = Color3.fromRGB(72, 72, 72),
 			BorderColor3 = Color3.fromRGB(0, 0, 0),
 			BorderSizePixel = 0,
 			Position = UDim2.fromScale(0.113, 0.309),
 			Size = UDim2.fromOffset(163, 163),
+			[React.Event.Activated] = packData[1].onActivated,
 		}, {
-			stroke = e("UIStroke", {
-				Color = Color3.fromRGB(255, 255, 255),
+			stroke = e(UIStroke, {
+				color = Color3.fromRGB(255, 255, 255),
 			}),
 
 			icon = e("ImageLabel", {
@@ -83,16 +122,21 @@ local function CurrencyPage(props: CurrencyPageProps)
 			coins = e("TextLabel", {
 				FontFace = Font.new(
 					"rbxasset://fonts/families/GothamSSm.json",
-					Enum.FontWeight.Bold,
+					Enum.FontWeight.ExtraBold,
 					Enum.FontStyle.Normal
 				),
-				Text = string.format("$%d", currencyInfo.Packs[1].Amount),
+				Text = packData[1].coinAmount,
 				TextColor3 = Color3.fromRGB(240, 240, 240),
-				TextSize = 16,
+				TextSize = 20,
 				TextXAlignment = Enum.TextXAlignment.Left,
 				BackgroundTransparency = 1,
 				Position = UDim2.fromOffset(17, 104),
+				RichText = true,
 				Size = UDim2.fromOffset(74, 17),
+			}, {
+				stroke = e(UIStroke, {
+					color = Color3.fromRGB(0, 0, 0),
+				}),
 			}),
 
 			robuxPrice = e("TextLabel", {
@@ -101,13 +145,7 @@ local function CurrencyPage(props: CurrencyPageProps)
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-				Text = string.format(
-					"%d",
-					productInfo
-							and productInfo[currencyInfo.Packs[1].ProductId]
-							and formatter.current:Format(productInfo[currencyInfo.Packs[1].ProductId].PriceInRobux or 0)
-						or 0
-				),
+				Text = packData[1].packPrice,
 				TextColor3 = Color3.fromRGB(255, 255, 255),
 				TextSize = 16,
 				TextXAlignment = Enum.TextXAlignment.Left,
@@ -117,7 +155,9 @@ local function CurrencyPage(props: CurrencyPageProps)
 			}),
 		}),
 
-		packTwo = e("Frame", {
+		packTwo = e("ImageButton", {
+			Image = "",
+			[React.Event.Activated] = packData[2].onActivated,
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			BackgroundColor3 = Color3.fromRGB(72, 72, 72),
 			BorderColor3 = Color3.fromRGB(0, 0, 0),
@@ -128,16 +168,21 @@ local function CurrencyPage(props: CurrencyPageProps)
 			coins1 = e("TextLabel", {
 				FontFace = Font.new(
 					"rbxasset://fonts/families/GothamSSm.json",
-					Enum.FontWeight.Bold,
+					Enum.FontWeight.ExtraBold,
 					Enum.FontStyle.Normal
 				),
-				Text = string.format("$%d", currencyInfo.Packs[2].Amount),
+				Text = packData[2].coinAmount,
 				TextColor3 = Color3.fromRGB(240, 240, 240),
-				TextSize = 16,
+				TextSize = 20,
+				RichText = true,
 				TextXAlignment = Enum.TextXAlignment.Left,
 				BackgroundTransparency = 1,
 				Position = UDim2.fromOffset(16, 104),
 				Size = UDim2.fromOffset(74, 17),
+			}, {
+				stroke = e(UIStroke, {
+					color = Color3.fromRGB(0, 0, 0),
+				}),
 			}),
 
 			icon = e("ImageLabel", {
@@ -157,13 +202,7 @@ local function CurrencyPage(props: CurrencyPageProps)
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-				Text = string.format(
-					"%d",
-					productInfo
-							and productInfo[currencyInfo.Packs[2].ProductId]
-							and formatter.current:Format(productInfo[currencyInfo.Packs[2].ProductId].PriceInRobux or 0)
-						or 0
-				),
+				Text = packData[2].packPrice,
 				TextColor3 = Color3.fromRGB(255, 255, 255),
 				TextSize = 16,
 				TextXAlignment = Enum.TextXAlignment.Left,
@@ -172,8 +211,8 @@ local function CurrencyPage(props: CurrencyPageProps)
 				Size = UDim2.fromOffset(28, 12),
 			}),
 
-			stroke = e("UIStroke", {
-				Color = Color3.fromRGB(255, 255, 255),
+			stroke = e(UIStroke, {
+				color = Color3.fromRGB(255, 255, 255),
 			}),
 
 			corner = e("UICorner", {
@@ -181,7 +220,9 @@ local function CurrencyPage(props: CurrencyPageProps)
 			}),
 		}),
 
-		packThree = e("Frame", {
+		packThree = e("ImageButton", {
+			Image = "",
+			[React.Event.Activated] = packData[3].onActivated,
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			BackgroundColor3 = Color3.fromRGB(72, 72, 72),
 			BorderColor3 = Color3.fromRGB(0, 0, 0),
@@ -193,8 +234,8 @@ local function CurrencyPage(props: CurrencyPageProps)
 				CornerRadius = UDim.new(0, 5),
 			}),
 
-			stroke = e("UIStroke", {
-				Color = Color3.fromRGB(255, 255, 255),
+			stroke = e(UIStroke, {
+				color = Color3.fromRGB(255, 255, 255),
 			}),
 
 			icon = e("ImageLabel", {
@@ -211,16 +252,21 @@ local function CurrencyPage(props: CurrencyPageProps)
 			coins2 = e("TextLabel", {
 				FontFace = Font.new(
 					"rbxasset://fonts/families/GothamSSm.json",
-					Enum.FontWeight.Bold,
+					Enum.FontWeight.ExtraBold,
 					Enum.FontStyle.Normal
 				),
-				Text = string.format("$%d", currencyInfo.Packs[3].Amount),
+				Text = packData[3].coinAmount,
 				TextColor3 = Color3.fromRGB(240, 240, 240),
-				TextSize = 16,
+				RichText = true,
+				TextSize = 20,
 				TextXAlignment = Enum.TextXAlignment.Left,
 				BackgroundTransparency = 1,
 				Position = UDim2.fromOffset(18, 104),
 				Size = UDim2.fromOffset(74, 17),
+			}, {
+				stroke = e(UIStroke, {
+					color = Color3.fromRGB(0, 0, 0),
+				}),
 			}),
 
 			robuxPrice2 = e("TextLabel", {
@@ -229,13 +275,7 @@ local function CurrencyPage(props: CurrencyPageProps)
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-				Text = string.format(
-					"%d",
-					productInfo
-							and productInfo[currencyInfo.Packs[3].ProductId]
-							and formatter.current:Format(productInfo[currencyInfo.Packs[3].ProductId].PriceInRobux or 0)
-						or 0
-				),
+				Text = packData[3].packPrice,
 				TextColor3 = Color3.fromRGB(255, 255, 255),
 				TextSize = 16,
 				TextXAlignment = Enum.TextXAlignment.Left,
@@ -245,7 +285,9 @@ local function CurrencyPage(props: CurrencyPageProps)
 			}),
 		}),
 
-		packFour = e("Frame", {
+		packFour = e("ImageButton", {
+			Image = "",
+			[React.Event.Activated] = packData[4].onActivated,
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			BackgroundColor3 = Color3.fromRGB(72, 72, 72),
 			BorderColor3 = Color3.fromRGB(0, 0, 0),
@@ -256,16 +298,21 @@ local function CurrencyPage(props: CurrencyPageProps)
 			coins3 = e("TextLabel", {
 				FontFace = Font.new(
 					"rbxasset://fonts/families/GothamSSm.json",
-					Enum.FontWeight.Bold,
+					Enum.FontWeight.ExtraBold,
 					Enum.FontStyle.Normal
 				),
-				Text = string.format("$%d", currencyInfo.Packs[4].Amount),
+				Text = packData[4].coinAmount,
 				TextColor3 = Color3.fromRGB(240, 240, 240),
-				TextSize = 16,
+				TextSize = 20,
 				TextXAlignment = Enum.TextXAlignment.Left,
 				BackgroundTransparency = 1,
 				Position = UDim2.fromOffset(17, 100),
 				Size = UDim2.fromOffset(74, 17),
+				RichText = true,
+			}, {
+				stroke = e(UIStroke, {
+					color = Color3.fromRGB(0, 0, 0),
+				}),
 			}),
 
 			icon = e("ImageLabel", {
@@ -285,13 +332,7 @@ local function CurrencyPage(props: CurrencyPageProps)
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-				Text = string.format(
-					"%d",
-					productInfo
-							and productInfo[currencyInfo.Packs[4].ProductId]
-							and formatter.current:Format(productInfo[currencyInfo.Packs[4].ProductId].PriceInRobux or 0)
-						or 0
-				),
+				Text = packData[4].packPrice,
 				TextColor3 = Color3.fromRGB(255, 255, 255),
 				TextSize = 16,
 				TextXAlignment = Enum.TextXAlignment.Left,
@@ -304,12 +345,14 @@ local function CurrencyPage(props: CurrencyPageProps)
 				CornerRadius = UDim.new(0, 5),
 			}),
 
-			stroke = e("UIStroke", {
-				Color = Color3.fromRGB(255, 255, 255),
+			stroke = e(UIStroke, {
+				color = Color3.fromRGB(255, 255, 255),
 			}),
 		}),
 
-		packFive = e("Frame", {
+		packFive = e("ImageButton", {
+			Image = "",
+			[React.Event.Activated] = packData[5].onActivated,
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			BackgroundColor3 = Color3.fromRGB(72, 72, 72),
 			BorderColor3 = Color3.fromRGB(0, 0, 0),
@@ -323,13 +366,7 @@ local function CurrencyPage(props: CurrencyPageProps)
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-				Text = string.format(
-					"%d",
-					productInfo
-							and productInfo[currencyInfo.Packs[5].ProductId]
-							and formatter.current:Format(productInfo[currencyInfo.Packs[5].ProductId].PriceInRobux or 0)
-						or 0
-				),
+				Text = packData[5].packPrice,
 				TextColor3 = Color3.fromRGB(255, 255, 255),
 				TextSize = 16,
 				TextXAlignment = Enum.TextXAlignment.Left,
@@ -342,8 +379,8 @@ local function CurrencyPage(props: CurrencyPageProps)
 				CornerRadius = UDim.new(0, 5),
 			}),
 
-			stroke = e("UIStroke", {
-				Color = Color3.fromRGB(255, 255, 255),
+			stroke = e(UIStroke, {
+				color = Color3.fromRGB(255, 255, 255),
 			}),
 
 			icon = e("ImageLabel", {
@@ -363,17 +400,24 @@ local function CurrencyPage(props: CurrencyPageProps)
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-				Text = string.format("$%d", currencyInfo.Packs[5].Amount),
+				Text = packData[5].coinAmount,
 				TextColor3 = Color3.fromRGB(240, 240, 240),
-				TextSize = 16,
+				TextSize = 20,
 				TextXAlignment = Enum.TextXAlignment.Left,
 				BackgroundTransparency = 1,
+				RichText = true,
 				Position = UDim2.fromOffset(18, 101),
 				Size = UDim2.fromOffset(74, 17),
+			}, {
+				stroke = e(UIStroke, {
+					color = Color3.fromRGB(0, 0, 0),
+				}),
 			}),
 		}),
 
-		packSix = e("Frame", {
+		packSix = e("ImageButton", {
+			Image = "",
+			[React.Event.Activated] = packData[6].onActivated,
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			BackgroundColor3 = Color3.fromRGB(72, 72, 72),
 			BorderColor3 = Color3.fromRGB(0, 0, 0),
@@ -385,8 +429,8 @@ local function CurrencyPage(props: CurrencyPageProps)
 				CornerRadius = UDim.new(0, 5),
 			}),
 
-			stroke = e("UIStroke", {
-				Color = Color3.fromRGB(255, 255, 255),
+			stroke = e(UIStroke, {
+				color = Color3.fromRGB(255, 255, 255),
 			}),
 
 			icon = e("ImageLabel", {
@@ -403,16 +447,21 @@ local function CurrencyPage(props: CurrencyPageProps)
 			coins5 = e("TextLabel", {
 				FontFace = Font.new(
 					"rbxasset://fonts/families/GothamSSm.json",
-					Enum.FontWeight.Bold,
+					Enum.FontWeight.ExtraBold,
 					Enum.FontStyle.Normal
 				),
-				Text = string.format("$%d", currencyInfo.Packs[6].Amount),
+				Text = packData[6].coinAmount,
 				TextColor3 = Color3.fromRGB(240, 240, 240),
-				TextSize = 16,
+				TextSize = 20,
 				TextXAlignment = Enum.TextXAlignment.Left,
 				BackgroundTransparency = 1,
 				Position = UDim2.fromOffset(23, 276),
+				RichText = true,
 				Size = UDim2.fromOffset(74, 17),
+			}, {
+				stroke = e(UIStroke, {
+					color = Color3.fromRGB(0, 0, 0),
+				}),
 			}),
 
 			robux1 = e("TextLabel", {
@@ -421,13 +470,7 @@ local function CurrencyPage(props: CurrencyPageProps)
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-				Text = string.format(
-					"%d",
-					productInfo
-							and productInfo[currencyInfo.Packs[6].ProductId]
-							and formatter.current:Format(productInfo[currencyInfo.Packs[6].ProductId].PriceInRobux or 0)
-						or 0
-				),
+				Text = packData[6].packPrice,
 				TextColor3 = Color3.fromRGB(255, 255, 255),
 				TextSize = 16,
 				TextXAlignment = Enum.TextXAlignment.Left,
@@ -443,9 +486,9 @@ local function CurrencyPage(props: CurrencyPageProps)
 				Position = UDim2.fromOffset(112, 13),
 				Size = UDim2.fromOffset(109, 42),
 			}, {
-				stroke = e("UIStroke", {
-					Color = Color3.fromRGB(255, 255, 255),
-					Thickness = 1,
+				stroke = e(UIStroke, {
+					color = Color3.fromRGB(255, 255, 255),
+					thickness = 1,
 				}),
 
 				bestDeal1 = e("TextLabel", {

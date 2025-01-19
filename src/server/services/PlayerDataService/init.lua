@@ -11,6 +11,7 @@ local Lapis = require(ServerPackages.Lapis)
 local Migrations = require(script.Migrations)
 local Promise = require(Packages.Promise)
 local Signal = require(Packages.Signal)
+local Types = require(ReplicatedStorage.constants.Types)
 local t = require(Packages.t)
 
 local collectionName = RunService:IsStudio() and "PlayerData" .. HttpService:GenerateGUID(false)
@@ -51,15 +52,20 @@ local PlayerDataCollection = Lapis.createCollection(collectionName, {
 				})),
 			})),
 		}),
+		ReceiptHistory = t.array(t.string),
 	}),
 	migrations = Migrations,
 })
 
+type PlayerDocument = Lapis.Document<Types.DataSchema>
+export type Document = PlayerDocument
+
 local PlayerDataService = {
 	Name = "PlayerDataService",
-	Documents = {},
-	DocumentLoaded = Signal.new(),
-	BeforeDocumentCloseCallbacks = {},
+	Documents = {} :: { [Player]: PlayerDocument },
+	DocumentLoaded = Signal.new() :: Signal.Signal<Player, PlayerDocument>,
+	DocumentClosed = Signal.new() :: Signal.Signal<Player>,
+	BeforeDocumentCloseCallbacks = {} :: { (Player) -> () },
 	DataSessionLock = {} :: { [Player]: boolean },
 }
 
@@ -102,6 +108,26 @@ function PlayerDataService:IsSessionLocked(Player: Player): boolean
 	return PlayerDataService.DataSessionLock[Player] == true
 end
 
+function PlayerDataService:AwaitDocument(Player: Player)
+	local playerDocument = PlayerDataService:GetDocument(Player)
+	if playerDocument then
+		return Promise.resolve(playerDocument)
+	else
+		return Promise.race({
+			Promise.fromEvent(PlayerDataService.DocumentLoaded, function(loadedPlayer: Player)
+				return loadedPlayer.UserId == Player.UserId
+			end):andThen(function(_, document: PlayerDocument)
+				return document
+			end),
+			Promise.fromEvent(PlayerDataService.DocumentClosed, function(loadedPlayer: Player)
+				return loadedPlayer.UserId == Player.UserId
+			end):andThen(function()
+				return Promise.reject("Player document closed.")
+			end),
+		})
+	end
+end
+
 function PlayerDataService:LockSession(Player: Player)
 	PlayerDataService.DataSessionLock[Player] = true
 	return Promise.resolve()
@@ -120,6 +146,7 @@ function PlayerDataService:CloseDocument(Player: Player)
 	local document = PlayerDataService.Documents[Player]
 	if document ~= nil and PlayerDataService:IsSessionLocked(Player) == false then
 		PlayerDataService.Documents[Player] = nil
+		PlayerDataService.DocumentClosed:Fire(Player)
 		document:close():catch(warn)
 	end
 end

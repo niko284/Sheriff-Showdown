@@ -46,11 +46,6 @@ local function loadClient()
 				end
 			end
 
-			-- initialize and start the service bag for our nevermore packages.
-			local serviceBag = controllers.NevermoreController:GetServiceBag()
-			serviceBag:Init()
-			serviceBag:Start()
-
 			return controllers
 		end)
 		:andThen(function(controllers)

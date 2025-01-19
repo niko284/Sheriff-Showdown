@@ -7,6 +7,7 @@ local React = require(ReplicatedStorage.packages.React)
 local ReactSpring = require(ReplicatedStorage.packages.ReactSpring)
 local StringUtils = require(ReplicatedStorage.utils.StringUtils)
 local Types = require(ReplicatedStorage.constants.Types)
+local UIStroke = require(ReplicatedStorage.react.components.other.UIStroke)
 
 local e = React.createElement
 local useCallback = React.useCallback
@@ -82,10 +83,10 @@ local function InputTemplate(props: InputTemplateProps)
 			CornerRadius = UDim.new(0, 5),
 		}),
 
-		stroke = e("UIStroke", {
-			Color = Color3.fromRGB(255, 255, 255),
-			Thickness = 1,
-			Transparency = 0.67,
+		stroke = e(UIStroke, {
+			color = Color3.fromRGB(255, 255, 255),
+			thickness = 1,
+			transparency = 0.67,
 		}),
 
 		description = e("TextLabel", {
@@ -142,11 +143,11 @@ local function InputTemplate(props: InputTemplateProps)
 				CornerRadius = UDim.new(1, 0),
 			}),
 
-			stroke = e("UIStroke", {
-				ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-				Color = Color3.fromRGB(255, 255, 255),
-				Thickness = 1.4,
-				Transparency = 0.69,
+			stroke = e(UIStroke, {
+				applyStrokeMode = Enum.ApplyStrokeMode.Border,
+				color = Color3.fromRGB(255, 255, 255),
+				thickness = 1.4,
+				transparency = 0.69,
 			}),
 
 			textBox = e("TextBox", {

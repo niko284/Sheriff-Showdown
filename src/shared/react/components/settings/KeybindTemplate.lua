@@ -7,6 +7,7 @@ local InputLib = require(ReplicatedStorage.packages.Input)
 local React = require(ReplicatedStorage.packages.React)
 local Settings = require(ReplicatedStorage.constants.Settings)
 local Types = require(ReplicatedStorage.constants.Types)
+local UIStroke = require(ReplicatedStorage.react.components.other.UIStroke)
 
 local PreferredInput = InputLib.PreferredInput
 
@@ -69,10 +70,10 @@ local function KeybindTemplate(props: KeybindTemplateProps)
 			CornerRadius = UDim.new(0, 5),
 		}),
 
-		stroke = e("UIStroke", {
-			Color = Color3.fromRGB(255, 255, 255),
-			Thickness = 1,
-			Transparency = 0.67,
+		stroke = e(UIStroke, {
+			color = Color3.fromRGB(255, 255, 255),
+			thickness = 1,
+			transparency = 0.67,
 		}),
 
 		description = e("TextLabel", {
@@ -118,11 +119,11 @@ local function KeybindTemplate(props: KeybindTemplateProps)
 				CornerRadius = UDim.new(1, 0),
 			}),
 
-			stroke = e("UIStroke", {
-				ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-				Color = Color3.fromRGB(255, 255, 255),
-				Thickness = 1.4,
-				Transparency = 0.69,
+			stroke = e(UIStroke, {
+				applyStrokeMode = Enum.ApplyStrokeMode.Border,
+				color = Color3.fromRGB(255, 255, 255),
+				thickness = 1.4,
+				transparency = 0.69,
 			}),
 
 			inputRequestButton = e("TextButton", {

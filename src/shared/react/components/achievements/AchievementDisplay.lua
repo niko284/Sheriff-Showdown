@@ -10,6 +10,7 @@ local ItemUtils = require(ReplicatedStorage.utils.ItemUtils)
 local Rarities = require(ReplicatedStorage.constants.Rarities)
 local React = require(ReplicatedStorage.packages.React)
 local Types = require(ReplicatedStorage.constants.Types)
+local UIStroke = require(ReplicatedStorage.react.components.other.UIStroke)
 
 local e = React.createElement
 
@@ -204,9 +205,9 @@ local function AchievementDisplay(props: AchievementDisplayProps)
 			CornerRadius = UDim.new(0, 5),
 		}),
 
-		uIStroke = e("UIStroke", {
-			Color = Color3.fromRGB(255, 255, 255),
-			Thickness = 1.5,
+		uIStroke = e(UIStroke, {
+			color = Color3.fromRGB(255, 255, 255),
+			thickness = 1.5,
 		}),
 	})
 end

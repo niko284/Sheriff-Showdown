@@ -5,13 +5,16 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local Codes = require(script.Codes)
 local Crates = require(ReplicatedStorage.constants.Crates)
+local Currencies = require(ReplicatedStorage.constants.Currencies)
 local InventoryService = require(ServerScriptService.services.InventoryService)
 local ItemService = require(ServerScriptService.services.ItemService)
 local ItemUtils = require(ReplicatedStorage.utils.ItemUtils)
 local Net = require(ReplicatedStorage.packages.Net)
 local PlayerDataService = require(ServerScriptService.services.PlayerDataService)
+local Promise = require(ReplicatedStorage.packages.Promise)
 local Remotes = require(ReplicatedStorage.network.Remotes)
 local ResourceService = require(ServerScriptService.services.ResourceService)
+local TransactionService = require(script.Parent.TransactionService)
 local Types = require(ReplicatedStorage.constants.Types)
 
 local ShopNamespace = Remotes.Server:GetNamespace("Shop")
@@ -27,6 +30,25 @@ function ShopService:OnInit()
 	PurchaseCrate:SetCallback(function(Player: Player, CrateName: Types.Crate, PurchaseMethod: number)
 		return ShopService:PurchaseCrateNetworkRequest(Player, CrateName, PurchaseMethod)
 	end)
+
+	-- set up currency dev products
+
+	for currencyName, currencyInfo in Currencies do
+		if currencyInfo.CanPurchase then
+			for _, pack in currencyInfo.Packs do
+				TransactionService:OnDeveloperProductPurchased(pack.ProductId, function(player: Player)
+					print("In callback for ", pack.ProductId)
+					local playerDocument = PlayerDataService:GetDocument(player)
+					if not playerDocument then
+						return Promise.reject("Player document not found.")
+					end
+					print("incrementing and resolving")
+					ResourceService:IncrementResource(player, currencyName, pack.Amount)
+					return Promise.resolve()
+				end)
+			end
+		end
+	end
 end
 
 function ShopService:PurchaseCrateNetworkRequest(

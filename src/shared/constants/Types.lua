@@ -75,6 +75,7 @@ export type DataSchema = {
 	ProcessingTrades: { ProcessingTrade },
 	Statistics: PlayerStatistics,
 	Achievements: PlayerAchievements,
+	ReceiptHistory: { string },
 }
 
 -- >> Leaderboard Types
@@ -298,6 +299,14 @@ export type ProductInfo = {
 	CanBeSoldInThisGame: boolean,
 	ProductId: number,
 	IconImageAssetId: number,
+}
+export type ProductReceipt = {
+	PurchaseId: string,
+	PlayerId: number,
+	ProductId: number,
+	CurrencySpent: number,
+	CurrencyType: Enum.CurrencyType,
+	PlaceIdWherePurchased: number,
 }
 
 export type Crate = "Standard" | "Classic"

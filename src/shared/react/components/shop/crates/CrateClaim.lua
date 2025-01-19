@@ -7,13 +7,14 @@ local LocalPlayer = Players.LocalPlayer
 local Components = ReplicatedStorage.react.components
 local Controllers = LocalPlayer.PlayerScripts.controllers
 
-local ShopController = require(Controllers.ShopController)
 local Button = require(Components.buttons.Button)
-local React = require(ReplicatedStorage.packages.React)
 local ItemUtils = require(ReplicatedStorage.utils.ItemUtils)
-local ReactSpring = require(ReplicatedStorage.packages.ReactSpring)
 local Rarities = require(ReplicatedStorage.constants.Rarities)
+local React = require(ReplicatedStorage.packages.React)
+local ReactSpring = require(ReplicatedStorage.packages.ReactSpring)
+local ShopController = require(Controllers.ShopController)
 local Types = require(ReplicatedStorage.constants.Types)
+local UIStroke = require(ReplicatedStorage.react.components.other.UIStroke)
 
 local CurrentCamera = workspace.CurrentCamera
 local e = React.createElement
@@ -102,7 +103,7 @@ local function CrateClaim()
 			Position = UDim2.fromScale(0.0573, 0.143),
 			Size = UDim2.fromScale(0.884, 0.204),
 		}, {
-			uIStroke = e("UIStroke"),
+			uIStroke = e(UIStroke),
 		}),
 
 		rarityType = crateItem and e("TextLabel", {
@@ -119,7 +120,7 @@ local function CrateClaim()
 			Position = UDim2.fromScale(0.0573, 0.322),
 			Size = UDim2.fromScale(0.884, 0.179),
 		}, {
-			uIStroke1 = e("UIStroke"),
+			uIStroke1 = e(UIStroke),
 		}),
 	})
 end

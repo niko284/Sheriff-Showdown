@@ -16,7 +16,10 @@ function RarityUtils.GetRarityProbability(rarity: Types.ItemRarity, weightMap: {
 	return weightMap[rarity] / totalWeight
 end
 
-function RarityUtils.SelectRandomRarity(weightMap: { [Types.ItemRarity]: number }): Types.ItemRarity
+function RarityUtils.SelectRandomRarity(
+	weightMap: { [Types.ItemRarity]: number },
+	rarities: { Types.ItemRarity }?
+): Types.ItemRarity
 	local totalWeight = 0
 	for _, weight in pairs(weightMap) do
 		totalWeight = totalWeight + weight
@@ -25,7 +28,7 @@ function RarityUtils.SelectRandomRarity(weightMap: { [Types.ItemRarity]: number 
 	local randomValue = math.random() * totalWeight
 	for rarity, weight in pairs(weightMap) do
 		randomValue = randomValue - weight
-		if randomValue <= 0 then
+		if randomValue <= 0 and (not rarities or table.find(rarities, rarity)) then
 			return rarity :: Types.ItemRarity
 		end
 	end

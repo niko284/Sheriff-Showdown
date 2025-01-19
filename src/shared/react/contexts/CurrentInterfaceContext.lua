@@ -7,4 +7,5 @@ local Types = require(ReplicatedStorage.constants.Types)
 
 return React.createContext({
 	current = nil :: Types.Interface?,
+	hideHUD = false,
 })

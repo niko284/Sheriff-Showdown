@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local React = require(ReplicatedStorage.packages.React)
 local ReactSpring = require(ReplicatedStorage.packages.ReactSpring)
 local Types = require(ReplicatedStorage.constants.Types)
+local UIStroke = require(ReplicatedStorage.react.components.other.UIStroke)
 
 local useState = React.useState
 local e = React.createElement
@@ -88,11 +89,11 @@ local function Button(props: ButtonProps)
 		corner = e("UICorner", {
 			CornerRadius = props.cornerRadius,
 		}),
-		stroke = props.strokeColor and e("UIStroke", {
-			ApplyStrokeMode = props.applyStrokeMode,
-			Color = props.strokeColor,
-			Thickness = props.strokeThickness,
-			Transparency = props.strokeTransparency,
+		stroke = props.strokeColor and e(UIStroke, {
+			applyStrokeMode = props.applyStrokeMode,
+			color = props.strokeColor,
+			thickness = props.strokeThickness,
+			transparency = props.strokeTransparency,
 		}),
 		gradient = props.gradient and e("UIGradient", {
 			Color = props.gradient,
