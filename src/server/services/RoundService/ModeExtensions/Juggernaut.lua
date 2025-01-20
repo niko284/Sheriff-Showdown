@@ -13,7 +13,6 @@ local Types = require(Constants.Types)
 
 local JuggernautExtension = {
 	Data = RoundService:GetRoundModeData("Juggernaut"),
-	StartMatch = Generic.StartMatch,
 } :: Types.RoundModeExtension
 
 function JuggernautExtension.AllocateMatches(playerPool: { Player }): { Types.Match }

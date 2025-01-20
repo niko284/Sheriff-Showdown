@@ -7,6 +7,7 @@ local Services = ServerScriptService.services
 local Components = require(ReplicatedStorage.ecs.components)
 local Matter = require(ReplicatedStorage.packages.Matter)
 local MatterTypes = require(ReplicatedStorage.ecs.MatterTypes)
+local ResourceService = require(ServerScriptService.services.ResourceService)
 local StatisticsService = require(Services.StatisticsService)
 
 type KilledRecord = MatterTypes.WorldChangeRecord<Components.Killed>
@@ -66,6 +67,8 @@ local function killsAreProcessed(world: Matter.World)
 			local killedByPlayer = getPlayerKillerFromKilled(world, killedRecord.new)
 			if killedByPlayer then
 				StatisticsService:IncrementStatistic(killedByPlayer, "TotalKills", 1)
+				ResourceService:IncrementResource(killedByPlayer, "Coins", 5)
+
 				local longestKillStreak = StatisticsService:GetStatistic(killedByPlayer, "LongestKillStreak")
 
 				local newKillStreak = StatisticsService:IncrementStatistic(killedByPlayer, "KillStreak", 1)

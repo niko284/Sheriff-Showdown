@@ -162,7 +162,6 @@ function HotPotatoExtension.StartMatch(Match: Types.Match, RoundInstance: Types.
 	table.insert(Actions.BulletHit.afterProcess, checkBulletHit)
 
 	Generic.MatchFinishedPromise(Match):andThen(function()
-		print("MATCH FINISHED")
 		table.remove(Actions.BulletHit.afterProcess, table.find(Actions.BulletHit.afterProcess, checkBulletHit))
 		relayJanitor:Destroy()
 		hotPotatoTimer:Destroy()

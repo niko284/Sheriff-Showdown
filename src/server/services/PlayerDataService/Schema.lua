@@ -38,4 +38,5 @@ return {
 	Settings = {},
 	ProcessingTrades = {},
 	ReceiptHistory = {},
+	GiftedGamepasses = {},
 } :: Types.DataSchema

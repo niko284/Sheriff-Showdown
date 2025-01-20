@@ -7,7 +7,7 @@ local Constants = ReplicatedStorage.constants
 local Types = require(Constants.Types)
 
 return {
-	Standard = {
+	Sturdy = {
 		OpenAnimation = 103475632191659,
 		ShopLayoutOrder = 1,
 		ShopImage = 16417980472,
@@ -32,7 +32,7 @@ return {
 		PurchaseMethods = {
 			{
 				Type = "Coins",
-				Price = 100,
+				Price = 1000,
 			},
 		},
 		Weights = {
@@ -68,7 +68,7 @@ return {
 		PurchaseMethods = {
 			{
 				Type = "Coins",
-				Price = 100,
+				Price = 800,
 			},
 		},
 		Weights = {

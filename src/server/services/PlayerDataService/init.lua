@@ -15,7 +15,7 @@ local Types = require(ReplicatedStorage.constants.Types)
 local t = require(Packages.t)
 
 local collectionName = RunService:IsStudio() and "PlayerData" .. HttpService:GenerateGUID(false)
-	or "SheriffShowdownData12"
+	or "SheriffShowdownData123"
 
 local PlayerDataCollection = Lapis.createCollection(collectionName, {
 	defaultData = require(script.Schema),
@@ -53,6 +53,7 @@ local PlayerDataCollection = Lapis.createCollection(collectionName, {
 			})),
 		}),
 		ReceiptHistory = t.array(t.string),
+		GiftedGamepasses = t.array(t.number),
 	}),
 	migrations = Migrations,
 })

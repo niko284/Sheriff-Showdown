@@ -12,6 +12,9 @@ local e = React.createElement
 
 type GamepassTemplateProps = {
 	gamepassId: number,
+	giftRecipient: Player?,
+	giftProductId: number,
+	showGiftPrompt: (Player, string, number, number, number) -> (),
 }
 
 local function GamepassTemplate(props: GamepassTemplateProps)
@@ -33,7 +36,17 @@ local function GamepassTemplate(props: GamepassTemplateProps)
 			ZIndex = 2,
 			Size = UDim2.fromScale(1, 1),
 			[React.Event.Activated] = function()
-				MarketplaceService:PromptGamePassPurchase(Players.LocalPlayer, props.gamepassId)
+				if props.giftRecipient and productInfo then
+					props.showGiftPrompt(
+						props.giftRecipient,
+						productInfo.Name,
+						productInfo.PriceInRobux,
+						props.gamepassId,
+						props.giftProductId
+					)
+				else
+					MarketplaceService:PromptGamePassPurchase(Players.LocalPlayer, props.gamepassId)
+				end
 			end,
 		}),
 

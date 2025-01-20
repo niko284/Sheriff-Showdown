@@ -7,6 +7,7 @@ local Types = require(ReplicatedStorage.constants.Types)
 return {
 	{
 		GamepassId = 52316442,
+		GiftProductId = 2704351614,
 		Featured = true,
 	},
 	{

@@ -18,29 +18,23 @@ local Promise = require(Packages.Promise)
 local Remotes = require(ReplicatedStorage.network.Remotes)
 local RoundService = require(Services.RoundService)
 local StatusService = require(Services.StatusService)
+local Timer = require(ReplicatedStorage.packages.Timer)
 local Types = require(Constants.Types)
 
 local RoundNamespace = Remotes.Server:GetNamespace("Round")
 local EndMatchClient = RoundNamespace:Get("EndMatch") :: Net.ServerSenderEvent
 
-local START_TIME_SECONDS = 8
-
 -- Generic functions that are used in our Round Service, particularly our mode extensions.
 local Generic = {}
 
-function Generic.StartMatch(Match: Types.Match, _RoundInstance: Types.Round, World: Matter.World, equipGuns: boolean?)
-	local START_MATCH_TIMESTAMP = os.time() + START_TIME_SECONDS
-	RoundService.StartMatchTimestamp:Set(START_MATCH_TIMESTAMP)
-
-	repeat
-		RunService.Heartbeat:Wait()
-	until os.time() >= START_MATCH_TIMESTAMP
-
+function Generic.StartMatch(Match: Types.Match, RoundInstance: Types.Round, World: Matter.World, equipGuns: boolean?)
 	-- start the match by inserting our equipped guns into the world and assigning our players to the teams.
+
+	local roundModeData = RoundService:GetRoundModeData(RoundInstance.RoundMode)
+
 	for _, team in Match.Teams do
 		for _, entityId in team.Entities do
 			local target = World:get(entityId, Components.Target)
-
 			if equipGuns ~= false then
 				local plrComponent: Components.PlayerComponent? = World:get(entityId, Components.Player)
 				local childrenComp: Components.Children<Types.TargetChildren> = World:get(entityId, Components.Children)
@@ -77,6 +71,8 @@ function Generic.StartMatch(Match: Types.Match, _RoundInstance: Types.Round, Wor
 	end
 
 	local statusProcessedConnection
+	local timeLimitTimer = Timer.new(1)
+
 	statusProcessedConnection = StatusService.StatusProcessed:Connect(function(EntityId: number, Status: Types.Status)
 		local renderable: Components.Renderable<Model> = World:get(EntityId, Components.Renderable)
 		if Status == "Killed" and renderable then
@@ -101,11 +97,30 @@ function Generic.StartMatch(Match: Types.Match, _RoundInstance: Types.Round, Wor
 					if winningTeam then
 						RoundService.MatchFinished:Fire(Match.MatchUUID, winningTeam)
 						statusProcessedConnection:Disconnect()
+						timeLimitTimer:Destroy()
 					end
 				end
 			end
 		end
 	end)
+
+	if roundModeData.TimeLimit then
+		local elapsedSeconds = 0
+		timeLimitTimer.Tick:Connect(function()
+			elapsedSeconds += 1
+			if elapsedSeconds >= roundModeData.TimeLimit then
+				-- time limit reached, end round no one wins
+
+				RoundService.MatchFinished:Fire(Match.MatchUUID, nil)
+
+				statusProcessedConnection:Disconnect()
+				timeLimitTimer:Destroy()
+			elseif roundModeData.TimeLimit - elapsedSeconds <= 60 then
+				RoundService.RoundStatus:Set("TimeWarning")
+			end
+		end)
+		timeLimitTimer:Start()
+	end
 end
 
 function Generic.MatchFinishedPromise(Match: Types.Match)

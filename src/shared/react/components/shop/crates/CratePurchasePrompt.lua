@@ -7,12 +7,15 @@ local Contexts = ReplicatedStorage.react.contexts
 
 local ConfirmationPrompt = require(Components.other.ConfirmationPrompt)
 local Crates = require(ReplicatedStorage.constants.Crates)
+local FormatNumber = require(ReplicatedStorage.utils.FormatNumber)
 local InventoryContext = require(Contexts.InventoryContext)
 local Net = require(ReplicatedStorage.packages.Net)
 local React = require(ReplicatedStorage.packages.React)
 local Remotes = require(ReplicatedStorage.network.Remotes)
 local ResourceContext = require(Contexts.ResourceContext)
 local Types = require(ReplicatedStorage.constants.Types)
+
+local NumberFormatter = FormatNumber.NumberFormatter
 
 local ShopNamespace = Remotes.Client:GetNamespace("Shop")
 local PurchaseCrate = ShopNamespace:Get("PurchaseCrate") :: Net.ClientAsyncCaller
@@ -22,6 +25,8 @@ local e = React.createElement
 local useState = React.useState
 local useEffect = React.useEffect
 local useContext = React.useContext
+
+local PriceFormatter = NumberFormatter.with():Precision(FormatNumber.Precision.integer())
 
 type CratePurchasePromptProps = {
 	crateName: Types.Crate,
@@ -69,16 +74,16 @@ local function CratePurchasePrompt(props: CratePurchasePromptProps)
 		local hasEnough = resources[purchaseMethod.Type] >= purchaseMethod.Price
 		if hasEnough then
 			description = string.format(
-				'Purchase the %s crate for <font color="rgb(255,125,0)">%d %s</font>?',
+				'Purchase the %s crate for <font color="rgb(255,125,0)">%s %s</font>?',
 				props.crateName,
-				purchaseMethod.Price,
+				PriceFormatter:Format(purchaseMethod.Price),
 				purchaseMethod.Type
 			)
 			acceptText = "Purchase"
 		else
 			description = string.format(
-				"You need %d %s more to purchase the %s crate!",
-				purchaseMethod.Price - resources[purchaseMethod.Type],
+				"You need %s %s more to purchase the %s crate!",
+				PriceFormatter:Format(purchaseMethod.Price - resources[purchaseMethod.Type]),
 				purchaseMethod.Type,
 				props.crateName
 			)

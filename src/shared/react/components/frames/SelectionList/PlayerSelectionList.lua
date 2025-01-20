@@ -15,7 +15,7 @@ local usePlayers = require(Hooks.usePlayers)
 local e = React.createElement
 
 type PlayerSelectionListProps = {
-	position: React.Binding<UDim2> | UDim2,
+	position: any,
 	listTitle: string,
 	subtitle: string,
 	selectionText: string,

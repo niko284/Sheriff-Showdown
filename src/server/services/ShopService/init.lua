@@ -1,11 +1,14 @@
 --!strict
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local Codes = require(script.Codes)
 local Crates = require(ReplicatedStorage.constants.Crates)
 local Currencies = require(ReplicatedStorage.constants.Currencies)
+local Freeze = require(ReplicatedStorage.packages.Freeze)
+local Gamepasses = require(ReplicatedStorage.constants.Gamepasses)
 local InventoryService = require(ServerScriptService.services.InventoryService)
 local ItemService = require(ServerScriptService.services.ItemService)
 local ItemUtils = require(ReplicatedStorage.utils.ItemUtils)
@@ -20,15 +23,33 @@ local Types = require(ReplicatedStorage.constants.Types)
 local ShopNamespace = Remotes.Server:GetNamespace("Shop")
 local SubmitCode = ShopNamespace:Get("SubmitCode") :: Net.ServerAsyncCallback
 local PurchaseCrate = ShopNamespace:Get("PurchaseCrate") :: Net.ServerAsyncCallback
+local SetGiftPlayer = ShopNamespace:Get("SetGiftPlayer") :: Net.ServerListenerEvent
+local GetGiftedGamepasses = ShopNamespace:Get("GetGiftedGamepasses") :: Net.ServerAsyncCallback
 
-local ShopService = { Name = "ShopService" }
+local ShopService = { Name = "ShopService", GiftPlayerMap = {} }
 
 function ShopService:OnInit()
 	SubmitCode:SetCallback(function(Player: Player, Code: string)
 		return ShopService:SubmitCodeNetworkRequest(Player, Code)
 	end)
-	PurchaseCrate:SetCallback(function(Player: Player, CrateName: Types.Crate, PurchaseMethod: number)
-		return ShopService:PurchaseCrateNetworkRequest(Player, CrateName, PurchaseMethod)
+	PurchaseCrate:SetCallback(function(Player: Player, CrateName: Types.Crate, PurchaseMethodIndex: number)
+		return ShopService:PurchaseCrateNetworkRequest(Player, CrateName, PurchaseMethodIndex)
+	end)
+
+	SetGiftPlayer:Connect(function(Player: Player, GiftPlayer: Player)
+		if Player == GiftPlayer then
+			return
+		end
+		ShopService.GiftPlayerMap[Player] = GiftPlayer
+	end)
+
+	GetGiftedGamepasses:SetCallback(function(_Player: Player, GiftPlayer: Player)
+		local giftPlayerDocument = PlayerDataService:GetDocument(GiftPlayer)
+		if not giftPlayerDocument then
+			return {}
+		end
+		local giftPlayerData = giftPlayerDocument:read()
+		return giftPlayerData.GiftedGamepasses
 	end)
 
 	-- set up currency dev products
@@ -37,16 +58,44 @@ function ShopService:OnInit()
 		if currencyInfo.CanPurchase then
 			for _, pack in currencyInfo.Packs do
 				TransactionService:OnDeveloperProductPurchased(pack.ProductId, function(player: Player)
-					print("In callback for ", pack.ProductId)
 					local playerDocument = PlayerDataService:GetDocument(player)
 					if not playerDocument then
 						return Promise.reject("Player document not found.")
 					end
-					print("incrementing and resolving")
 					ResourceService:IncrementResource(player, currencyName, pack.Amount)
 					return Promise.resolve()
 				end)
 			end
+		end
+	end
+
+	for _, gamepassInfo in Gamepasses do
+		if gamepassInfo.GiftProductId then
+			TransactionService:OnDeveloperProductPurchased(gamepassInfo.GiftProductId, function(player: Player)
+				local giftPlayer = ShopService.GiftPlayerMap[player]
+				if not giftPlayer or giftPlayer:IsDescendantOf(Players) == false then
+					return Promise.reject("No gift player found.")
+				end
+				local giftPlayerDocument = PlayerDataService:GetDocument(giftPlayer)
+				if not giftPlayerDocument then
+					return Promise.reject("Gift player document not found.")
+				end
+
+				local giftPlayerData = giftPlayerDocument:read()
+				local newGiftedGamepasses = table.clone(giftPlayerData.GiftedGamepasses)
+
+				if table.find(newGiftedGamepasses, gamepassInfo.GamepassId) then
+					return Promise.reject("Already gifted")
+				end
+
+				table.insert(newGiftedGamepasses, gamepassInfo.GamepassId)
+
+				local newGiftPlayerData = Freeze.Dictionary.set(giftPlayerData, "GiftedGamepasses", newGiftedGamepasses)
+
+				giftPlayerDocument:write(newGiftPlayerData)
+
+				return Promise.resolve()
+			end)
 		end
 	end
 end
@@ -54,7 +103,7 @@ end
 function ShopService:PurchaseCrateNetworkRequest(
 	Player: Player,
 	CrateName: Types.Crate,
-	PurchaseMethod: number
+	PurchaseMethodIndex: number
 ): Types.NetworkResponse
 	local crateInfo = Crates[CrateName]
 	if not crateInfo then
@@ -69,7 +118,7 @@ function ShopService:PurchaseCrateNetworkRequest(
 	local playerData = playerDocument:read()
 	local resources = playerData.Resources
 
-	local purchaseMethod = crateInfo.PurchaseMethods[PurchaseMethod]
+	local purchaseMethod = crateInfo.PurchaseMethods[PurchaseMethodIndex]
 	if not purchaseMethod then
 		return { Success = false, Message = "Invalid purchase method" }
 	end

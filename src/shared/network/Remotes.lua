@@ -77,6 +77,12 @@ return Net.CreateDefinitions({
 		PurchaseCrate = Net.Definitions.ServerAsyncFunction({
 			Net.Middleware.TypeChecking(t.string, t.numberMin(1)),
 		}),
+		SetGiftPlayer = Net.Definitions.ClientToServerEvent({
+			Net.Middleware.TypeChecking(t.instanceIsA("Player")),
+		}),
+		GetGiftedGamepasses = Net.Definitions.ServerAsyncFunction({
+			Net.Middleware.TypeChecking(t.instanceIsA("Player")),
+		}),
 	}),
 
 	Notifications = Net.Definitions.Namespace({

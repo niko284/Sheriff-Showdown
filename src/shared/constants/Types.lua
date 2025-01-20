@@ -76,6 +76,7 @@ export type DataSchema = {
 	Statistics: PlayerStatistics,
 	Achievements: PlayerAchievements,
 	ReceiptHistory: { string },
+	GiftedGamepasses: { number },
 }
 
 -- >> Leaderboard Types
@@ -118,6 +119,7 @@ export type RoundModeData = {
 	TeamSize: ((() -> number) | number)?,
 	TeamsPerMatch: ((() -> number) | number)?,
 	TeamNames: { string }?,
+	TimeLimit: number?,
 }
 export type Team = {
 	Entities: { number }, -- list of entity ids in this team.
@@ -127,6 +129,7 @@ export type Team = {
 export type Match = {
 	Teams: { Team },
 	MatchUUID: string,
+	StartTime: number,
 }
 
 export type Effect = {
@@ -309,7 +312,7 @@ export type ProductReceipt = {
 	PlaceIdWherePurchased: number,
 }
 
-export type Crate = "Standard" | "Classic"
+export type Crate = "Sturdy" | "Classic"
 export type CrateInfo = {
 	OpenAnimation: number,
 	ShopImage: number,
@@ -328,6 +331,7 @@ export type CrateInfo = {
 export type Gamepass = {
 	Featured: boolean,
 	GamepassId: number,
+	GiftProductId: number?,
 }
 
 -- >> Setting Types

@@ -52,6 +52,7 @@ return {
 		end,
 		UseSpawnType = "FFA",
 		Image = 77237596598471,
+		TimeLimit = 60 * 3,
 	},
 	{
 		Name = "Revolver Relay",
@@ -65,6 +66,7 @@ return {
 			return #Players:GetPlayers()
 		end,
 		Image = 99452383534143,
+		TimeLimit = 60 * 3,
 	},
 	{
 		Name = "Hot Potato",
@@ -87,6 +89,7 @@ return {
 		end,
 		UseSpawnType = "RVB",
 		Image = 100074347186146,
+		TimeLimit = 60 * 3,
 	},
 	--[[{
 		Name = "Duos",
@@ -110,6 +113,7 @@ return {
 		end,
 		UseSpawnType = "FFA",
 		Image = 73093599523132,
+		TimeLimit = 60 * 3,
 	},
 	--[[{
 		Name = "Distraction",

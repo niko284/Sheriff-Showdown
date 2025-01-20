@@ -2,11 +2,14 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local LocalPlayer = Players.LocalPlayer
 
 local Controllers = LocalPlayer.PlayerScripts.controllers
 
+local Janitor = require(ReplicatedStorage.packages.Janitor)
+local Promise = require(ReplicatedStorage.packages.Promise)
 local React = require(ReplicatedStorage.packages.React)
 local ReactSpring = require(ReplicatedStorage.packages.ReactSpring)
 local RoundController = require(Controllers.RoundController)
@@ -27,7 +30,6 @@ local function StatusText()
 
 	local status, setStatus = useState({
 		status = "",
-		shouldAnimate = false,
 	})
 
 	-- if alternating is true, then the first text will fade out and the second text will fade in.
@@ -45,42 +47,64 @@ local function StatusText()
 			alternating2opacity = alternating.current and 0 or 1,
 		},
 		reset = true,
-	}, { status })
+	}, { alternating.current })
 
 	useEffect(function()
+		local statusJanitor = Janitor.new()
+
 		local updateStatusConnection = RoundController:ObserveStatusChanged(
 			function(newStatus: string, shouldAnimate: boolean)
-				alternating.current = not alternating.current
+				statusJanitor:Cleanup()
+				RunService.Heartbeat:Wait()
 
 				if newStatus == "StartMatch" then
 					local endTime = os.time() + 8 -- 8 seconds
 
-					while os.time() < endTime do
+					local elapsed = 0
+					statusJanitor:AddPromise(Promise.fromEvent(RunService.Heartbeat, function(dt: number)
+						elapsed += dt
 						local timeLeft = endTime - os.time()
 						setStatus(function(oldStatus)
 							oldStatusText.current = oldStatus.status
 							return {
-								status = "Match starts in " .. timeLeft,
-								shouldAnimate = false,
+								status = "Starting in: " .. timeLeft,
 							}
 						end)
-						task.wait()
-					end
+						return os.time() > endTime
+					end):andThen(function()
+						alternating.current = not alternating.current
+						setStatus({
+							status = "Match in progress",
+						})
+					end))
+				elseif newStatus == "TimeWarning" then
+					local endTime = os.time() + 60 -- 60 seconds
 
-					return
+					statusJanitor:AddPromise(Promise.fromEvent(RunService.Heartbeat, function(_dt: number)
+						local timeLeft = endTime - os.time()
+						timeLeft = math.max(0, timeLeft)
+						setStatus(function(oldStatus)
+							oldStatusText.current = oldStatus.status
+							return {
+								status = "Time remaining: " .. timeLeft,
+							}
+						end)
+						return os.time() > endTime
+					end))
+				else
+					alternating.current = not alternating.current
+					setStatus(function(oldStatus)
+						oldStatusText.current = oldStatus.status
+						return {
+							status = newStatus,
+						}
+					end)
 				end
-
-				setStatus(function(oldStatus)
-					oldStatusText.current = oldStatus.status
-					return {
-						status = newStatus,
-						shouldAnimate = shouldAnimate,
-					}
-				end)
 			end
 		)
 		return function()
 			updateStatusConnection:Disconnect()
+			statusJanitor:Destroy()
 		end
 	end, {})
 
@@ -89,7 +113,8 @@ local function StatusText()
 		BackgroundTransparency = 1,
 		BorderColor3 = Color3.fromRGB(0, 0, 0),
 		BorderSizePixel = 0,
-		Position = UDim2.fromScale(0.347, 0.05),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.05),
 		Size = UDim2.fromOffset(586, 135),
 	}, {
 		alternating1 = e("TextLabel", {

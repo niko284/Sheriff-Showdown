@@ -16,6 +16,7 @@ local Maps = require(Constants.Maps)
 local Matter = require(Packages.Matter)
 local Promise = require(Packages.Promise)
 local Remotes = require(ReplicatedStorage.network.Remotes)
+local ResourceService = require(script.Parent.ResourceService)
 local RoundModes = require(Constants.RoundModes)
 local ServerComm = require(ServerScriptService.ServerComm)
 local SettingsService = require(ServerScriptService.services.SettingsService)
@@ -39,6 +40,10 @@ local MINIMUM_PLAYERS = 2
 local MAP_VOTING_COUNT = 3
 local ROUND_MODE_VOTING_COUNT = 3
 local WINNER_CELEBRATION_DURATION = 6
+local START_TIME_SECONDS = 8
+
+local BASE_WIN_COINS = 20
+local MAX_WIN_COINS = 50
 
 -- // Service \\
 
@@ -48,7 +53,6 @@ local RoundService = {
 	RoundExtensions = {} :: { [Types.RoundMode]: Types.RoundModeExtension },
 	CurrentRound = nil :: Types.Round?,
 	VotingPoolClient = ServerComm:CreateProperty("VotingPoolClient", nil),
-	StartMatchTimestamp = ServerComm:CreateProperty("StartMatchTimestamp", nil),
 	RoundStatus = ServerComm:CreateProperty("RoundStatus", nil),
 	VotingPool = nil :: Types.VotingPool?,
 	World = nil :: Matter.World, -- injected by our ECS system
@@ -472,6 +476,14 @@ function RoundService:StartMatch(RoundInstance: Types.Round, Match: Types.Match)
 	ApplyTeamIndicator:SendToPlayers(RoundService:GetAllPlayersInMatch(Match), teamPlayerColors)
 
 	local roundModeExtension = RoundService:GetRoundModeExtension(RoundInstance.RoundMode)
+
+	local START_MATCH_TIMESTAMP = os.time() + START_TIME_SECONDS
+
+	repeat
+		RunService.Heartbeat:Wait()
+	until os.time() >= START_MATCH_TIMESTAMP
+
+	Match.StartTime = os.time() -- used to calculate winner EXP as a function of round time taken
 	roundModeExtension.StartMatch(Match, RoundInstance, world)
 end
 
@@ -499,6 +511,8 @@ end
 
 function RoundService:WaitForMatchesToFinish(RoundInstance: Types.Round)
 	local matchPromises = {}
+	local roundModeData = RoundService:GetRoundModeData(RoundInstance.RoundMode)
+
 	for index, match in ipairs(RoundInstance.Matches) do
 		local matchPromise = Promise.fromEvent(
 			RoundService.MatchFinished,
@@ -528,14 +542,41 @@ function RoundService:WaitForMatchesToFinish(RoundInstance: Types.Round)
 
 					-- start the next match in the RoundInstance (if there are any left)
 
+					if not winningTeam then
+						RoundService.RoundStatus:Set("No winners for this round!")
+					end
+
+					-- calculate the # of coins to give to winning team based on how long match took relative to time limit.
+					-- the longer it took, the more of the max they get (MAX_WIN_COINS)
+					local timeTakenSeconds = os.time() - match.StartTime
+					local diffFromMax = MAX_WIN_COINS - BASE_WIN_COINS
+					local percentageTimeTaken = timeTakenSeconds / roundModeData.TimeLimit
+					local coinsToGiveWinners = BASE_WIN_COINS + math.round(diffFromMax * percentageTimeTaken)
+
 					task.delay(WINNER_CELEBRATION_DURATION, function()
-						for _, winningPlayer in RoundService:GetPlayersInTeam(winningTeam) do
-							if winningPlayer:IsDescendantOf(game) == false then
-								continue
+						if winningTeam then
+							for _, winningPlayer in RoundService:GetPlayersInTeam(winningTeam) do
+								if winningPlayer:IsDescendantOf(game) == false then
+									continue
+								end
+								StatisticsService:IncrementStatistic(winningPlayer, "TotalWins", 1)
+								EndMatchClient:SendToPlayer(winningPlayer)
+								winningPlayer:LoadCharacter()
+
+								ResourceService:IncrementResource(winningPlayer, "Coins", coinsToGiveWinners)
 							end
-							StatisticsService:IncrementStatistic(winningPlayer, "TotalWins", 1)
-							EndMatchClient:SendToPlayer(winningPlayer)
-							winningPlayer:LoadCharacter()
+						else
+							for _, team in match.Teams do
+								for _, entityId in team.Entities do
+									local wasKilled = table.find(team.Killed, entityId)
+									local playerComponent: Components.PlayerComponent? =
+										RoundService.World:get(entityId, Components.Player)
+									if not wasKilled and playerComponent then
+										playerComponent.player:LoadCharacter()
+										EndMatchClient:SendToPlayer(playerComponent.player)
+									end
+								end
+							end
 						end
 
 						local nextMatch = RoundInstance.Matches[index + 1]
