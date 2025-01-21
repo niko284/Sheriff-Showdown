@@ -95,6 +95,7 @@ export type StatusEffect = {
 
 export type Killed = {
 	killerEntityId: number,
+	markedKill: boolean?,
 } & StatusEffect
 export type Ragdolled = {}
 export type PlayerComponent = {

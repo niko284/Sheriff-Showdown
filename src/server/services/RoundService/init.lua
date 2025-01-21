@@ -12,6 +12,7 @@ local Constants = ReplicatedStorage.constants
 local Packages = ReplicatedStorage.packages
 
 local Components = require(ReplicatedStorage.ecs.components)
+local ExperienceService = require(script.Parent.ExperienceService)
 local Maps = require(Constants.Maps)
 local Matter = require(Packages.Matter)
 local Promise = require(Packages.Promise)
@@ -371,6 +372,10 @@ function RoundService:RunMatches(RoundInstance: Types.Round)
 	local roundMode = RoundService:GetRoundModeData(RoundInstance.RoundMode)
 
 	return Promise.new(function(resolve)
+		for _, player in RoundInstance.Players do
+			StatisticsService:IncrementStatistic(player, "RoundsPlayed", 1, false)
+		end
+
 		while #RoundInstance.Matches > 0 do
 			-- our match pool will get smaller and smaller as the tournament progresses. start the initial match every time.
 			RoundService:StartMatch(RoundInstance, RoundInstance.Matches[1])
@@ -548,10 +553,16 @@ function RoundService:WaitForMatchesToFinish(RoundInstance: Types.Round)
 
 					-- calculate the # of coins to give to winning team based on how long match took relative to time limit.
 					-- the longer it took, the more of the max they get (MAX_WIN_COINS)
-					local timeTakenSeconds = os.time() - match.StartTime
+
+					local coinsToGiveWinners
 					local diffFromMax = MAX_WIN_COINS - BASE_WIN_COINS
-					local percentageTimeTaken = timeTakenSeconds / roundModeData.TimeLimit
-					local coinsToGiveWinners = BASE_WIN_COINS + math.round(diffFromMax * percentageTimeTaken)
+					if roundModeData.TimeLimit then
+						local timeTakenSeconds = os.time() - match.StartTime
+						local percentageTimeTaken = timeTakenSeconds / roundModeData.TimeLimit
+						coinsToGiveWinners = BASE_WIN_COINS + math.round(diffFromMax * percentageTimeTaken)
+					else
+						coinsToGiveWinners = BASE_WIN_COINS + math.round(diffFromMax / 2)
+					end
 
 					task.delay(WINNER_CELEBRATION_DURATION, function()
 						if winningTeam then
@@ -559,9 +570,14 @@ function RoundService:WaitForMatchesToFinish(RoundInstance: Types.Round)
 								if winningPlayer:IsDescendantOf(game) == false then
 									continue
 								end
+
 								StatisticsService:IncrementStatistic(winningPlayer, "TotalWins", 1)
 								EndMatchClient:SendToPlayer(winningPlayer)
 								winningPlayer:LoadCharacter()
+
+								local level = ResourceService:GetResource(winningPlayer, "Level")
+								local winEXPGain = ExperienceService:GetWinExperienceGain(level)
+								ExperienceService:AddExperience(winningPlayer, winEXPGain)
 
 								ResourceService:IncrementResource(winningPlayer, "Coins", coinsToGiveWinners)
 							end

@@ -2,6 +2,7 @@
 
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 
 local Components = require(ReplicatedStorage.ecs.components)
 local Types = require(ReplicatedStorage.constants.Types)
@@ -103,6 +104,14 @@ return {
 				local health = world:get(actionPayload.targetEntityId, Components.Health)
 				if health then
 					local damage = gun.CriticalDamage[actionPayload.hitPart.Name] or gun.Damage
+
+					if actionPayload.hitPart.Name == "Head" and gun.CriticalDamage["Head"] then
+						-- we keep track of headshots in the player's stats
+
+						local StatisticsService = require(ServerScriptService.services.StatisticsService)
+
+						StatisticsService:IncrementStatistic(player, "Headshots", 1, false)
+					end
 
 					local myChar = player.Character
 					if not myChar then

@@ -18,7 +18,11 @@ local ExperienceService = {
 -- // Functions \\
 
 function ExperienceService:GetExperienceForLevel(Level: number): number
-	return math.round(((1880 * math.pow(Level / 9, 2.85) + 85 * math.pow(Level + 1, 1.6)) - 230))
+	return math.round((1880 * math.pow(Level / 9, 2.85) + 85 * math.pow(Level + 1, 1.6)))
+end
+
+function ExperienceService:GetWinExperienceGain(Level: number): number
+	return math.round(32 * math.pow(Level / 13, 2) * (1.2 * math.floor(Level / 13)) + 75 * math.pow(Level + 1, 1.2))
 end
 
 function ExperienceService:GetAmassedExperienceForLevel(Level: number): number

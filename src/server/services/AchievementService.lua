@@ -149,7 +149,7 @@ function AchievementService:OnStart()
 		end
 
 		newplayerAchievements.ActiveAchievements = newActiveAchievements
-		PlayerDocument:write(Freeze.Dictionary.set(PlayerDocument:read(), "Achievements", newplayerAchievements))
+		PlayerDocument:write(Freeze.Dictionary.set(PlayerDocument:read(), "Achievements", newplayerAchievements) :: any)
 
 		-- Update progress for all achievements.
 		for _, ActiveAchievement in newActiveAchievements do
@@ -371,14 +371,7 @@ function AchievementService:RegisterAchievementProgress(
 				continue -- We don't have an old value to compare to, so we can't register progress for this requirement.
 			end
 
-			local goal = if typeof(requirement.Goal) == "function"
-				then requirement.Goal(achievement)
-				else requirement.Goal
-			if goal and goal <= NewVal then
-				AchievementService:CompleteRequirement(Player, achievement.UUID, index, NewVal)
-			elseif goal and goal > NewVal then
-				AchievementService:UpdateRequirementProgress(Player, achievement.UUID, index, NewVal)
-			end
+			AchievementService:UpdateRequirementProgress(Player, achievement.UUID, index, NewVal)
 		end
 
 		return atLeastOneRequirementMatches
@@ -468,12 +461,10 @@ function AchievementService:CompleteRequirement(
 		if Achievement.UUID == AchievementUUID then
 			local newActiveAchievements = table.clone(playerAchievements.ActiveAchievements)
 			local newAchievement = table.clone(Achievement)
-			local newRequirements = table.clone(newAchievement.Requirements)
-			local requirement = newRequirements[requirementIndex]
+			local requirement = newAchievement.Requirements[requirementIndex]
 			requirement = table.clone(requirement)
 			requirement.Progress = NewValue
-			newRequirements[requirementIndex] = requirement
-			newAchievement.Requirements = newRequirements
+			newAchievement.Requirements[requirementIndex] = requirement
 			newActiveAchievements[index] = newAchievement
 			playerDocument:write(
 				Freeze.Dictionary.setIn(
@@ -687,9 +678,7 @@ function AchievementService:GrantAchievementReward(Player: Player, Achievement: 
 	if achievementInfo.Rewards then
 		for _, reward in achievementInfo.Rewards do -- loop through all rewards
 			if reward.Type == "Currency" and reward.Amount then
-				local amount = if typeof(reward.Amount) == "function"
-					then reward.Amount(Achievement.TimesClaimed or 0)
-					else reward.Amount
+				local amount = if typeof(reward.Amount) == "function" then reward.Amount(Achievement) else reward.Amount
 				ResourceService:IncrementResource(Player, reward.Currency, amount)
 			end
 		end

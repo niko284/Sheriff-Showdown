@@ -18,7 +18,6 @@ local function statusEffectsExpire(world: Matter.World)
 				and (DateTime.now().UnixTimestampMillis / 1000) >= statusEffect.expiry
 				and statusEffect.processRemoval ~= false
 			then
-				print("Expiring status effect ", tostring(statusEffectComponent), " for entity ", eid)
 				world:remove(eid, statusEffectComponent)
 			end
 		end

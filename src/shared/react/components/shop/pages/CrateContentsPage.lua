@@ -12,6 +12,7 @@ local OptionButton = require(Components.buttons.OptionButton)
 local RarityUtils = require(ReplicatedStorage.utils.RarityUtils)
 local React = require(ReplicatedStorage.packages.React)
 local Types = require(ReplicatedStorage.constants.Types)
+local createNextOrder = require(ReplicatedStorage.react.hooks.createNextOrder)
 
 local e = React.createElement
 type CrateContentsPageProps = Types.FrameProps & {
@@ -21,6 +22,9 @@ type CrateContentsPageProps = Types.FrameProps & {
 
 local function CrateContentsPage(props: CrateContentsPageProps)
 	local contentElements = {}
+
+	local nextOrder = createNextOrder()
+
 	if props.crateName then
 		local crateInfo = Crates[props.crateName]
 
@@ -38,6 +42,8 @@ local function CrateContentsPage(props: CrateContentsPageProps)
 				icon = string.format("rbxassetid://%d", itemInfo.Image),
 				rarity = RarityUtils.GetRarityProbability(itemInfo.Rarity :: Types.ItemRarity, crateInfo.Weights) * 100,
 				itemName = itemInfo.Name,
+				layoutOrder = nextOrder(),
+				itemRarity = itemInfo.Rarity,
 			})
 		end
 	end

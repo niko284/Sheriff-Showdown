@@ -2,22 +2,29 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local Rarities = require(ReplicatedStorage.constants.Rarities)
 local React = require(ReplicatedStorage.packages.React)
+local Types = require(ReplicatedStorage.constants.Types)
 local UIStroke = require(ReplicatedStorage.react.components.other.UIStroke)
 
 local e = React.createElement
 
 type CrateItemTemplateProps = {
 	icon: string,
+	layoutOrder: number,
 	itemName: string,
+	itemRarity: Types.ItemRarity?,
 	rarity: number,
 }
 
 local function CrateItemTemplate(props: CrateItemTemplateProps)
+	local rarityInfo = props.itemRarity and Rarities[props.itemRarity] or nil
+
 	return e("Frame", {
 		BackgroundColor3 = Color3.fromRGB(72, 72, 72),
 		BorderColor3 = Color3.fromRGB(0, 0, 0),
 		BorderSizePixel = 0,
+		LayoutOrder = props.layoutOrder,
 	}, {
 		corner = e("UICorner", {
 			CornerRadius = UDim.new(0, 5),
@@ -27,11 +34,13 @@ local function CrateItemTemplate(props: CrateItemTemplateProps)
 			color = Color3.fromRGB(255, 255, 255),
 		}),
 
-		gradient = e("ImageLabel", {
-			Image = "rbxassetid://18134658384",
+		grad = rarityInfo and e("ImageLabel", {
+			ZIndex = -1,
+			Image = "rbxassetid://17886581996",
+			ImageColor3 = rarityInfo.Color,
 			BackgroundTransparency = 1,
-			Size = UDim2.fromOffset(145, 145),
-			ZIndex = 2,
+			Position = UDim2.fromScale(0.00685, 0.479),
+			Size = UDim2.fromScale(1, 0.521),
 		}),
 
 		gunImage = e("ImageLabel", {
@@ -49,12 +58,17 @@ local function CrateItemTemplate(props: CrateItemTemplateProps)
 			),
 			Text = props.itemName,
 			TextColor3 = Color3.fromRGB(255, 255, 255),
-			TextSize = 12,
+			TextSize = 13,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			BackgroundTransparency = 1,
 			Position = UDim2.fromOffset(10, 100),
 			Size = UDim2.fromOffset(68, 9),
 			ZIndex = 3,
+		}, {
+			stroke = e(UIStroke, {
+				color = Color3.fromRGB(0, 0, 0),
+				thickness = 1.8,
+			}),
 		}),
 
 		rarity = e("TextLabel", {
@@ -64,13 +78,18 @@ local function CrateItemTemplate(props: CrateItemTemplateProps)
 				Enum.FontStyle.Normal
 			),
 			Text = string.format("%d%%", props.rarity),
-			TextColor3 = Color3.fromRGB(156, 221, 250),
-			TextSize = 14,
+			TextColor3 = Color3.fromRGB(255, 255, 255),
+			TextSize = 12,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			BackgroundTransparency = 1,
-			Position = UDim2.fromOffset(11, 118),
+			Position = UDim2.fromOffset(11, 120),
 			Size = UDim2.fromOffset(25, 9),
 			ZIndex = 3,
+		}, {
+			stroke = e(UIStroke, {
+				color = Color3.fromRGB(0, 0, 0),
+				thickness = 1.8,
+			}),
 		}),
 	})
 end

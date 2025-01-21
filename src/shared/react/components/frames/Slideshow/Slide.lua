@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local React = require(ReplicatedStorage.packages.React)
 local Types = require(ReplicatedStorage.constants.Types)
+local UIStroke = require(ReplicatedStorage.react.components.other.UIStroke)
 
 local e = React.createElement
 
@@ -47,13 +48,17 @@ local function Slide(props: SlideProps)
 			BackgroundTransparency = 1,
 			Position = UDim2.fromOffset(22, 243),
 			Size = UDim2.fromOffset(92, 12),
+		}, {
+			stroke = e(UIStroke, {
+				color = Color3.fromRGB(0, 0, 0),
+			}),
 		}),
 
 		description = e("TextLabel", {
 			FontFace = Font.new(
 				"rbxasset://fonts/families/GothamSSm.json",
 				Enum.FontWeight.Medium,
-				Enum.FontStyle.Normal
+				Enum.FontStyle.Italic
 			),
 			Text = props.description or "Description",
 			TextColor3 = Color3.fromRGB(255, 255, 255),

@@ -446,7 +446,7 @@ export type AchievementReward = {
 	Currency: Currency,
 	ItemId: number?, -- only used if we're giving an item as a reward
 	BadgeId: number?, -- only used if we're giving a badge as a reward
-	Amount: number | (claimCount: number) -> number,
+	Amount: number | (Achievement) -> number,
 }
 
 export type AchievementType = "Progressive" | "Daily" | "Event"

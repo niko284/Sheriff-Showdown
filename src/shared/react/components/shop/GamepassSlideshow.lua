@@ -33,7 +33,7 @@ local function GamepassSlideshow(props: GamepassSlideshowProps)
 		local productInfo = gamepassProductInfo[gamepass.id]
 		if productInfo then
 			table.insert(gamepassSlides, {
-				key = gamepass.id,
+				key = tostring(gamepass.id),
 				icon = string.format("rbxassetid://%d", productInfo.IconImageAssetId),
 				slideName = productInfo.Name,
 				price = productInfo.PriceInRobux,

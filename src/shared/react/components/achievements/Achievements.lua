@@ -77,6 +77,7 @@ local function Achievements(_props: AchievementProps)
 			achievementUUID = achievement.UUID,
 			achievementName = AchievementController:GetRequirementName(achievement, 1),
 			onActivated = changeSelectedAchievement,
+			numberOfRewards = #achievementInfo.Rewards,
 		})
 	end
 
@@ -313,10 +314,9 @@ local function Achievements(_props: AchievementProps)
 		}),
 
 		selectedDisplay = selectedAchievement and e(AchievementDisplay, {
-			goal = selectedAchievement.Requirements[1].Goal,
-			progress = selectedAchievement.Requirements[1].Progress,
 			achievementName = AchievementController:GetRequirementName(selectedAchievement, 1),
 			rewards = (selectedAchievementInfo :: Types.AchievementInfo).Rewards,
+			achievement = selectedAchievement,
 		}),
 	})
 end

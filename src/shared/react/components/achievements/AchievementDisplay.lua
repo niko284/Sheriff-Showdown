@@ -10,14 +10,12 @@ local ItemUtils = require(ReplicatedStorage.utils.ItemUtils)
 local Rarities = require(ReplicatedStorage.constants.Rarities)
 local React = require(ReplicatedStorage.packages.React)
 local Types = require(ReplicatedStorage.constants.Types)
-local UIStroke = require(ReplicatedStorage.react.components.other.UIStroke)
 
 local e = React.createElement
 
 type AchievementDisplayProps = {
-	goal: number,
 	achievementName: string,
-	progress: number,
+	achievement: Types.Achievement,
 	rewards: { Types.AchievementReward },
 	timesClaimed: number?,
 }
@@ -30,7 +28,7 @@ local function AchievementDisplay(props: AchievementDisplayProps)
 			-- use rich text to color the currency text differently
 			local currencyInfo = Currencies[reward.Currency]
 
-			local rewardAmount = typeof(reward.Amount) == "function" and reward.Amount(props.timesClaimed or 0)
+			local rewardAmount = typeof(reward.Amount) == "function" and reward.Amount(props.achievement)
 				or reward.Amount :: number
 
 			rewardsText = rewardsText
@@ -54,6 +52,9 @@ local function AchievementDisplay(props: AchievementDisplayProps)
 			-- @TODO: Add badge support
 		end
 	end
+
+	local goal = props.achievement.Requirements[1].Goal
+	local progress = props.achievement.Requirements[1].Progress
 
 	return e("Frame", {
 		BackgroundColor3 = Color3.fromRGB(72, 72, 72),
@@ -126,17 +127,26 @@ local function AchievementDisplay(props: AchievementDisplayProps)
 			Size = UDim2.fromOffset(228, 4),
 		}),
 
-		slider = e("ImageLabel", {
-			Image = "rbxassetid://18442700894",
-			BackgroundTransparency = 1,
-			Position = UDim2.fromOffset(24, 120),
-			Size = UDim2.fromOffset(209, 11),
+		sliderBar = e("Frame", {
+			BackgroundColor3 = Color3.fromRGB(93, 93, 93),
+			BorderColor3 = Color3.fromRGB(0, 0, 0),
+			BorderSizePixel = 0,
+			Position = UDim2.fromOffset(15, 125),
+			Size = UDim2.fromOffset(209, 7),
 		}, {
-			progress = e("ImageLabel", {
-				Image = "rbxassetid://18442712157",
-				BackgroundTransparency = 1,
-				Position = UDim2.fromOffset(2, 2),
-				Size = UDim2.fromScale(props.progress / props.goal, 1),
+			corner = e("UICorner", {
+				CornerRadius = UDim.new(1, 0),
+			}),
+
+			progress = e("Frame", {
+				AnchorPoint = Vector2.new(0, 0.5),
+				BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+				BorderColor3 = Color3.fromRGB(0, 0, 0),
+				BorderSizePixel = 0,
+				Position = UDim2.fromScale(0, 0.5),
+				Size = UDim2.fromScale(progress / goal, 1),
+			}, {
+				corner = e("UICorner"),
 			}),
 		}),
 
@@ -146,12 +156,12 @@ local function AchievementDisplay(props: AchievementDisplayProps)
 				Enum.FontWeight.Bold,
 				Enum.FontStyle.Normal
 			),
-			Text = string.format("%d%% Completed", math.round(props.progress / props.goal * 100)),
+			Text = string.format("%d%% Completed", math.round(progress / goal * 100)),
 			TextColor3 = Color3.fromRGB(255, 255, 255),
 			TextSize = 13,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			BackgroundTransparency = 1,
-			Position = UDim2.fromOffset(26, 103),
+			Position = UDim2.fromOffset(15, 103),
 			Size = UDim2.fromOffset(115, 13),
 		}),
 
@@ -164,9 +174,10 @@ local function AchievementDisplay(props: AchievementDisplayProps)
 			Text = "Rewards",
 			TextColor3 = Color3.fromRGB(255, 255, 255),
 			TextSize = 13,
-			TextXAlignment = Enum.TextXAlignment.Left,
+			TextXAlignment = Enum.TextXAlignment.Center,
 			BackgroundTransparency = 1,
-			Position = UDim2.fromOffset(3, 173),
+			Position = UDim2.new(0.5, 0, 0, 165),
+			AnchorPoint = Vector2.new(0.5, 0),
 			Size = UDim2.fromOffset(58, 11),
 		}),
 
@@ -176,13 +187,13 @@ local function AchievementDisplay(props: AchievementDisplayProps)
 				Enum.FontWeight.Medium,
 				Enum.FontStyle.Normal
 			),
-			Text = "Description goes here",
+			Text = string.format("%d %s", #props.rewards, #props.rewards == 1 and "Reward" or "Rewards"),
 			TextColor3 = Color3.fromRGB(255, 255, 255),
-			TextSize = 13,
+			TextSize = 16,
 			TextTransparency = 0.38,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			BackgroundTransparency = 1,
-			Position = UDim2.fromOffset(27, 55),
+			Position = UDim2.fromOffset(15, 55),
 			Size = UDim2.fromOffset(144, 13),
 		}),
 
@@ -197,7 +208,7 @@ local function AchievementDisplay(props: AchievementDisplayProps)
 			TextSize = 17,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			BackgroundTransparency = 1,
-			Position = UDim2.fromOffset(27, 30),
+			Position = UDim2.fromOffset(15, 30),
 			Size = UDim2.fromOffset(201, 15),
 		}),
 
@@ -205,9 +216,9 @@ local function AchievementDisplay(props: AchievementDisplayProps)
 			CornerRadius = UDim.new(0, 5),
 		}),
 
-		uIStroke = e(UIStroke, {
-			color = Color3.fromRGB(255, 255, 255),
-			thickness = 1.5,
+		uIStroke = e("UIStroke", {
+			Color = Color3.fromRGB(255, 255, 255),
+			Thickness = 1.5,
 		}),
 	})
 end

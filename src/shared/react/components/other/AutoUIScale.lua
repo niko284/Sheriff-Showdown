@@ -58,7 +58,7 @@ local function AutoUIScale(props: AutoUIScaleProps)
 		end
 	end, { updateScale, setMultiplier } :: { any })
 	return e("UIScale", {
-		Scale = (props.scale or 1) * multiplier,
+		Scale = ((props.scale or 1) + 0.2) * multiplier,
 	})
 end
 

@@ -24,6 +24,7 @@ local ResourceService = require(Services.ResourceService)
 local ServerComm = require(ServerScriptService.ServerComm)
 local SettingsService = require(Services.SettingsService)
 local Sift = require(Packages.Sift)
+local StatisticsService = require(script.Parent.StatisticsService)
 local TradeSerde = require(Serde.TradeSerde)
 local Types = require(Constants.Types)
 local UUIDSerde = require(Serde.UUIDSerde)
@@ -616,6 +617,8 @@ function TradingService:GrantProcessingTrades(Player: Player, TradeUUIDs: { stri
 			for _, item in receiving do
 				InventoryService:AddItem(Player, item, false)
 			end
+
+			StatisticsService:IncrementStatistic(Player, "TradesCompleted", 1, false)
 
 			table.remove(ProcessingTradesNew, index) -- after giving the player their items, we remove the trade from their processing trades.
 		end

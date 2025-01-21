@@ -30,6 +30,9 @@ return {
 	Statistics = {
 		TotalWins = 0,
 		TotalKills = 0,
+		RoundsPlayed = 0,
+		Headshots = 0,
+		TradesCompleted = 0,
 		TotalDeaths = 0,
 		TimePlayed = 0,
 		LongestKillStreak = 0,

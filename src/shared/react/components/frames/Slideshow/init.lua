@@ -28,7 +28,7 @@ type SlideshowFrameProps = Types.FrameProps & {
 
 local function Slideshow(props: SlideshowFrameProps)
 	local currentSlide, setCurrentSlide = useState(1)
-	local slideRefs = useRef({}) :: { current: { [number]: GuiObject } }
+	local slideRefs = useRef({}) :: { current: { [number]: Frame } }
 	local pageLayoutRef = useRef(nil :: UIPageLayout?)
 
 	local slideElements = {}

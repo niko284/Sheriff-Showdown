@@ -20,34 +20,27 @@ type GamepassTemplateProps = {
 local function GamepassTemplate(props: GamepassTemplateProps)
 	local productInfo = useProductInfoFromId(props.gamepassId, Enum.InfoType.GamePass)
 
-	return e("Frame", {
+	return e("ImageButton", {
 		BackgroundColor3 = Color3.fromRGB(72, 72, 72),
 		BorderColor3 = Color3.fromRGB(0, 0, 0),
 		BorderSizePixel = 0,
 		Position = UDim2.fromScale(0.533, 0.288),
+		[React.Event.Activated] = function()
+			if props.giftRecipient and productInfo then
+				props.showGiftPrompt(
+					props.giftRecipient,
+					productInfo.Name,
+					productInfo.PriceInRobux,
+					props.gamepassId,
+					props.giftProductId
+				)
+			else
+				MarketplaceService:PromptGamePassPurchase(Players.LocalPlayer, props.gamepassId)
+			end
+		end,
 	}, {
 		corner = e("UICorner", {
 			CornerRadius = UDim.new(0, 5),
-		}),
-
-		button = e("TextButton", {
-			BackgroundTransparency = 1,
-			Text = "",
-			ZIndex = 2,
-			Size = UDim2.fromScale(1, 1),
-			[React.Event.Activated] = function()
-				if props.giftRecipient and productInfo then
-					props.showGiftPrompt(
-						props.giftRecipient,
-						productInfo.Name,
-						productInfo.PriceInRobux,
-						props.gamepassId,
-						props.giftProductId
-					)
-				else
-					MarketplaceService:PromptGamePassPurchase(Players.LocalPlayer, props.gamepassId)
-				end
-			end,
 		}),
 
 		stroke = e(UIStroke, {
@@ -97,6 +90,7 @@ local function GamepassTemplate(props: GamepassTemplateProps)
 		}, {
 			stroke = e(UIStroke, {
 				color = Color3.fromRGB(0, 0, 0),
+				thickness = 1.8,
 			}),
 		}),
 

@@ -37,19 +37,14 @@ local function killsAreProcessed(world: Matter.World)
 		if os.time() >= killed.expiry then
 			killed = killed:patch({ processRemoval = Matter.None })
 			world:insert(eid, killed)
-			print("Killed expired for ", renderable.instance.Name)
 			local plrFromRenderable: Components.PlayerComponent? = world:get(eid, Components.Player)
-			print("Plr from renderable initial", plrFromRenderable)
 			if not plrFromRenderable then
 				plrFromRenderable = { player = Players:GetPlayerFromCharacter(renderable.instance) }
-				print("Trying to get player from character instead:", plrFromRenderable)
 			end
 			if plrFromRenderable then
-				print("Respawning ", plrFromRenderable.player.Name)
 				task.spawn(plrFromRenderable.player.LoadCharacter, plrFromRenderable.player)
 			else
 				if renderable and renderable.instance:IsDescendantOf(game) then
-					print("Destroying ", renderable.instance.Name)
 					renderable.instance:Destroy()
 				end
 			end
@@ -58,16 +53,29 @@ local function killsAreProcessed(world: Matter.World)
 
 	-- killed entities are ragdolled
 	for eid, killedRecord: KilledRecord in world:queryChanged(Components.Killed) do
-		if killedRecord.new then -- killed entities are ragdolled
+		if killedRecord.new and not killedRecord.new.markedKill then -- killed entities are ragdolled
 			local ragdolled = world:get(eid, Components.Ragdolled)
 			if ragdolled == nil then
 				world:insert(eid, Components.Ragdolled())
 			end
 
+			local killed = world:get(eid, Components.Killed)
+			world:insert(
+				eid,
+				killed:patch({
+					markedKill = true,
+				})
+			)
+
+			local killedPlayerComponent: Components.PlayerComponent? = world:get(eid, Components.Player)
+			local killedPlayer = killedPlayerComponent and killedPlayerComponent.player
+
 			local killedByPlayer = getPlayerKillerFromKilled(world, killedRecord.new)
-			if killedByPlayer then
+			if killedByPlayer and killedByPlayer ~= killedPlayer then -- don't count our own kills..
 				StatisticsService:IncrementStatistic(killedByPlayer, "TotalKills", 1)
 				ResourceService:IncrementResource(killedByPlayer, "Coins", 5)
+
+				print("Incrementing kill")
 
 				local longestKillStreak = StatisticsService:GetStatistic(killedByPlayer, "LongestKillStreak")
 
@@ -78,13 +86,12 @@ local function killsAreProcessed(world: Matter.World)
 				end
 			end
 
-			local killedPlayer: Components.PlayerComponent? = world:get(eid, Components.Player)
-			if killedPlayer then
-				StatisticsService:IncrementStatistic(killedPlayer.player, "TotalDeaths", 1)
+			if killedPlayerComponent then
+				StatisticsService:IncrementStatistic(killedPlayerComponent.player, "TotalDeaths", 1)
 
-				local killStreak = StatisticsService:GetStatistic(killedPlayer.player, "KillStreak")
+				local killStreak = StatisticsService:GetStatistic(killedPlayerComponent.player, "KillStreak")
 				if killStreak > 0 then -- lost kill streak since we died
-					StatisticsService:SetStatistic(killedPlayer.player, "KillStreak", 0)
+					StatisticsService:SetStatistic(killedPlayerComponent.player, "KillStreak", 0)
 				end
 			end
 		end
