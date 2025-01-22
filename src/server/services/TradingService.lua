@@ -44,7 +44,7 @@ local TradeProcessed = TradingRemotes:Get("TradeProcessed") :: Net.ServerSenderE
 
 local MAX_PENDING_TRADES = 50
 local LOCK_RETRY_ATTEMPTS = 5
-local TRADING_LEVEL_REQUIREMENT = 1
+local TRADING_LEVEL_REQUIREMENT = 15
 
 local TradingService = {
 	Name = "TradingService",
@@ -618,7 +618,7 @@ function TradingService:GrantProcessingTrades(Player: Player, TradeUUIDs: { stri
 				InventoryService:AddItem(Player, item, false)
 			end
 
-			StatisticsService:IncrementStatistic(Player, "TradesCompleted", 1, false)
+			StatisticsService:IncrementStatistic(Player, "TradesCompleted", 1)
 
 			table.remove(ProcessingTradesNew, index) -- after giving the player their items, we remove the trade from their processing trades.
 		end

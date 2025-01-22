@@ -54,6 +54,7 @@ local function TradeRequestNotification(props: TradeRequestNotificationProps)
 		id = props.id,
 		padding = props.padding,
 		duration = props.duration,
+		clickToDismiss = false,
 		isActive = props.isActive,
 		size = UDim2.fromOffset(303, 227),
 	}, {

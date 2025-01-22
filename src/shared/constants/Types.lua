@@ -406,7 +406,7 @@ export type Notification = {
 	Description: string,
 	UUID: string,
 	Duration: number,
-	Component: React.ComponentType<any>,
+	Component: any,
 	Props: { [string]: any }?,
 	ClickToDismiss: boolean?,
 	OnFade: (() -> ())?,

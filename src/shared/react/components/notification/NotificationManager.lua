@@ -155,6 +155,7 @@ local function NotificationManager(props: NotificationManagerProps)
 			Position = props.position,
 			AnchorPoint = props.anchorPoint,
 		},
+		className = "Frame",
 	}, {
 		listLayout = e("UIListLayout", {
 			Padding = props.padding,

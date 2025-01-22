@@ -70,6 +70,9 @@ local function Achievements(_props: AchievementProps)
 		if not achievementInfo or achievementInfo.Type ~= currentCategory then
 			continue
 		end
+		if achievement.Claimed == true then
+			continue
+		end
 		local requirement = achievement.Requirements[1] -- we only support one requirement for now
 		achievementElements[achievement.UUID] = e(AchievementTemplate, {
 			goal = requirement.Goal,
@@ -317,6 +320,7 @@ local function Achievements(_props: AchievementProps)
 			achievementName = AchievementController:GetRequirementName(selectedAchievement, 1),
 			rewards = (selectedAchievementInfo :: Types.AchievementInfo).Rewards,
 			achievement = selectedAchievement,
+			setSelectedAchievementUUID = setSelectedAchievementUUID,
 		}),
 	})
 end

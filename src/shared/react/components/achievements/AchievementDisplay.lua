@@ -1,27 +1,53 @@
 --!strict
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterPlayer = game:GetService("StarterPlayer")
 
 local Components = ReplicatedStorage.react.components
 
+local AchievementController = require(StarterPlayer.StarterPlayerScripts.controllers.AchievementController)
+local AchievementUtils = require(ReplicatedStorage.utils.AchievementUtils)
 local Button = require(Components.buttons.Button)
 local Currencies = require(ReplicatedStorage.constants.Currencies)
 local ItemUtils = require(ReplicatedStorage.utils.ItemUtils)
+local Net = require(ReplicatedStorage.packages.Net)
 local Rarities = require(ReplicatedStorage.constants.Rarities)
 local React = require(ReplicatedStorage.packages.React)
+local Remotes = require(ReplicatedStorage.network.Remotes)
 local Types = require(ReplicatedStorage.constants.Types)
+local UUIDSerde = require(ReplicatedStorage.network.serde.UUIDSerde)
+
+local AchievementNamespace = Remotes.Client:GetNamespace("Achievements")
+local ClaimAchievement = AchievementNamespace:Get("ClaimAchievement") :: Net.ClientAsyncCaller
 
 local e = React.createElement
+local useCallback = React.useCallback
 
 type AchievementDisplayProps = {
 	achievementName: string,
 	achievement: Types.Achievement,
 	rewards: { Types.AchievementReward },
 	timesClaimed: number?,
+	setSelectedAchievementUUID: (string?) -> (),
 }
 
 local function AchievementDisplay(props: AchievementDisplayProps)
 	local rewardsText = ""
+
+	local claimAchievement = useCallback(function(achievement: Types.Achievement)
+		local serializedUUID = UUIDSerde.Serialize(achievement.UUID)
+
+		props.setSelectedAchievementUUID(nil)
+		ClaimAchievement:CallServerAsync(serializedUUID)
+			:andThen(function(networkResponse: Types.NetworkResponse)
+				if networkResponse.Success == false then
+					warn(networkResponse.Response)
+				end
+			end)
+			:catch(function(err: any)
+				warn(tostring(err))
+			end)
+	end, { props.setSelectedAchievementUUID })
 
 	for _, reward in props.rewards do
 		if reward.Type == "Currency" then
@@ -85,7 +111,9 @@ local function AchievementDisplay(props: AchievementDisplayProps)
 				ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 203, 112)),
 			}),
 			gradientRotation = -90,
-			onActivated = function() end,
+			onActivated = function()
+				claimAchievement(props.achievement)
+			end,
 		}),
 
 		rewardsBackground = e("ImageLabel", {
@@ -156,7 +184,7 @@ local function AchievementDisplay(props: AchievementDisplayProps)
 				Enum.FontWeight.Bold,
 				Enum.FontStyle.Normal
 			),
-			Text = string.format("%d%% Completed", math.round(progress / goal * 100)),
+			Text = string.format("%d%% Completed", math.clamp(math.round(progress / goal * 100), 0, 100)),
 			TextColor3 = Color3.fromRGB(255, 255, 255),
 			TextSize = 13,
 			TextXAlignment = Enum.TextXAlignment.Left,

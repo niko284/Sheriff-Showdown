@@ -6,7 +6,7 @@ local Matter = require(ReplicatedStorage.packages.Matter)
 
 local Gun = Matter.component("Gun", {
 	LocalCooldownMillis = 100, -- How long does the gun have to wait before it can shoot again?
-	ReloadTimeMillis = 6000, -- 6 seconds
+	ReloadTimeMillis = 2500, -- 2 seconds
 
 	-- Store other information about the gun here like:
 	Damage = 25,

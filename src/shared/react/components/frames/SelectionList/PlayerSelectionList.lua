@@ -20,7 +20,7 @@ type PlayerSelectionListProps = {
 	subtitle: string,
 	selectionText: string,
 	selectionDescription: string,
-	selectionActivated: (TextButton) -> (),
+	selectionActivated: (TextButton, Player) -> (),
 	onClose: () -> (),
 }
 

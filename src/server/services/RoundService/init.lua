@@ -373,7 +373,7 @@ function RoundService:RunMatches(RoundInstance: Types.Round)
 
 	return Promise.new(function(resolve)
 		for _, player in RoundInstance.Players do
-			StatisticsService:IncrementStatistic(player, "RoundsPlayed", 1, false)
+			StatisticsService:IncrementStatistic(player, "RoundsPlayed", 1)
 		end
 
 		while #RoundInstance.Matches > 0 do

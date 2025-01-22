@@ -2,11 +2,14 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local AudioUtils = require(ReplicatedStorage.utils.AudioUtils)
 local Components = require(ReplicatedStorage.ecs.components)
 local MatterTypes = require(ReplicatedStorage.ecs.MatterTypes)
 local Middlewares = require(ReplicatedStorage.ecs.Middlewares)
 local Types = require(ReplicatedStorage.constants.Types)
 local t = require(ReplicatedStorage.packages.t)
+
+local RELOAD_SOUND_ID = 139717586861911
 
 type ShootPayload = {
 	velocity: Vector3,
@@ -50,6 +53,7 @@ return {
 
 		-- Verify that the origin is close to the player's right hand
 		local character = player.Character :: Model
+		local characterRootPart = character:FindFirstChild("HumanoidRootPart") :: BasePart
 		local rightHand = character:FindFirstChild("RightHand") :: Part
 		if not rightHand then
 			warn("RightHand not found")
@@ -58,7 +62,7 @@ return {
 
 		local origin = actionPayload.origin.Position
 		local diff = (origin - rightHand.Position).Magnitude
-		if diff > 5 then -- we can adjust this value if we want to be more lenient to high latency players
+		if diff > 15 then -- we can adjust this value if we want to be more lenient to high latency players
 			warn("Origin is too far from the right hand: " .. diff)
 			return false
 		end
@@ -68,6 +72,9 @@ return {
 		local timeNow = DateTime.now()
 		local cooldownMillis = newCapacity == 0 and gunComponent.ReloadTimeMillis or gunComponent.LocalCooldownMillis
 
+		local reloading = cooldownMillis == gunComponent.ReloadTimeMillis
+		local wasReloading = gunComponent.Reloading
+
 		world:insert(
 			actionPayload.fromGun,
 			Components.Cooldown({ expiry = timeNow.UnixTimestampMillis + cooldownMillis })
@@ -75,7 +82,12 @@ return {
 
 		gunComponent = gunComponent:patch({
 			CurrentCapacity = newCapacity == 0 and gunComponent.MaxCapacity or newCapacity,
+			Reloading = reloading,
 		})
+
+		if reloading and not wasReloading then
+			AudioUtils.PlaySoundOnInstance(RELOAD_SOUND_ID, characterRootPart)
+		end
 
 		world:insert(actionPayload.fromGun, gunComponent)
 

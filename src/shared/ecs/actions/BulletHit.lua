@@ -110,7 +110,7 @@ return {
 
 						local StatisticsService = require(ServerScriptService.services.StatisticsService)
 
-						StatisticsService:IncrementStatistic(player, "Headshots", 1, false)
+						StatisticsService:IncrementStatistic(player, "Headshots", 1)
 					end
 
 					local myChar = player.Character

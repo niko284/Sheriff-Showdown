@@ -378,7 +378,8 @@ function AchievementService:RegisterAchievementProgress(
 	end)
 
 	-- Send the partial state update to the client
-	-- @IMPORTANT: Our CompleteRequirement and UpdateRequirementProgress functions will clone achievement tables when updating them, so we can compare the old and new tables to see if anything changed.
+	-- @IMPORTANT: Our CompleteRequirement and UpdateRequirementProgress functions will clone achievement tables when updating them,
+	-- so we can compare the old and new tables to see if anything changed.
 	local changedActiveAchievements = {}
 	local newAchievements = AchievementService:GetAchievements(Player) :: Types.PlayerAchievements
 
@@ -401,7 +402,8 @@ function AchievementService:RegisterAchievementProgress(
 				and newAchievements.ActiveAchievements[newAchievementIndex]
 					~= currentActiveAchievements[oldAchievementIndex]
 			then
-				changedActiveAchievements[newAchievementIndex] = newAchievements.ActiveAchievements[newAchievementIndex]
+				changedActiveAchievements[tostring(newAchievementIndex)] =
+					newAchievements.ActiveAchievements[newAchievementIndex]
 			end
 		end
 	end
@@ -433,6 +435,8 @@ function AchievementService:UpdateRequirementProgress(
 			newRequirements[requirementIndex] = requirement
 			newAchievement.Requirements = newRequirements
 			newActiveAchievements[index] = newAchievement
+
+			print("Updating to ", NewValue)
 
 			playerDocument:write(
 				Freeze.Dictionary.setIn(
@@ -642,6 +646,11 @@ function AchievementService:ClaimAchievement(Player: Player, Achievement: Types.
 				)
 			)
 
+			AchievementsChanged:SendToPlayer(Player, {
+				ActiveAchievements = {
+					[tostring(index)] = newActiveAchievements[index],
+				},
+			})
 			AchievementService.AchievementClaimed:Fire(Player, achievement)
 			return true
 		end
