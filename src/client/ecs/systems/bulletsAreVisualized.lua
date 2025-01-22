@@ -50,6 +50,7 @@ local function bulletsAreVisualized(world: Matter.World)
 		bulletInstance.Parent = workspace
 
 		local ownerChar = owner.OwnedBy.Character :: Model
+		print("Playing")
 		AudioUtils.PlaySoundOnInstance(gunThatShotBullet.BulletSoundId, ownerChar.PrimaryPart :: BasePart)
 
 		world:insert(

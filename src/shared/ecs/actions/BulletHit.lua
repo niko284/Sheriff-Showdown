@@ -3,6 +3,7 @@
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
+local TweenService = game:GetService("TweenService")
 
 local Components = require(ReplicatedStorage.ecs.components)
 local Types = require(ReplicatedStorage.constants.Types)
@@ -125,6 +126,30 @@ return {
 						health:patch({ health = newHealth, causedBy = bullet.gunId, bulletId = eid })
 					)
 				end
+
+				local highlight = Instance.new("Highlight")
+				highlight.Enabled = true
+				highlight.DepthMode = Enum.HighlightDepthMode.Occluded
+				highlight.Adornee = targetRenderable.instance
+				highlight.FillTransparency = 1
+				highlight.OutlineTransparency = 1
+				highlight.Parent = targetRenderable.instance
+
+				world:spawn(
+					Components.Renderable({ instance = highlight }),
+					Components.Lifetime({ expiry = (DateTime.now().UnixTimestampMillis / 1000) + 0.3 })
+				)
+
+				local initTween = TweenService:Create(highlight, TweenInfo.new(0.1), {
+					FillTransparency = 0.5,
+				})
+
+				initTween:Play()
+				initTween.Completed:Once(function()
+					TweenService:Create(highlight, TweenInfo.new(0.1), {
+						FillTransparency = 1,
+					}):Play()
+				end)
 			end
 		end
 	end,

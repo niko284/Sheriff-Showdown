@@ -14,7 +14,7 @@ local Gun = Matter.component("Gun", {
 		Head = 100,
 	},
 
-	BulletLifeTime = 0.001, -- How long does the bullet last before it despawns?
+	BulletLifeTime = 1, -- How long does the bullet last before it despawns?
 
 	MaxCapacity = 10, -- How many bullets can the gun hold before automatically reloading?
 	ReloadTime = 1, -- How long does it take to reload the gun?

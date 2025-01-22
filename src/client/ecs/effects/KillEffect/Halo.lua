@@ -31,7 +31,7 @@ return {
 						instance = haloAttach,
 					}),
 					Components.Lifetime({
-						expiry = os.time() + 5, -- 5 seconds
+						expiry = (DateTime.now().UnixTimestampMillis / 1000) + 5, -- 5 seconds
 					})
 				)
 			end

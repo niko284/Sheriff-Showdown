@@ -93,7 +93,7 @@ local function gunsCanShoot(world: Matter.World, state)
 							velocity = velocity,
 						}),
 						Components.Lifetime({
-							expiry = os.time() + gun.BulletLifeTime,
+							expiry = (DateTime.now().UnixTimestampMillis / 1000) + gun.BulletLifeTime,
 						}),
 						Components.Owner({
 							OwnedBy = owner.OwnedBy,

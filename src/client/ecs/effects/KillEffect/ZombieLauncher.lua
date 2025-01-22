@@ -37,7 +37,7 @@ return {
 						instance = zombie,
 					}),
 					Components.Lifetime({
-						expiry = os.time() + 5,
+						expiry = (DateTime.now().UnixTimestampMillis / 1000) + 5,
 					})
 				)
 			end

@@ -115,7 +115,7 @@ return {
 				origin = actionPayload.origin,
 			}),
 			Components.Velocity({ velocity = actionPayload.velocity }),
-			Components.Lifetime({ expiry = os.time() + gunComponent.BulletLifeTime }),
+			Components.Lifetime({ expiry = (DateTime.now().UnixTimestampMillis / 1000) + gunComponent.BulletLifeTime }),
 			Components.Owner({ OwnedBy = player }),
 			Components.Identifier({ uuid = actionPayload.actionId }),
 			Components.Transform({ cframe = adjustedBulletCFrame })
