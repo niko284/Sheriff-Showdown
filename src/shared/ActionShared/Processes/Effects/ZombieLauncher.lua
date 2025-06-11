@@ -1,7 +1,4 @@
 --!strict
--- Zombie Launcher
--- This is a special kill effect that will spawn a zombie at the location of the killed entity for a period of time.
--- Nick
 
 local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")

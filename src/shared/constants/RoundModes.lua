@@ -46,6 +46,7 @@ return {
 	},--]]
 	{
 		Name = "Juggernaut",
+		Description = "One super-strong player vs everyone else. Team up to stop them!",
 		IsGameOver = function(RoundInstance: Types.Round)
 			-- the game is over when the player pool consists of only people that were in the same team last round.
 			return AllOnSameTeam(RoundInstance)
@@ -56,6 +57,7 @@ return {
 	},
 	{
 		Name = "Revolver Relay",
+		Description = "Dodge the gun wielder! When they miss, the gun moves to someone new.",
 		IsGameOver = function(RoundInstance: Types.Round)
 			-- the game is over when the player pool consists of only people that were in the same team last round.
 			return AllOnSameTeam(RoundInstance)
@@ -70,6 +72,7 @@ return {
 	},
 	{
 		Name = "Hot Potato",
+		Description = "You’ve got the gun! Shoot someone to pass it on before it explodes in your hands!",
 		IsGameOver = function(RoundInstance: Types.Round)
 			-- the game is over when the player pool consists of only people that were in the same team last round.
 			return AllOnSameTeam(RoundInstance)
@@ -83,6 +86,7 @@ return {
 	},
 	{
 		Name = "Red vs Blue",
+		Description = "Two teams fight—Red vs Blue. Work together to win!",
 		IsGameOver = function(RoundInstance: Types.Round)
 			-- the game is over when the player pool consists of only people that were in the same team last round.
 			return AllOnSameTeam(RoundInstance)
@@ -103,6 +107,7 @@ return {
 	},--]]
 	{
 		Name = "Free For All",
+		Description = "It’s every player for themselves! Shoot and dodge to be the last one standing!",
 		TeamSize = 1,
 		IsGameOver = function(RoundInstance: Types.Round)
 			-- the game is over when the player pool consists of only people that were in the same team last round.

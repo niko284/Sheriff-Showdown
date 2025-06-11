@@ -27,6 +27,7 @@ local KeybindInputController = {
 	TopbarJanitor = Janitor.new(),
 	World = nil :: Matter.World, -- gets injected
 	ShiftLockUI = nil :: ScreenGui?,
+	MobileShiftLockEnabled = false,
 }
 
 function KeybindInputController:OnStart()
@@ -64,10 +65,16 @@ function KeybindInputController:SetMouseIcon(Icon: string)
 	PlayerMouse.Icon = Icon
 end
 
+function KeybindInputController:IsMobileShiftLockEnabled()
+	return KeybindInputController.MobileShiftLockEnabled
+end
+
 function KeybindInputController:SetMobileShiftLock(Enabled: boolean)
 	local cameraJan = KeybindInputController.CameraJanitor
 	cameraJan:Cleanup()
 	local char = LocalPlayer.Character
+
+	KeybindInputController.MobileShiftLockEnabled = Enabled
 
 	if KeybindInputController.ShiftLockUI then
 		KeybindInputController.ShiftLockUI.Enabled = Enabled

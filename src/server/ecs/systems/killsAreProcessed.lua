@@ -75,8 +75,6 @@ local function killsAreProcessed(world: Matter.World)
 				StatisticsService:IncrementStatistic(killedByPlayer, "TotalKills", 1)
 				ResourceService:IncrementResource(killedByPlayer, "Coins", 5)
 
-				print("Incrementing kill")
-
 				local longestKillStreak = StatisticsService:GetStatistic(killedByPlayer, "LongestKillStreak")
 
 				local newKillStreak = StatisticsService:IncrementStatistic(killedByPlayer, "KillStreak", 1)

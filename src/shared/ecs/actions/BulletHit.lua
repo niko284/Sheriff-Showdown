@@ -5,9 +5,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local TweenService = game:GetService("TweenService")
 
+local AudioUtils = require(ReplicatedStorage.utils.AudioUtils)
 local Components = require(ReplicatedStorage.ecs.components)
 local Types = require(ReplicatedStorage.constants.Types)
 local t = require(ReplicatedStorage.packages.t)
+
+local BULLET_HIT_SOUND_ID = 3581383408
 
 type BulletHitPayload = {
 	targetEntityId: number, -- server entity id of the entity that was hit by the bullet
@@ -60,6 +63,8 @@ return {
 				if targetRenderable.instance == player.Character then
 					continue -- don't deal damage to ourselves.
 				end
+
+				local targetRootPart = targetRenderable.instance:FindFirstChild("HumanoidRootPart") :: BasePart
 
 				local gun: Components.Gun? = world:get(bullet.gunId, Components.Gun)
 				if not gun then
@@ -134,6 +139,9 @@ return {
 				highlight.FillTransparency = 1
 				highlight.OutlineTransparency = 1
 				highlight.Parent = targetRenderable.instance
+
+				-- play hit sound
+				AudioUtils.PlaySoundOnInstance(BULLET_HIT_SOUND_ID, targetRootPart)
 
 				world:spawn(
 					Components.Renderable({ instance = highlight }),

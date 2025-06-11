@@ -6,6 +6,7 @@ local PlayerScripts = LocalPlayer.PlayerScripts
 local Packages = ReplicatedStorage.packages
 
 local BootstrapCollections = require(ReplicatedStorage.ecs.BootstrapCollections)
+local Components = require(ReplicatedStorage.ecs.components)
 local Promise = require(Packages.Promise)
 local ecsStart = require(PlayerScripts.ecs.start)
 
@@ -16,7 +17,11 @@ local SYSTEM_CONTAINERS = {
 local CONTROLLER_CONTAINERS = {
 	PlayerScripts.controllers,
 }
-local COLLECTION_COMPONENTS = {}
+local COLLECTION_COMPONENTS = {
+	AnimatedRig = {
+		Components.AnimatedRig,
+	},
+}
 local LIFECYCLE_METHODS = { "OnInit", "OnStart" }
 
 local function fetchControllers(controllerContainers)

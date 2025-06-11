@@ -27,6 +27,7 @@ export type Gun = {
 	CriticalDamage: { [string]: number },
 	Reloading: boolean?,
 }
+export type AnimatedRig = {}
 export type Parent = {
 	id: number,
 }

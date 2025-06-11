@@ -1,13 +1,14 @@
--- Animation
+-- Animation Track
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Matter = require(ReplicatedStorage.packages.Matter)
 
-local Animation = Matter.component("Animation", {
-	animationId = 0,
+local AnimationTrack = Matter.component("AnimationTrack", {
+	track = nil :: AnimationTrack?,
 	looped = false,
 	speed = 1,
+	played = false,
 })
 
-return Animation
+return AnimationTrack

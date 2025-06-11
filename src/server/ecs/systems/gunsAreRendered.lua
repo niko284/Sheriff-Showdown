@@ -68,10 +68,10 @@ local function gunsAreRendered(world: Matter.World, server)
 	-- waist should show gun if player doesn't have gun in hand or has gun in hand but it's disabled
 	for
 		eid,
-		_target: Components.Target,
+		_player: Components.Target,
 		renderable: Components.Renderable<Types.Character>,
 		children: Components.Children<Types.TargetChildren>
-	in world:query(Components.Target, Components.Renderable, Components.Children) do
+	in world:query(Components.Player, Components.Renderable, Components.Children) do
 		local gunEntityId = children.children.gunEntityId
 		local waistRenderableGunId = children.children.waistRenderableGunId
 

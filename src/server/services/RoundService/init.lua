@@ -179,9 +179,20 @@ function RoundService:NotEnoughPlayersPromise()
 	if #Players:GetPlayers() < MINIMUM_PLAYERS then
 		return Promise.resolve()
 	else
-		return Promise.fromEvent(Players.PlayerRemoving, function()
-			return #Players:GetPlayers() < MINIMUM_PLAYERS
-		end)
+		return Promise.any({
+			Promise.fromEvent(
+				SettingsService.SettingChanged,
+				function(_Player: Player, SettingName: string, Value: Types.SettingValue)
+					return SettingName == "AFK Mode"
+							and Value == true
+							and #RoundService:GetPotentialRoundPlayers() < MINIMUM_PLAYERS
+						or false
+				end
+			),
+			Promise.fromEvent(Players.PlayerRemoving, function()
+				return #RoundService:GetPotentialRoundPlayers() < MINIMUM_PLAYERS
+			end),
+		})
 	end
 end
 
@@ -289,7 +300,8 @@ function RoundService:DoVoting()
 			fieldsWithWinningChoices[field] = winningChoice
 		end
 
-		RoundService.RoundStatus:Set("Chosen game mode: " .. fieldsWithWinningChoices.RoundModes.Name)
+		local roundModeData = RoundService:GetRoundModeData(fieldsWithWinningChoices.RoundModes.Name)
+		RoundService.RoundStatus:Set(fieldsWithWinningChoices.RoundModes.Name .. ": " .. roundModeData.Description)
 
 		RoundService.VotingPoolClient:Set(nil) -- close the voting interface
 
@@ -299,10 +311,10 @@ end
 
 function RoundService:WaitForPlayers(MinimumPlayers: number)
 	local playerCount = #RoundService:GetPotentialRoundPlayers()
-	RoundService.RoundStatus:Set("Waiting for players...")
 	if playerCount >= MinimumPlayers then
 		return Promise.resolve()
 	else
+		RoundService.RoundStatus:Set("Waiting for players...")
 		return Promise.any({
 			Promise.fromEvent(Players.PlayerAdded, function()
 				return #Players:GetPlayers() >= MinimumPlayers
@@ -634,7 +646,7 @@ function RoundService:GetWinningTeam(Match: Types.Match): Types.Team?
 end
 
 function RoundService:CreateRound(RoundMode: Types.RoundMode, MapName: string): Types.Round
-	local playerPool = RoundService:GetAllPlayers()
+	local playerPool = RoundService:GetPotentialRoundPlayers()
 
 	local Round = {
 		Players = playerPool,

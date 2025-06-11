@@ -115,6 +115,7 @@ export type RoundMode =
 	| "Juggernaut"
 export type RoundModeData = {
 	Name: RoundMode,
+	Description: string,
 	Image: number,
 	TeamSize: ((() -> number) | number)?,
 	TeamsPerMatch: ((() -> number) | number)?,

@@ -3,12 +3,15 @@ local GuiService = game:GetService("GuiService")
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterPlayer = game:GetService("StarterPlayer")
 local UserInputService = game:GetService("UserInputService")
 
 local Packages = ReplicatedStorage.packages
 local Utils = ReplicatedStorage.utils
 
 local Components = require(ReplicatedStorage.ecs.components)
+local Input = require(ReplicatedStorage.packages.Input)
+local KeybindInputController = require(StarterPlayer.StarterPlayerScripts.controllers.KeybindInputController)
 local Matter = require(Packages.Matter)
 local MatterReplication = require(Packages.MatterReplication)
 local MatterTypes = require(ReplicatedStorage.ecs.MatterTypes)
@@ -17,6 +20,8 @@ local Types = require(ReplicatedStorage.constants.Types)
 local UUIDSerde = require(Utils.UUIDSerde)
 local useAnimation = require(ReplicatedStorage.ecs.hooks.useAnimation)
 
+local PreferredInput = Input.PreferredInput
+
 local CombatNamespace = Remotes.Client:GetNamespace("Combat")
 local ProcessAction = CombatNamespace:Get("ProcessAction")
 
@@ -24,6 +29,7 @@ local Assets = ReplicatedStorage:FindFirstChild("assets") :: Folder
 local Animations = Assets:FindFirstChild("animations") :: Folder
 
 local SHOOT_ANIMATION = Animations:FindFirstChild("gunshoot") :: Animation
+local DOUBLE_TAP_THRESHOLD_S = 0.4
 
 local useEvent = Matter.useEvent
 
@@ -38,6 +44,13 @@ local function gunsCanShoot(world: Matter.World, state)
 		if isShooting then
 			if owner.OwnedBy == Players.LocalPlayer and gun.Disabled ~= true then
 				local mouseLocation = UserInputService:GetMouseLocation() - GuiService:GetGuiInset()
+
+				if PreferredInput.Current == "Touch" and KeybindInputController:IsMobileShiftLockEnabled() == true then
+					mouseLocation = Vector2.new(0.5, 0.5)
+				elseif PreferredInput.Current == "Touch" then
+					mouseLocation = state.lastTapPosition or mouseLocation
+				end
+
 				local viewportPointRay = workspace.CurrentCamera:ScreenPointToRay(mouseLocation.X, mouseLocation.Y)
 
 				local character = (owner.OwnedBy :: any).Character :: Types.Character
@@ -118,14 +131,21 @@ local function gunsCanShoot(world: Matter.World, state)
 
 	-- detect gun shooting for mobile
 
-	for inputObject: InputObject in useEvent(UserInputService, "TouchStarted") do
-		if inputObject.UserInputState == Enum.UserInputState.Begin then
+	for _, inputObject: InputObject, gameProcessed in useEvent(UserInputService, "TouchStarted") do
+		if gameProcessed then
+			continue
+		end
+		local nowMillis = DateTime.now().UnixTimestampMillis
+		local wasDoubleTapped = state.lastTapped and (nowMillis / 1000 - state.lastTapped <= DOUBLE_TAP_THRESHOLD_S)
+		state.lastTapped = nowMillis / 1000
+		if wasDoubleTapped then
+			state.lastTapPosition = Vector2.new(inputObject.Position.X, inputObject.Position.Y)
 			state.releaseTouch = state.actions:hold("shoot")
 		end
 	end
 
-	for inputObject: InputObject in useEvent(UserInputService, "TouchEnded") do
-		if inputObject.UserInputState == Enum.UserInputState.Begin and state.releaseTouch then
+	for _ in useEvent(UserInputService, "TouchEnded") do
+		if state.releaseTouch then
 			state.releaseTouch()
 			state.releaseTouch = nil
 		end

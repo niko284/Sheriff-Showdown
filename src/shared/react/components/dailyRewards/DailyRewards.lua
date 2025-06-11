@@ -18,8 +18,10 @@ local React = require(ReplicatedStorage.packages.React)
 local Remotes = require(ReplicatedStorage.network.Remotes)
 local Rewards = require(ReplicatedStorage.constants.Rewards)
 local RewardsContext = require(ReplicatedStorage.react.contexts.RewardsContext)
+local StringUtils = require(ReplicatedStorage.utils.StringUtils)
 local Types = require(ReplicatedStorage.constants.Types)
 local animateCurrentInterface = require(ReplicatedStorage.react.hooks.animateCurrentInterface)
+local useCountdown = require(ReplicatedStorage.react.hooks.useCountdown)
 
 local RewardsNamespace = Remotes.Client:GetNamespace("Rewards")
 
@@ -55,6 +57,11 @@ end
 local function DailyRewards(_props: DailyRewardProps)
 	local rewardsCont = useContext(RewardsContext)
 
+	local dailyRewards = rewardsCont.rewards.daily
+
+	local timeTillDailyRewards =
+		useCountdown(dailyRewards and (86400 - (os.time() - (dailyRewards.LastRewardClaim :: any))) or 0)
+
 	local _shouldRender, styles =
 		animateCurrentInterface("DailyRewards", UDim2.fromScale(0.5, 0.5), UDim2.fromScale(0.5, 2))
 
@@ -85,8 +92,6 @@ local function DailyRewards(_props: DailyRewardProps)
 				rewardsCont.set(oldRewards)
 			end)
 	end, { rewardsCont })
-
-	local dailyRewards = rewardsCont.rewards.daily
 
 	local rewardElements = {}
 
@@ -227,7 +232,9 @@ local function DailyRewards(_props: DailyRewardProps)
 					Enum.FontWeight.Bold,
 					Enum.FontStyle.Normal
 				),
-				Text = "12:53:14",
+				Text = timeTillDailyRewards:map(function(secondsLeft)
+					return StringUtils.SecondsToHMS(secondsLeft)
+				end),
 				TextColor3 = Color3.fromRGB(255, 255, 255),
 				TextSize = 16,
 				TextXAlignment = Enum.TextXAlignment.Left,

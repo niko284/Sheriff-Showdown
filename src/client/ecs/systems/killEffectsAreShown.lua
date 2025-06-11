@@ -16,6 +16,7 @@ type KilledRecord = MatterTypes.WorldChangeRecord<Components.Killed>
 
 local function killEffectsAreShown(world: Matter.World)
 	for eid, killedRecord: KilledRecord in world:queryChanged(Components.Killed) do
+		print(killedRecord)
 		if killedRecord.new then
 			local serverEntity: MatterReplication.ServerEntityData = world:get(eid, MatterReplication.ServerEntity)
 			KillEffect.visualize(world, {
