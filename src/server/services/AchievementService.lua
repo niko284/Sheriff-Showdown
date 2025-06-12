@@ -7,23 +7,17 @@
 -- // Variables \\
 
 local HttpService = game:GetService("HttpService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService = game:GetService("ServerScriptService")
 
-local Packages = ReplicatedStorage.packages
-local Constants = ReplicatedStorage.constants
-local Services = ServerScriptService.services
-
-local Freeze = require(Packages.Freeze)
-local Net = require(Packages.Net)
-local PlayerDataService = require(Services.PlayerDataService)
-local Remotes = require(ReplicatedStorage.network.Remotes)
-local ResourceService = require(Services.ResourceService)
-local Sift = require(Packages.Sift)
-local Signal = require(Packages.Signal)
-local StatisticsService = require(Services.StatisticsService)
-local Timer = require(Packages.Timer)
-local Types = require(Constants.Types)
+local Freeze = require("@packages/Freeze")
+local Net = require("@packages/Net")
+local PlayerDataService = require("@services/PlayerDataService")
+local Remotes = require("@network/Remotes")
+local ResourceService = require("@services/ResourceService")
+local Sift = require("@packages/Sift")
+local Signal = require("@packages/Signal")
+local StatisticsService = require("@services/StatisticsService")
+local Timer = require("@packages/Timer")
+local Types = require("@constants/Types")
 
 local AchievementNamespace = Remotes.Server:GetNamespace("Achievements")
 
@@ -48,7 +42,7 @@ local AchievementService = {
 function AchievementService:OnInit()
 	-- Let's tag each achievement with it's respective ID.
 	-- selene: allow(undefined_variable)
-	local AchievementModule = require(Constants.Achievements)
+	local AchievementModule = require("@constants/Achievements")
 	for _, Achievement in AchievementModule do
 		AchievementService.Achievements[Achievement.Id] = Achievement
 	end

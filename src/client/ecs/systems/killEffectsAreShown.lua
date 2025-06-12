@@ -1,14 +1,8 @@
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local LocalPlayer = Players.LocalPlayer
-local PlayerScripts = LocalPlayer.PlayerScripts
-
-local Components = require(ReplicatedStorage.ecs.components)
-local Effects = require(PlayerScripts.ecs.effects)
-local Matter = require(ReplicatedStorage.packages.Matter)
-local MatterReplication = require(ReplicatedStorage.packages.MatterReplication)
-local MatterTypes = require(ReplicatedStorage.ecs.MatterTypes)
+local Components = require("@ecs/components")
+local Effects = require("@client/ecs/effects")
+local Matter = require("@packages/Matter")
+local MatterReplication = require("@packages/MatterReplication")
+local MatterTypes = require("@ecs/MatterTypes")
 
 local KillEffect = Effects.KillEffect
 

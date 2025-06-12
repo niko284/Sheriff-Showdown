@@ -1,14 +1,7 @@
 --!strict
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
-
-local Components = require(ReplicatedStorage.ecs.components)
-local Matter = require(ReplicatedStorage.packages.Matter)
-
-local useThrottle = Matter.useThrottle
-
-local MERRY_GO_ROUND_ATTRIBUTE = RunService:IsServer() and "serverEntityId" or "clientEntityId"
+local Components = require("@ecs/components")
+local Matter = require("@packages/Matter")
 
 local function merryGoRoundsSpin(world: Matter.World)
 	local deltaTime = Matter.useDeltaTime()

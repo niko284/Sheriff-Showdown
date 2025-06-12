@@ -1,23 +1,16 @@
 --!strict
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService = game:GetService("ServerScriptService")
-
-local Packages = ReplicatedStorage.packages
-local Constants = ReplicatedStorage.constants
-local Services = ServerScriptService.services
-
-local Actions = require(ReplicatedStorage.ecs.actions)
-local Components = require(ReplicatedStorage.ecs.components)
-local Distractions = require(Constants.Distractions)
-local Generic = require(script.Parent.Parent.Generic)
-local Matter = require(Packages.Matter)
-local Net = require(Packages.Net)
-local Promise = require(Packages.Promise)
-local Remotes = require(ReplicatedStorage.network.Remotes)
-local RoundService = require(Services.RoundService)
-local Sift = require(Packages.Sift)
-local Types = require(Constants.Types)
+local Actions = require("@ecs/actions")
+local Components = require("@ecs/components")
+local Distractions = require("@constants/Distractions")
+local Generic = require("../Generic")
+local Matter = require("@packages/Matter")
+local Net = require("@packages/Net")
+local Promise = require("@packages/Promise")
+local Remotes = require("@network/Remotes")
+local RoundService = require("@services/RoundService")
+local Sift = require("@packages/Sift")
+local Types = require("@constants/Types")
 
 local RoundNamespace = Remotes.Server:GetNamespace("Round")
 local SendDistraction = RoundNamespace:Get("SendDistraction") :: Net.ServerSenderEvent

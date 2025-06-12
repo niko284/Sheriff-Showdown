@@ -1,10 +1,6 @@
 --!strict
 
-local ServerScriptService = game:GetService("ServerScriptService")
-
-local Services = ServerScriptService.services
-
-local NevermoreService = require(Services.NevermoreService)
+local NevermoreService = require("@services/NevermoreService")
 
 local Require = NevermoreService.require
 

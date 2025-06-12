@@ -1,7 +1,5 @@
 --!strict
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Matter = require(ReplicatedStorage.packages.Matter)
+local Matter = require("@packages/Matter")
 
 return Matter.component("ExtendedHitbox")

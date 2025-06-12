@@ -1,17 +1,12 @@
 --!strict
 
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Serde = ReplicatedStorage.network.serde
-local Packages = ReplicatedStorage.packages
-local Constants = ReplicatedStorage.constants
-
-local ItemSerde = require(Serde.ItemSerde)
-local MsgPack = require(ReplicatedStorage.utils.MsgPack)
-local Types = require(Constants.Types)
-local UUIDSerde = require(Serde.UUIDSerde)
-local t = require(Packages.t)
+local ItemSerde = require("@network/serde/ItemSerde")
+local MsgPack = require("@utilities/MsgPack")
+local Types = require("@constants/Types")
+local UUIDSerde = require("@network/serde/UUIDSerde")
+local t = require("@packages/t")
 
 local tradeKeys = {
 	"UUID",

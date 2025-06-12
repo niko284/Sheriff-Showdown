@@ -1,10 +1,9 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
-local Matter = require(ReplicatedStorage.packages.Matter)
-local Plasma = require(ReplicatedStorage.packages.Plasma)
-local Spark = require(ReplicatedStorage.packages.Spark)
+local Matter = require("@packages/Matter")
+local Plasma = require("@packages/Plasma")
+local Spark = require("@packages/Spark")
 
 local InputState = Spark.InputState
 local Actions = Spark.Actions

@@ -1,8 +1,4 @@
--- Transform
-
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Matter = require(ReplicatedStorage.packages.Matter)
+local Matter = require("@packages/Matter")
 
 local Transform = Matter.component("Transform", {
 	cframe = CFrame.new(),

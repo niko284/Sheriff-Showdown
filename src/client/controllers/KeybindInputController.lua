@@ -4,13 +4,11 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local Packages = ReplicatedStorage.packages
-
-local Components = require(ReplicatedStorage.ecs.components)
-local Input = require(Packages.Input)
-local Janitor = require(Packages.Janitor)
-local Matter = require(Packages.Matter)
-local TopbarPlus = require(Packages.TopbarPlus)
+local Components = require("@ecs/components")
+local Input = require("@packages/Input")
+local Janitor = require("@packages/Janitor")
+local Matter = require("@packages/Matter")
+local TopbarPlus = require("@packages/TopbarPlus")
 
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
@@ -25,7 +23,7 @@ local KeybindInputController = {
 	Name = "KeybindInputController",
 	CameraJanitor = Janitor.new(),
 	TopbarJanitor = Janitor.new(),
-	World = nil :: Matter.World, -- gets injected
+	World = nil :: Matter.World?,
 	ShiftLockUI = nil :: ScreenGui?,
 	MobileShiftLockEnabled = false,
 }
@@ -80,7 +78,7 @@ function KeybindInputController:SetMobileShiftLock(Enabled: boolean)
 		KeybindInputController.ShiftLockUI.Enabled = Enabled
 	end
 
-	if not char then
+	if not char or not KeybindInputController.World then
 		return
 	end
 

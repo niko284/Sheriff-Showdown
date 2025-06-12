@@ -1,18 +1,12 @@
 --!strict
 
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local LocalPlayer = Players.LocalPlayer
-local PlayerScripts = LocalPlayer.PlayerScripts
-
-local ClientComm = require(PlayerScripts.ClientComm)
-local ItemUtils = require(ReplicatedStorage.utils.ItemUtils)
-local Net = require(ReplicatedStorage.packages.Net)
-local Rarities = require(ReplicatedStorage.constants.Rarities)
-local Remotes = require(ReplicatedStorage.network.Remotes)
-local Signal = require(ReplicatedStorage.packages.Signal)
-local Types = require(ReplicatedStorage.constants.Types)
+local ClientComm = require("../ClientComm")
+local ItemUtils = require("@utilities/ItemUtils")
+local Net = require("@packages/Net")
+local Rarities = require("@constants/Rarities")
+local Remotes = require("@network/Remotes")
+local Signal = require("@packages/Signal")
+local Types = require("@constants/Types")
 
 local InventoryNamespace = Remotes.Client:GetNamespace("Inventory")
 local ItemAdded = InventoryNamespace:Get("ItemAdded") :: Net.ClientListenerEvent

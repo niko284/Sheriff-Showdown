@@ -1,17 +1,11 @@
 --!strict
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Packages = ReplicatedStorage.packages
-local Constants = ReplicatedStorage.constants
-local Serde = ReplicatedStorage.network.serde
-
-local Net = require(Packages.Net)
-local NotificationSerde = require(Serde.NotificationSerde)
-local Remotes = require(ReplicatedStorage.network.Remotes)
-local Signal = require(Packages.Signal)
-local Types = require(Constants.Types)
-local UUIDSerde = require(Serde.UUIDSerde)
+local Net = require("@packages/Net")
+local NotificationSerde = require("@network/serde/NotificationSerde")
+local Remotes = require("@network/Remotes")
+local Signal = require("@packages/Signal")
+local Types = require("@constants/Types")
+local UUIDSerde = require("@network/serde/UUIDSerde")
 
 local NotificationRemotes = Remotes.Client:GetNamespace("Notifications")
 local AddNotification = NotificationRemotes:Get("AddNotification") :: Net.ClientListenerEvent

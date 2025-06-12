@@ -1,7 +1,7 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+--!strict
 
-local Components = require(ReplicatedStorage.ecs.components)
-local MatterReplication = require(ReplicatedStorage.packages.MatterReplication)
+local Components = require("@ecs/components")
+local MatterReplication = require("@packages/MatterReplication")
 
 local REPLICATED_COMPONENTS = {
 	Components.Gun,

@@ -6,16 +6,11 @@
 
 -- // Variables \\
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Constants = ReplicatedStorage.constants
-local Packages = ReplicatedStorage.packages
-
-local Achievements = require(Constants.Achievements)
-local Net = require(Packages.Net)
-local Remotes = require(ReplicatedStorage.network.Remotes)
-local Signal = require(Packages.Signal)
-local Types = require(Constants.Types)
+local Achievements = require("@constants/Achievements")
+local Net = require("@packages/Net")
+local Remotes = require("@network/Remotes")
+local Signal = require("@packages/Signal")
+local Types = require("@constants/Types")
 
 local AchievementsNamespace = Remotes.Client:GetNamespace("Achievements")
 local AchievementsChanged = AchievementsNamespace:Get("AchievementsChanged") :: Net.ClientListenerEvent

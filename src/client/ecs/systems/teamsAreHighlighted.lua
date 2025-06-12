@@ -1,18 +1,15 @@
 --!strict
 
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Controllers = Players.LocalPlayer.PlayerScripts.controllers
-
-local Components = require(ReplicatedStorage.ecs.components)
-local Matter = require(ReplicatedStorage.packages.Matter)
-local MatterTypes = require(ReplicatedStorage.ecs.MatterTypes)
-local SettingsController = require(Controllers.SettingsController)
-local Teams = require(ReplicatedStorage.constants.Teams)
-local Types = require(ReplicatedStorage.constants.Types)
-local useCollectionService = require(ReplicatedStorage.ecs.hooks.useCollectionService)
-local useSetting = require(ReplicatedStorage.ecs.hooks.useSetting)
+local Components = require("@ecs/components")
+local Matter = require("@packages/Matter")
+local MatterTypes = require("@ecs/MatterTypes")
+local SettingsController = require("@controllers/SettingsController")
+local Teams = require("@constants/Teams")
+local Types = require("@constants/Types")
+local useCollectionService = require("@ecs/hooks/useCollectionService")
+local useSetting = require("@ecs/hooks/useSetting")
 
 type TeamChangeRecord = MatterTypes.WorldChangeRecord<Components.Team>
 

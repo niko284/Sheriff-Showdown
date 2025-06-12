@@ -1,14 +1,10 @@
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService = game:GetService("ServerScriptService")
 
-local Services = ServerScriptService.services
-
-local Components = require(ReplicatedStorage.ecs.components)
-local Matter = require(ReplicatedStorage.packages.Matter)
-local MatterTypes = require(ReplicatedStorage.ecs.MatterTypes)
-local ResourceService = require(ServerScriptService.services.ResourceService)
-local StatisticsService = require(Services.StatisticsService)
+local Components = require("@ecs/components")
+local Matter = require("@packages/Matter")
+local MatterTypes = require("@ecs/MatterTypes")
+local ResourceService = require("@services/ResourceService")
+local StatisticsService = require("@services/StatisticsService")
 
 type KilledRecord = MatterTypes.WorldChangeRecord<Components.Killed>
 

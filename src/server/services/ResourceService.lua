@@ -1,17 +1,12 @@
 --!strict
 
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService = game:GetService("ServerScriptService")
 
-local Services = ServerScriptService.services
-local Packages = ReplicatedStorage.packages
-
-local PlayerDataService = require(Services.PlayerDataService)
-local Schema = require(Services.PlayerDataService.Schema)
-local ServerComm = require(ServerScriptService.ServerComm)
-local Sift = require(Packages.Sift)
-local Signal = require(Packages.Signal)
+local PlayerDataService = require("@services/PlayerDataService")
+local Schema = require("@services/PlayerDataService/Schema")
+local ServerComm = require("@server/ServerComm")
+local Sift = require("@packages/Sift")
+local Signal = require("@packages/Signal")
 
 local PlayerResourcesProperty = ServerComm:CreateProperty("PlayerResources", nil)
 

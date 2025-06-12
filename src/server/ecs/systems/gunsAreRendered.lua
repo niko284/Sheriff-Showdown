@@ -3,11 +3,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Assets = ReplicatedStorage:FindFirstChild("assets") :: Folder
 local Guns = Assets:FindFirstChild("guns") :: Folder
 
-local Components = require(ReplicatedStorage.ecs.components)
-local ItemUtils = require(ReplicatedStorage.utils.ItemUtils)
-local Matter = require(ReplicatedStorage.packages.Matter)
-local MatterTypes = require(ReplicatedStorage.ecs.MatterTypes)
-local Types = require(ReplicatedStorage.constants.Types)
+local Components = require("@ecs/components")
+local ItemUtils = require("@utilities/ItemUtils")
+local Matter = require("@packages/Matter")
+local MatterTypes = require("@ecs/MatterTypes")
+local Types = require("@constants/Types")
 
 local function gunsAreRendered(world: Matter.World, server)
 	for eid, gunRecord: MatterTypes.WorldChangeRecord<Components.Gun> in world:queryChanged(Components.Gun) do

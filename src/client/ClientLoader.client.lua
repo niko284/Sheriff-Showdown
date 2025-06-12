@@ -3,19 +3,18 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerScripts = LocalPlayer.PlayerScripts
-local Packages = ReplicatedStorage.packages
 
-local BootstrapCollections = require(ReplicatedStorage.ecs.BootstrapCollections)
-local Components = require(ReplicatedStorage.ecs.components)
-local Promise = require(Packages.Promise)
-local ecsStart = require(PlayerScripts.ecs.start)
+local BootstrapCollections = require("@ecs/BootstrapCollections")
+local Components = require("@ecs/components")
+local Promise = require("@packages/Promise")
+local ecsStart = require("@client/ecs/start")
 
 local SYSTEM_CONTAINERS = {
-	ReplicatedStorage.ecs.systems,
-	PlayerScripts.ecs.systems,
+	ReplicatedStorage.shared.ecs.systems,
+	PlayerScripts.client.ecs.systems,
 }
 local CONTROLLER_CONTAINERS = {
-	PlayerScripts.controllers,
+	PlayerScripts.client.controllers,
 }
 local COLLECTION_COMPONENTS = {
 	AnimatedRig = {

@@ -1,6 +1,4 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Matter = require(ReplicatedStorage.packages.Matter)
+local Matter = require("@packages/Matter")
 
 local Killed = Matter.component("Killed", {
 	-- entityId of the entity that killed this entity

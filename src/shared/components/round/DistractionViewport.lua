@@ -1,27 +1,14 @@
--- Distraction Viewport
--- April 20th, 2024
--- Nick
+--!strict
 
--- // Variables \\
-
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local LocalPlayer = Players.LocalPlayer
-local PlayerScripts = LocalPlayer.PlayerScripts
-
-local Packages = ReplicatedStorage.packages
-local Components = ReplicatedStorage.react.components
-local FrameComponents = Components.frames
-local Controllers = PlayerScripts.controllers
-local Constants = ReplicatedStorage.constants
 local Assets = ReplicatedStorage:FindFirstChild("assets")
 
-local RoundController = require(Controllers.RoundController)
-local Types = require(Constants.Types)
-local ViewportFrame = require(FrameComponents.ViewportFrame)
+local RoundController = require("@controllers/RoundController")
+local Types = require("@constants/Types")
+local ViewportFrame = require("@ui/components/frames/ViewportFrame")
 
-local React = require(Packages.React)
+local React = require("@packages/React")
 
 local e = React.createElement
 local useState = React.useState

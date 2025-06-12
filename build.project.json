@@ -1,0 +1,41 @@
+{
+    "name": "Sheriff Showdown Build",
+    "servePlaceIds": [
+        17516619149
+    ],
+    "tree": {
+        "$className": "DataModel",
+        "ReplicatedStorage": {
+            "packages": {
+                "$path": "Packages"
+            },
+            "shared": {
+                "$path": "dist/shared"
+            }
+        },
+        "ServerScriptService": {
+            "server": {
+                "$path": "dist/server"
+            },
+            "nodeModules": {
+                "$path": "node_modules"
+            },
+            "ServerPackages": {
+                "$path": "ServerPackages"
+            }
+        },
+        "StarterPlayer": {
+            "$className": "StarterPlayer",
+            "StarterPlayerScripts": {
+                "$className": "StarterPlayerScripts",
+                "client": {
+                    "$path": "dist/client"
+                }
+            },
+            "StarterCharacterScripts": {
+                "$className": "StarterCharacterScripts",
+                "$path": "dist/starterCharacter"
+            }
+        }
+    }
+}

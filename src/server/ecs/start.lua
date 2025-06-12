@@ -1,12 +1,10 @@
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local Components = require(ReplicatedStorage.ecs.components)
-local Items = require(ReplicatedStorage.constants.Items)
-local Matter = require(ReplicatedStorage.packages.Matter)
-local Plasma = require(ReplicatedStorage.packages.Plasma)
+local Components = require("@ecs/components")
+local Matter = require("@packages/Matter")
+local Plasma = require("@packages/Plasma")
 
 local function start(systemsContainers: { Instance }, services)
 	local world = Matter.World.new()

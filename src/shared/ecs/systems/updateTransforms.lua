@@ -1,12 +1,8 @@
 --!strict
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Packages = ReplicatedStorage.packages
-
-local Components = require(ReplicatedStorage.ecs.components)
-local Matter = require(Packages.Matter)
-local MatterTypes = require(ReplicatedStorage.ecs.MatterTypes)
+local Components = require("@ecs/components")
+local Matter = require("@packages/Matter")
+local MatterTypes = require("@ecs/MatterTypes")
 
 local Transform = Components.Transform
 local Renderable = Components.Renderable

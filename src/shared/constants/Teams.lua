@@ -1,12 +1,6 @@
--- Teams
--- May 3rd, 2024
--- Nick
+--!strict
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Constants = ReplicatedStorage.constants
-
-local Types = require(Constants.Types)
+local Types = require("@constants/Types")
 
 return {
 	Red = {

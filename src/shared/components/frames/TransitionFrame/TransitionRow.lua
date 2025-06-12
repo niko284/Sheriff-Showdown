@@ -1,17 +1,8 @@
 --!strict
--- Transition Row
--- March 31st, 2024
--- Nick
 
--- // Variables \\
-
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Packages = ReplicatedStorage.packages
-
-local React = require(Packages.React)
-local ReactSpring = require(Packages.ReactSpring)
-local Signal = require(Packages.Signal)
+local React = require("@packages/React")
+local ReactSpring = require("@packages/ReactSpring")
+local Signal = require("@packages/Signal")
 
 local useEffect = React.useEffect
 local e = React.createElement

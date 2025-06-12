@@ -2,8 +2,6 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Packages = ReplicatedStorage.packages
-
-local ClientComm = require(Packages.Comm).ClientComm
+local ClientComm = require("@packages/Comm").ClientComm
 
 return ClientComm.new(ReplicatedStorage:FindFirstChild("comm") :: Folder, false, "GameComm")

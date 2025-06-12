@@ -3,14 +3,12 @@
 local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Constants = ReplicatedStorage.constants
-local Utils = ReplicatedStorage.utils
 local Assets = ReplicatedStorage:FindFirstChild("assets") :: Folder
 local Effects = Assets:FindFirstChild("effects") :: Folder
 
-local AudioUtils = require(Utils.AudioUtils)
-local Audios = require(Constants.Audios)
-local Types = require(Constants.Types)
+local AudioUtils = require("@utilities/AudioUtils")
+local Audios = require("@constants/Audios")
+local Types = require("@constants/Types")
 
 local ZombieLauncher = {} :: Types.Effect
 ZombieLauncher.Name = "Zombie Launcher"

@@ -1,9 +1,5 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Packages = ReplicatedStorage.packages
-
-local Components = require(ReplicatedStorage.ecs.components)
-local Matter = require(Packages.Matter)
+local Components = require("@ecs/components")
+local Matter = require("@packages/Matter")
 
 local affectsWalkspeed = {
 	Components.Slowed,

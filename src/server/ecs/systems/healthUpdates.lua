@@ -1,11 +1,7 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Packages = ReplicatedStorage.packages
-
-local Components = require(ReplicatedStorage.ecs.components)
-local Matter = require(Packages.Matter)
-local MatterTypes = require(ReplicatedStorage.ecs.MatterTypes)
-local Types = require(ReplicatedStorage.constants.Types)
+local Components = require("@ecs/components")
+local Matter = require("@packages/Matter")
+local MatterTypes = require("@ecs/MatterTypes")
+local Types = require("@constants/Types")
 
 type HealthRecord = MatterTypes.WorldChangeRecord<Components.Health>
 

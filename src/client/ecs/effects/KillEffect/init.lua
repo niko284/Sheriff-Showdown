@@ -1,11 +1,9 @@
 --!strict
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Components = require(ReplicatedStorage.ecs.components)
-local ItemUtils = require(ReplicatedStorage.utils.ItemUtils)
-local MatterReplication = require(ReplicatedStorage.packages.MatterReplication)
-local Types = require(ReplicatedStorage.constants.Types)
+local Components = require("@ecs/components")
+local ItemUtils = require("@utilities/ItemUtils")
+local MatterReplication = require("@packages/MatterReplication")
+local Types = require("@constants/Types")
 
 local KillEffects = {} :: Types.VisualEffect<KillEffectPayload>
 

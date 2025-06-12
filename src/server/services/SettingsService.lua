@@ -1,22 +1,15 @@
 --!strict
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService = game:GetService("ServerScriptService")
-
-local Services = ServerScriptService.services
-local Constants = ReplicatedStorage.constants
-local Packages = ReplicatedStorage.packages
-
-local EnumUtils = require(ReplicatedStorage.utils.EnumUtils)
-local Freeze = require(Packages.Freeze)
-local Net = require(Packages.Net)
-local PlayerDataService = require(Services.PlayerDataService)
-local Remotes = require(ReplicatedStorage.network.Remotes)
-local ServerComm = require(ServerScriptService.ServerComm)
-local Settings = require(ReplicatedStorage.constants.Settings)
-local Signal = require(Packages.Signal)
-local Types = require(Constants.Types)
-local t = require(Packages.t)
+local EnumUtils = require("@utilities/EnumUtils")
+local Freeze = require("@packages/Freeze")
+local Net = require("@packages/Net")
+local PlayerDataService = require("@services/PlayerDataService")
+local Remotes = require("@network/Remotes")
+local ServerComm = require("@server/ServerComm")
+local Settings = require("@constants/Settings")
+local Signal = require("@packages/Signal")
+local Types = require("@constants/Types")
+local t = require("@packages/t")
 
 local SettingsRemotes = Remotes.Server:GetNamespace("Settings")
 local ChangeSetting = SettingsRemotes:Get("ChangeSetting") :: Net.ServerAsyncCallback

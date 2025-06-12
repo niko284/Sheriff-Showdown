@@ -1,15 +1,10 @@
 local HttpService = game:GetService("HttpService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService = game:GetService("ServerScriptService")
 
-local Constants = ReplicatedStorage.constants
-local Services = ServerScriptService.services
-
-local Components = require(ReplicatedStorage.ecs.components)
-local Generic = require(script.Parent.Parent.Generic)
-local Matter = require(ReplicatedStorage.packages.Matter)
-local RoundService = require(Services.RoundService)
-local Types = require(Constants.Types)
+local Components = require("@ecs/components")
+local Generic = require("../Generic")
+local Matter = require("@packages/Matter")
+local RoundService = require("@services/RoundService")
+local Types = require("@constants/Types")
 
 local JuggernautExtension = {
 	Data = RoundService:GetRoundModeData("Juggernaut"),

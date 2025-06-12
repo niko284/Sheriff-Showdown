@@ -1,12 +1,11 @@
 --!strict
 
 local CollectionService = game:GetService("CollectionService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local Components = require(ReplicatedStorage.ecs.components)
-local Matter = require(ReplicatedStorage.packages.Matter)
-local MatterTypes = require(ReplicatedStorage.ecs.MatterTypes)
+local Components = require("@ecs/components")
+local Matter = require("@packages/Matter")
+local MatterTypes = require("@ecs/MatterTypes")
 
 local idAttribute = RunService:IsServer() and "serverEntityId" or "clientEntityId"
 

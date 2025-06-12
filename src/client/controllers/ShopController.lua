@@ -2,21 +2,19 @@
 
 local ContentProvider = game:GetService("ContentProvider")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
-local CrateData = require(ReplicatedStorage.constants.Crates)
-local EffectUtils = require(ReplicatedStorage.utils.EffectUtils)
-local Freeze = require(ReplicatedStorage.packages.Freeze)
-local InterfaceController = require(script.Parent.InterfaceController)
-local ItemUtils = require(ReplicatedStorage.utils.ItemUtils)
-local Janitor = require(ReplicatedStorage.packages.Janitor)
-local MathUtils = require(ReplicatedStorage.utils.MathUtils)
-local NevermoreController = require(script.Parent.NevermoreController)
-local Promise = require(ReplicatedStorage.packages.Promise)
-local Rarities = require(ReplicatedStorage.constants.Rarities)
-local Signal = require(ReplicatedStorage.packages.Signal)
-local Types = require(ReplicatedStorage.constants.Types)
+local CrateData = require("@constants/Crates")
+local EffectUtils = require("@utilities/EffectUtils")
+local Freeze = require("@packages/Freeze")
+local InterfaceController = require("./InterfaceController")
+local ItemUtils = require("@utilities/ItemUtils")
+local Janitor = require("@packages/Janitor")
+local MathUtils = require("@utilities/MathUtils")
+local Promise = require("@packages/Promise")
+local Rarities = require("@constants/Rarities")
+local Signal = require("@packages/Signal")
+local Types = require("@constants/Types")
 
 local Assets = ReplicatedStorage:FindFirstChild("assets") :: Folder
 local Particles = Assets:FindFirstChild("particles") :: Folder
@@ -24,10 +22,6 @@ local CurrentCamera = workspace.CurrentCamera
 local Guns = Assets:FindFirstChild("guns") :: Folder
 local Crates = Assets:FindFirstChild("crates") :: Folder
 local Other = Assets:FindFirstChild("other") :: Folder
-
-local Require = NevermoreController.require
-
-local Spring = Require("Spring")
 
 local CRATE_MAP = Other:FindFirstChild("CrateMap") :: Model
 local GUN_TWEEN_UP_INFO = TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)

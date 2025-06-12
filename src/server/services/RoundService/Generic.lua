@@ -1,25 +1,17 @@
 --!strict
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
-local ServerScriptService = game:GetService("ServerScriptService")
-
-local Constants = ReplicatedStorage.constants
-local Services = ServerScriptService.services
-local Packages = ReplicatedStorage.packages
-
-local Components = require(ReplicatedStorage.ecs.components)
-local InventoryService = require(Services.InventoryService)
-local InventoryUtils = require(ReplicatedStorage.utils.InventoryUtils)
-local Items = require(Constants.Items)
-local Matter = require(Packages.Matter)
-local Net = require(Packages.Net)
-local Promise = require(Packages.Promise)
-local Remotes = require(ReplicatedStorage.network.Remotes)
-local RoundService = require(Services.RoundService)
-local StatusService = require(Services.StatusService)
-local Timer = require(ReplicatedStorage.packages.Timer)
-local Types = require(Constants.Types)
+local Components = require("@ecs/components")
+local InventoryService = require("@services/InventoryService")
+local InventoryUtils = require("@utilities/InventoryUtils")
+local Items = require("@constants/Items")
+local Matter = require("@packages/Matter")
+local Net = require("@packages/Net")
+local Promise = require("@packages/Promise")
+local Remotes = require("@network/Remotes")
+local RoundService = require("@services/RoundService")
+local StatusService = require("@services/StatusService")
+local Timer = require("@packages/Timer")
+local Types = require("@constants/Types")
 
 local RoundNamespace = Remotes.Server:GetNamespace("Round")
 local EndMatchClient = RoundNamespace:Get("EndMatch") :: Net.ServerSenderEvent

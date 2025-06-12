@@ -1,21 +1,9 @@
 --!strict
--- Transition Frame
--- March 31st, 2024
--- Nick
 
--- // Variables \\
-
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Packages = ReplicatedStorage.packages
-local Constants = ReplicatedStorage.constants
-local Components = ReplicatedStorage.components
-local FrameComponents = Components.frames
-
-local React = require(Packages.React)
-local Signal = require(Packages.Signal)
-local TransitionRow = require(FrameComponents.TransitionFrame.TransitionRow)
-local Types = require(Constants.Types)
+local React = require("@packages/React")
+local Signal = require("@packages/Signal")
+local TransitionRow = require("@self/TransitionRow")
+local Types = require("@constants/Types")
 
 local e = React.createElement
 local useEffect = React.useEffect

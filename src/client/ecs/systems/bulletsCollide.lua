@@ -1,14 +1,10 @@
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Packages = ReplicatedStorage.packages
-local Util = ReplicatedStorage.utils
-
-local Components = require(ReplicatedStorage.ecs.components)
-local Matter = require(Packages.Matter)
-local MatterReplication = require(Packages.MatterReplication)
-local Remotes = require(ReplicatedStorage.network.Remotes)
-local UUIDSerde = require(Util.UUIDSerde)
+local Components = require("@ecs/components")
+local Matter = require("@packages/Matter")
+local MatterReplication = require("@packages/MatterReplication")
+local Remotes = require("@network/Remotes")
+local UUIDSerde = require("@utilities/UUIDSerde")
 
 local CombatNamespace = Remotes.Client:GetNamespace("Combat")
 local ProcessAction = CombatNamespace:Get("ProcessAction")

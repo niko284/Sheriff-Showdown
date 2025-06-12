@@ -1,10 +1,6 @@
 -- !strict
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Constants = ReplicatedStorage.constants
-
-local Types = require(Constants.Types)
+local Types = require("@constants/Types")
 
 local Effects = {} :: { [string]: Types.Effect }
 

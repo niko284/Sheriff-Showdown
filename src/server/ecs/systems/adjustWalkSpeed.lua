@@ -1,7 +1,5 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Components = require(ReplicatedStorage.ecs.components)
-local Matter = require(ReplicatedStorage.packages.Matter)
+local Components = require("@ecs/components")
+local Matter = require("@packages/Matter")
 
 local function adjustWalkSpeed(world: Matter.World)
 	for _id, walkSpeed, renderable in world:query(Components.WalkSpeed, Components.Renderable) do

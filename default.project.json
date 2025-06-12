@@ -1,35 +1,41 @@
 {
-  "name": "Sheriff-Showdown",
-  "tree": {
-    "$className": "DataModel",
-
-    "ReplicatedStorage": {
-      "$path": "src/shared",
-      "$ignoreUnknownInstances": true,
-      "packages": {
-        "$path": "Packages",
-        "$ignoreUnknownInstances": true
-      }
-    },
-
-    "ServerScriptService": {
-      "$path": "src/server",
-      "ServerPackages": {
-        "$path": "ServerPackages"
-      },
-      "nodeModules": {
-        "$path": "node_modules"
-      }
-    },
-
-    "StarterPlayer": {
-      "StarterPlayerScripts": {
-        "$path": "src/client"
-      },
-      "StarterCharacterScripts": {
-        "$className": "StarterCharacterScripts",
-        "$path": "src/starterCharacter"
-      }
+    "name": "Sheriff Showdown",
+    "servePlaceIds": [
+        17516619149
+    ],
+    "tree": {
+        "$className": "DataModel",
+        "ReplicatedStorage": {
+            "packages": {
+                "$path": "Packages"
+            },
+            "shared": {
+                "$path": "src/shared"
+            }
+        },
+        "ServerScriptService": {
+            "server": {
+                "$path": "src/server"
+            },
+            "nodeModules": {
+                "$path": "node_modules"
+            },
+            "ServerPackages": {
+                "$path": "ServerPackages"
+            }
+        },
+        "StarterPlayer": {
+            "$className": "StarterPlayer",
+            "StarterPlayerScripts": {
+                "$className": "StarterPlayerScripts",
+                "client": {
+                    "$path": "src/client"
+                }
+            },
+            "StarterCharacterScripts": {
+                "$className": "StarterCharacterScripts",
+                "$path": "src/starterCharacter"
+            }
+        }
     }
-  }
 }

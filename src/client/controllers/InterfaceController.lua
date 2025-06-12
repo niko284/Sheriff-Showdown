@@ -1,18 +1,15 @@
 --!strict
 
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local StarterGui = game:GetService("StarterGui")
 
 local LocalPlayer = Players.LocalPlayer
-local Packages = ReplicatedStorage.packages
-local Components = ReplicatedStorage.react.components
 
-local Matter = require(Packages.Matter)
-local React = require(Packages.React)
-local ReactRoblox = require(Packages.ReactRoblox)
-local Signal = require(Packages.Signal)
-local Types = require(ReplicatedStorage.constants.Types)
+local Matter = require("@packages/Matter")
+local React = require("@packages/React")
+local ReactRoblox = require("@packages/ReactRoblox")
+local Signal = require("@packages/Signal")
+local Types = require("@constants/Types")
 
 local e = React.createElement
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
@@ -38,7 +35,7 @@ end
 
 function InterfaceController:OnStart()
 	self.Root = ReactRoblox.createRoot(Instance.new("Folder"))
-	self.App = require(Components.App) :: any
+	self.App = require("@ui/components/App") :: any
 	self.GameApp = e(self.App)
 	self.Root:render(ReactRoblox.createPortal({ self.GameApp }, PlayerGui))
 end

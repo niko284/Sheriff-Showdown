@@ -1,8 +1,6 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Matter = require("@packages/Matter")
 
-local Matter = require(ReplicatedStorage.packages.Matter)
-
-local Components = require(ReplicatedStorage.ecs.components)
+local Components = require("@ecs/components")
 
 local function lifetimesDespawn(world: Matter.World)
 	for eid, lifetime in world:query(Components.Lifetime) do

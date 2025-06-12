@@ -12,18 +12,12 @@
 
 local MarketPlaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService = game:GetService("ServerScriptService")
 
-local Packages = ReplicatedStorage.packages
-local Constants = ReplicatedStorage.constants
-local Services = ServerScriptService.services
-
-local PlayerDataService = require(Services.PlayerDataService)
-local Promise = require(Packages.Promise)
-local Sift = require(ReplicatedStorage.packages.Sift)
-local Signal = require(Packages.Signal)
-local Types = require(Constants.Types)
+local PlayerDataService = require("@services/PlayerDataService")
+local Promise = require("@packages/Promise")
+local Sift = require("@packages/Sift")
+local Signal = require("@packages/Signal")
+local Types = require("@constants/Types")
 
 local MAXIMUM_PURCHASEID_LOGS = 50
 

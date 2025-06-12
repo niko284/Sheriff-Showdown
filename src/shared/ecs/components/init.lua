@@ -1,8 +1,6 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
 local Components = {}
 
-local MatterTypes = require(ReplicatedStorage.ecs.MatterTypes)
+local MatterTypes = require("@ecs/MatterTypes")
 
 for _, ComponentModule in ipairs(script:GetChildren()) do
 	local Component = require(ComponentModule)

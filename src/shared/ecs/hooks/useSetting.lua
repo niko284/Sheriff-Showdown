@@ -1,13 +1,7 @@
 --!strict
 
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local LocalPlayer = Players.LocalPlayer
-local Controllers = LocalPlayer.PlayerScripts.controllers
-
-local Matter = require(ReplicatedStorage.packages.Matter)
-local SettingsController = require(Controllers.SettingsController)
+local Matter = require("@packages/Matter")
+local SettingsController = require("@controllers/SettingsController")
 
 local function cleanup(storage)
 	if storage.connections then

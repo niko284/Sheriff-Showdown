@@ -1,11 +1,7 @@
 --!strict
 
-local ServerScriptService = game:GetService("ServerScriptService")
-
-local Services = ServerScriptService.services
-
-local PlayerDataService = require(Services.PlayerDataService)
-local ResourceService = require(Services.ResourceService)
+local PlayerDataService = require("@services/PlayerDataService")
+local ResourceService = require("@services/ResourceService")
 
 local LEVEL_CAP = math.huge -- We manually set this in the future updates.
 

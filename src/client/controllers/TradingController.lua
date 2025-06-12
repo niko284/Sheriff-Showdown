@@ -1,22 +1,15 @@
 --!strict
 
 local HttpService = game:GetService("HttpService")
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local LocalPlayer = Players.LocalPlayer
-local PlayerScripts = LocalPlayer.PlayerScripts
-local Serde = ReplicatedStorage.network.serde
-local Components = ReplicatedStorage.react.components
-
-local ClientComm = require(PlayerScripts.ClientComm)
-local Net = require(ReplicatedStorage.packages.Net)
-local NotificationController = require(PlayerScripts.controllers.NotificationController)
-local Remotes = require(ReplicatedStorage.network.Remotes)
-local Signal = require(ReplicatedStorage.packages.Signal)
-local TradeRequestNotification = require(Components.trading.TradeRequestNotification)
-local TradeSerde = require(Serde.TradeSerde)
-local Types = require(ReplicatedStorage.constants.Types)
+local ClientComm = require("../ClientComm")
+local Net = require("@packages/Net")
+local NotificationController = require("@controllers/NotificationController")
+local Remotes = require("@network/Remotes")
+local Signal = require("@packages/Signal")
+local TradeRequestNotification = require("@ui/components/trading/TradeRequestNotification")
+local TradeSerde = require("@network/serde/TradeSerde")
+local Types = require("@constants/Types")
 
 local TradingNamespace = Remotes.Client:GetNamespace("Trading")
 local TradeReceived = TradingNamespace:Get("TradeReceived") :: Net.ClientListenerEvent

@@ -1,17 +1,12 @@
 --!strict
 
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService = game:GetService("ServerScriptService")
 
-local Services = ServerScriptService.services
-local Constants = ReplicatedStorage.constants
-
-local PlayerDataService = require(Services.PlayerDataService)
-local ResourceService = require(Services.ResourceService)
-local ServerComm = require(ServerScriptService.ServerComm)
-local StatisticsService = require(Services.StatisticsService)
-local Types = require(Constants.Types)
+local PlayerDataService = require("@services/PlayerDataService")
+local ResourceService = require("@services/ResourceService")
+local ServerComm = require("@server/ServerComm")
+local StatisticsService = require("@services/StatisticsService")
+local Types = require("@constants/Types")
 
 -- // Service Variables \\
 

@@ -1,8 +1,6 @@
 -- Bullet
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Matter = require(ReplicatedStorage.packages.Matter)
+local Matter = require("@packages/Matter")
 
 local Bullet = Matter.component("Bullet", {
 	filter = {},

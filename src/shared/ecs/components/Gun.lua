@@ -1,6 +1,4 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Matter = require(ReplicatedStorage.packages.Matter)
+local Matter = require("@packages/Matter")
 
 -- guns are only replicated from the server to the client when they are equipped, so it's less expensive to store some of the bullet information on the gun itself.
 

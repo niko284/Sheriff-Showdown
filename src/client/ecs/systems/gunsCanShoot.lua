@@ -3,22 +3,18 @@ local GuiService = game:GetService("GuiService")
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local StarterPlayer = game:GetService("StarterPlayer")
 local UserInputService = game:GetService("UserInputService")
 
-local Packages = ReplicatedStorage.packages
-local Utils = ReplicatedStorage.utils
-
-local Components = require(ReplicatedStorage.ecs.components)
-local Input = require(ReplicatedStorage.packages.Input)
-local KeybindInputController = require(StarterPlayer.StarterPlayerScripts.controllers.KeybindInputController)
-local Matter = require(Packages.Matter)
-local MatterReplication = require(Packages.MatterReplication)
-local MatterTypes = require(ReplicatedStorage.ecs.MatterTypes)
-local Remotes = require(ReplicatedStorage.network.Remotes)
-local Types = require(ReplicatedStorage.constants.Types)
-local UUIDSerde = require(Utils.UUIDSerde)
-local useAnimation = require(ReplicatedStorage.ecs.hooks.useAnimation)
+local Components = require("@ecs/components")
+local Input = require("@packages/Input")
+local KeybindInputController = require("@controllers/KeybindInputController")
+local Matter = require("@packages/Matter")
+local MatterReplication = require("@packages/MatterReplication")
+local MatterTypes = require("@ecs/MatterTypes")
+local Remotes = require("@network/Remotes")
+local Types = require("@constants/Types")
+local UUIDSerde = require("@utilities/UUIDSerde")
+local useAnimation = require("@ecs/hooks/useAnimation")
 
 local PreferredInput = Input.PreferredInput
 

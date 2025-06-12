@@ -1,8 +1,6 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Components = require(ReplicatedStorage.ecs.components)
-local Matter = require(ReplicatedStorage.packages.Matter)
-local Types = require(ReplicatedStorage.constants.Types)
+local Components = require("@ecs/components")
+local Matter = require("@packages/Matter")
+local Types = require("@constants/Types")
 
 local useEvent = Matter.useEvent
 

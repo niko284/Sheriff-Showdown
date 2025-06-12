@@ -6,10 +6,10 @@ local Assets = ReplicatedStorage:FindFirstChild("assets") :: Folder
 local Other = Assets:FindFirstChild("other") :: Folder
 local ZombieRagdoll = Other:FindFirstChild("ZombieMesh") :: MeshPart
 
-local AudioUtils = require(ReplicatedStorage.utils.AudioUtils)
-local Components = require(ReplicatedStorage.ecs.components)
-local MatterReplication = require(ReplicatedStorage.packages.MatterReplication)
-local Types = require(ReplicatedStorage.constants.Types)
+local AudioUtils = require("@utilities/AudioUtils")
+local Components = require("@ecs/components")
+local MatterReplication = require("@packages/MatterReplication")
+local Types = require("@constants/Types")
 
 type KillEffectPayload = {
 	killerServerEntityId: number,

@@ -1,27 +1,21 @@
 --!strict
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService = game:GetService("ServerScriptService")
-
-local Services = ServerScriptService.services
-local Constants = ReplicatedStorage.constants
-
-local CrateUtils = require(ReplicatedStorage.utils.CrateUtils)
-local Crates = require(Constants.Crates)
-local Freeze = require(ReplicatedStorage.packages.Freeze)
-local InventoryUtils = require(ReplicatedStorage.utils.InventoryUtils)
-local ItemService = require(Services.ItemService)
-local ItemTypes = require(Constants.ItemTypes)
-local ItemUtils = require(ReplicatedStorage.utils.ItemUtils)
-local Items = require(Constants.Items)
-local Lapis = require(ServerScriptService.ServerPackages.Lapis)
-local Net = require(ReplicatedStorage.packages.Net)
-local PlayerDataService = require(Services.PlayerDataService)
-local Promise = require(ReplicatedStorage.packages.Promise)
-local RarityUtils = require(ReplicatedStorage.utils.RarityUtils)
-local Remotes = require(ReplicatedStorage.network.Remotes)
-local ServerComm = require(ServerScriptService.ServerComm)
-local Types = require(ReplicatedStorage.constants.Types)
+local CrateUtils = require("@utilities/CrateUtils")
+local Crates = require("@constants/Crates")
+local Freeze = require("@packages/Freeze")
+local InventoryUtils = require("@utilities/InventoryUtils")
+local ItemService = require("@services/ItemService")
+local ItemTypes = require("@constants/ItemTypes")
+local ItemUtils = require("@utilities/ItemUtils")
+local Items = require("@constants/Items")
+local Lapis = require("@ServerPackages/Lapis")
+local Net = require("@packages/Net")
+local PlayerDataService = require("@services/PlayerDataService")
+local Promise = require("@packages/Promise")
+local RarityUtils = require("@utilities/RarityUtils")
+local Remotes = require("@network/Remotes")
+local ServerComm = require("@server/ServerComm")
+local Types = require("@constants/Types")
 
 local InventoryNamespace = Remotes.Server:GetNamespace("Inventory")
 local ItemAdded = InventoryNamespace:Get("ItemAdded") :: Net.ServerSenderEvent

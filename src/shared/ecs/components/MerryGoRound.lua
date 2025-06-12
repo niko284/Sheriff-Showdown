@@ -1,6 +1,4 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Matter = require(ReplicatedStorage.packages.Matter)
+local Matter = require("@packages/Matter")
 
 local MerryGoRound = Matter.component("MerryGoRound", {
 	targetAngularVelocity = 0,

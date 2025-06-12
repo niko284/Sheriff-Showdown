@@ -1,12 +1,11 @@
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local Components = require(ReplicatedStorage.ecs.components)
-local EffectUtils = require(ReplicatedStorage.utils.EffectUtils)
-local ItemUtils = require(ReplicatedStorage.utils.ItemUtils)
-local Matter = require(ReplicatedStorage.packages.Matter)
-local MatterReplication = require(ReplicatedStorage.packages.MatterReplication)
+local Components = require("@ecs/components")
+local EffectUtils = require("@utilities/EffectUtils")
+local ItemUtils = require("@utilities/ItemUtils")
+local Matter = require("@packages/Matter")
+local MatterReplication = require("@packages/MatterReplication")
 
 local function bulletsTravel(world: Matter.World, _state)
 	for eid, bullet, velocity: Components.Velocity in world:query(Components.Bullet, Components.Velocity) do

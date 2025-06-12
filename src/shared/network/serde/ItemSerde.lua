@@ -1,11 +1,9 @@
 --!strict
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local MsgPack = require(ReplicatedStorage.utils.MsgPack)
-local Types = require(ReplicatedStorage.constants.Types)
-local UUIDSerde = require(ReplicatedStorage.network.serde.UUIDSerde)
-local t = require(ReplicatedStorage.packages.t)
+local MsgPack = require("@utilities/MsgPack")
+local Types = require("@constants/Types")
+local UUIDSerde = require("@network/serde/UUIDSerde")
+local t = require("@packages/t")
 
 local itemMap = {
 	"Id",

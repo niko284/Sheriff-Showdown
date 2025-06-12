@@ -7,19 +7,13 @@
 -- // Variables \\
 
 local DataStoreService = game:GetService("DataStoreService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService = game:GetService("ServerScriptService")
 
-local Constants = ReplicatedStorage.constants
-local Packages = ReplicatedStorage.packages
-local Services = ServerScriptService.services
-
-local Leaderboards = require(Constants.Leaderboards)
-local PlayerDataService = require(Services.PlayerDataService)
-local Promise = require(Packages.Promise)
-local Sift = require(Packages.Sift)
-local Timer = require(Packages.Timer)
-local Types = require(Constants.Types)
+local Leaderboards = require("@constants/Leaderboards")
+local PlayerDataService = require("@services/PlayerDataService")
+local Promise = require("@packages/Promise")
+local Sift = require("@packages/Sift")
+local Timer = require("@packages/Timer")
+local Types = require("@constants/Types")
 
 local MAX_FETCH_RETRIES = 3 -- Maximum number of times to retry fetching the leaderboard data
 local LEADERBOARD_UPDATE_INTERVAL = 120 -- Time in seconds between leaderboard updates\

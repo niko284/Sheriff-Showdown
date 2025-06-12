@@ -4,9 +4,9 @@ local Assets = ReplicatedStorage:FindFirstChild("assets") :: Folder
 local Particles = Assets:FindFirstChild("particles") :: Folder
 local HaloParticle = Particles:FindFirstChild("HaloParticle") :: ParticleEmitter
 
-local Components = require(ReplicatedStorage.ecs.components)
-local MatterReplication = require(ReplicatedStorage.packages.MatterReplication)
-local Types = require(ReplicatedStorage.constants.Types)
+local Components = require("@ecs/components")
+local MatterReplication = require("@packages/MatterReplication")
+local Types = require("@constants/Types")
 
 type KillEffectPayload = {
 	killerServerEntityId: number,

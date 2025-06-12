@@ -2,11 +2,11 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Components = require(ReplicatedStorage.ecs.components)
-local Matter = require(ReplicatedStorage.packages.Matter)
-local MatterReplication = require(ReplicatedStorage.packages.MatterReplication)
-local Types = require(ReplicatedStorage.constants.Types)
-local useAnimation = require(ReplicatedStorage.ecs.hooks.useAnimation)
+local Components = require("@ecs/components")
+local Matter = require("@packages/Matter")
+local MatterReplication = require("@packages/MatterReplication")
+local Types = require("@constants/Types")
+local useAnimation = require("@ecs/hooks/useAnimation")
 
 local Assets = ReplicatedStorage:FindFirstChild("assets") :: Folder
 local Animations = Assets:FindFirstChild("animations") :: Folder

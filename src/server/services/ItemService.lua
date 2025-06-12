@@ -1,11 +1,10 @@
 local DataStoreService = game:GetService("DataStoreService")
 local HttpService = game:GetService("HttpService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local ItemTypes = require(ReplicatedStorage.constants.ItemTypes)
-local ItemUtils = require(ReplicatedStorage.utils.ItemUtils)
-local Promise = require(ReplicatedStorage.packages.Promise)
-local Types = require(ReplicatedStorage.constants.Types)
+local ItemTypes = require("@constants/ItemTypes")
+local ItemUtils = require("@utilities/ItemUtils")
+local Promise = require("@packages/Promise")
+local Types = require("@constants/Types")
 
 local ItemDataStore = DataStoreService:GetDataStore("ItemSerials")
 

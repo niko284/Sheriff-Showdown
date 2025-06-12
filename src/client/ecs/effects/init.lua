@@ -1,8 +1,6 @@
 --!strict
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Types = require(ReplicatedStorage.constants.Types)
+local Types = require("@constants/Types")
 
 local effects = {} :: { [string]: Types.VisualEffect<any> }
 

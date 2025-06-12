@@ -1,8 +1,6 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Components = require(ReplicatedStorage.ecs.components)
-local Types = require(ReplicatedStorage.constants.Types)
-local t = require(ReplicatedStorage.packages.t)
+local Components = require("@ecs/components")
+local Types = require("@constants/Types")
+local t = require("@packages/t")
 
 type ImpulsePayload = Types.GenericPayload & { merryGoRoundId: number }
 

@@ -1,23 +1,15 @@
---!strict
-
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService = game:GetService("ServerScriptService")
-
-local Constants = ReplicatedStorage.constants
-local Services = ServerScriptService.services
-
-local Actions = require(ReplicatedStorage.ecs.actions)
-local Components = require(ReplicatedStorage.ecs.components)
-local Generic = require(script.Parent.Parent.Generic)
-local InventoryService = require(Services.InventoryService)
-local InventoryUtils = require(ReplicatedStorage.utils.InventoryUtils)
-local Items = require(Constants.Items)
-local Janitor = require(ReplicatedStorage.packages.Janitor)
-local Matter = require(ReplicatedStorage.packages.Matter)
-local RoundService = require(Services.RoundService)
-local Sift = require(ReplicatedStorage.packages.Sift)
-local Timer = require(ReplicatedStorage.packages.Timer)
-local Types = require(Constants.Types)
+local Actions = require("@ecs/actions")
+local Components = require("@ecs/components")
+local Generic = require("../Generic")
+local InventoryService = require("@services/InventoryService")
+local InventoryUtils = require("@utilities/InventoryUtils")
+local Items = require("@constants/Items")
+local Janitor = require("@packages/Janitor")
+local Matter = require("@packages/Matter")
+local RoundService = require("@services/RoundService")
+local Sift = require("@packages/Sift")
+local Timer = require("@packages/Timer")
+local Types = require("@constants/Types")
 
 local HOT_POTATO_TIMER = 10 -- in seconds
 

@@ -1,9 +1,7 @@
 --!strict
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Goals = require(script.Goals)
-local Types = require(ReplicatedStorage.constants.Types)
+local Goals = require("@self/Goals")
+local Types = require("@constants/Types")
 
 local function GenerateTargetRequirementGeneric(
 	baseName: string,

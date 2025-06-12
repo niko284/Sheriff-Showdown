@@ -1,10 +1,8 @@
 --!strict
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local MatterTypes = require(ReplicatedStorage.ecs.MatterTypes)
-local Types = require(ReplicatedStorage.constants.Types)
-local WorldUtils = require(ReplicatedStorage.ecs.Util)
+local MatterTypes = require("@ecs/MatterTypes")
+local Types = require("@constants/Types")
+local WorldUtils = require("@ecs/Util")
 
 local Middlewares: { [string]: (any) -> Types.MiddlewareFn<any> } = {}
 

@@ -1,14 +1,13 @@
 --!strict
 
 local CollectionService = game:GetService("CollectionService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local TweenService = game:GetService("TweenService")
 
-local AudioUtils = require(ReplicatedStorage.utils.AudioUtils)
-local Components = require(ReplicatedStorage.ecs.components)
-local Types = require(ReplicatedStorage.constants.Types)
-local t = require(ReplicatedStorage.packages.t)
+local AudioUtils = require("@utilities/AudioUtils")
+local Components = require("@ecs/components")
+local Types = require("@constants/Types")
+local t = require("@packages/t")
 
 local BULLET_HIT_SOUND_ID = 3581383408
 
@@ -114,7 +113,7 @@ return {
 					if actionPayload.hitPart.Name == "Head" and gun.CriticalDamage["Head"] then
 						-- we keep track of headshots in the player's stats
 
-						local StatisticsService = require(ServerScriptService.services.StatisticsService)
+						local StatisticsService = require("@services/StatisticsService")
 
 						StatisticsService:IncrementStatistic(player, "Headshots", 1)
 					end

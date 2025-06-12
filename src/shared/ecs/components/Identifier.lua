@@ -1,8 +1,4 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Packages = ReplicatedStorage.packages
-
-local Matter = require(Packages.Matter)
+local Matter = require("@packages/Matter")
 
 local Identifier = Matter.component("Identifier", {
 	uuid = nil :: string?,

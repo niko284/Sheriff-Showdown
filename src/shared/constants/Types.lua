@@ -1,9 +1,8 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+--!strict
 
-local Comm = require(ReplicatedStorage.packages.Comm)
-local Matter = require(ReplicatedStorage.packages.Matter)
-local React = require(ReplicatedStorage.packages.React)
-local Signal = require(ReplicatedStorage.packages.Signal)
+local Comm = require("@packages/Comm")
+local Matter = require("@packages/Matter")
+local Signal = require("@packages/Signal")
 
 export type ItemRarity = "Basic" | "Rare" | "Epic" | "Legendary" | "Exotic"
 export type ItemType = "Gun" | "Crate"
@@ -13,8 +12,8 @@ type ItemGunData = {
 export type ItemInfo = {
 	Id: number,
 	Name: string,
-	Rarity: ItemRarity?,
-	Type: ItemType,
+	Rarity: string?,
+	Type: string,
 	Image: number,
 	Default: (boolean | (Player) -> boolean)?,
 	TagWithSerial: boolean?,

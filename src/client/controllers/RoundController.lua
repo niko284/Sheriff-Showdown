@@ -1,27 +1,19 @@
 --!strict
 
 local CollectionService = game:GetService("CollectionService")
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SoundService = game:GetService("SoundService")
 
-local LocalPlayer = Players.LocalPlayer
-local PlayerScripts = LocalPlayer.PlayerScripts
-local Controllers = PlayerScripts.controllers
-local Packages = ReplicatedStorage.packages
-local Constants = ReplicatedStorage.constants
-local Utils = ReplicatedStorage.utils
-
 local Assets = ReplicatedStorage:FindFirstChild("assets") :: Folder
 
-local AudioUtils = require(Utils.AudioUtils)
-local ClientComm = require(PlayerScripts.ClientComm)
-local Distractions = require(Constants.Distractions)
-local KeybindInputController = require(Controllers.KeybindInputController)
-local Net = require(Packages.Net)
-local Remotes = require(ReplicatedStorage.network.Remotes)
-local Signal = require(Packages.Signal)
-local Types = require(Constants.Types)
+local AudioUtils = require("@utilities/AudioUtils")
+local ClientComm = require("../ClientComm")
+local Distractions = require("@constants/Distractions")
+local KeybindInputController = require("@controllers/KeybindInputController")
+local Net = require("@packages/Net")
+local Remotes = require("@network/Remotes")
+local Signal = require("@packages/Signal")
+local Types = require("@constants/Types")
 
 local RoundNamespace = Remotes.Client:GetNamespace("Round")
 local StartMatch = RoundNamespace:Get("StartMatch") :: Net.ClientListenerEvent

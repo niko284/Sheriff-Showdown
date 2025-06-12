@@ -1,19 +1,17 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
-local Packages = ReplicatedStorage.packages
-
-local Components = require(ReplicatedStorage.ecs.components)
-local Promise = require(Packages.Promise)
-local bootstrapCollections = require(ReplicatedStorage.ecs.BootstrapCollections)
-local ecsStart = require(ServerScriptService.ecs.start)
+local Components = require("@ecs/components")
+local Promise = require("@packages/Promise")
+local bootstrapCollections = require("@ecs/BootstrapCollections")
+local ecsStart = require("@server/ecs/start")
 
 local SYSTEM_CONTAINERS = {
-	ReplicatedStorage.ecs.systems,
-	ServerScriptService.ecs.systems,
+	ReplicatedStorage.shared.ecs.systems,
+	ServerScriptService.server.ecs.systems,
 }
 local SERVICE_CONTAINERS = {
-	ServerScriptService.services,
+	ServerScriptService.server.services,
 }
 local LIFECYCLE_METHODS = { "OnInit", "OnStart" }
 local COLLECTION_COMPONENTS = {

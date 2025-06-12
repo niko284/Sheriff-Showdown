@@ -1,13 +1,6 @@
 --!strict
--- Distractions (for the distraction Round Mode)
--- Nick
--- April 13th, 2024
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Constants = ReplicatedStorage.constants
-
-local Types = require(Constants.Types)
+local Types = require("@constants/Types")
 
 return {
 	Car = {

@@ -1,6 +1,4 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local AudioUtils = require(ReplicatedStorage.utils.AudioUtils)
+local AudioUtils = require("@utilities/AudioUtils")
 
 return {
 	Name = "Lobby Audio",

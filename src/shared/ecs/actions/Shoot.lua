@@ -1,13 +1,11 @@
 --!strict
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local AudioUtils = require(ReplicatedStorage.utils.AudioUtils)
-local Components = require(ReplicatedStorage.ecs.components)
-local MatterTypes = require(ReplicatedStorage.ecs.MatterTypes)
-local Middlewares = require(ReplicatedStorage.ecs.Middlewares)
-local Types = require(ReplicatedStorage.constants.Types)
-local t = require(ReplicatedStorage.packages.t)
+local AudioUtils = require("@utilities/AudioUtils")
+local Components = require("@ecs/components")
+local MatterTypes = require("@ecs/MatterTypes")
+local Middlewares = require("@ecs/Middlewares")
+local Types = require("@constants/Types")
+local t = require("@packages/t")
 
 local RELOAD_SOUND_ID = 139717586861911
 

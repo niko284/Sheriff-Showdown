@@ -6,10 +6,10 @@ local Assets = ReplicatedStorage:FindFirstChild("assets") :: Folder
 local Particles = Assets:FindFirstChild("particles") :: Folder
 local BuggedParticles = Particles:FindFirstChild("Bugged") :: Folder
 
-local AudioUtils = require(ReplicatedStorage.utils.AudioUtils)
-local Components = require(ReplicatedStorage.ecs.components)
-local MatterReplication = require(ReplicatedStorage.packages.MatterReplication)
-local Types = require(ReplicatedStorage.constants.Types)
+local AudioUtils = require("@utilities/AudioUtils")
+local Components = require("@ecs/components")
+local MatterReplication = require("@packages/MatterReplication")
+local Types = require("@constants/Types")
 
 local GLITCH_SOUND_ID = 5491518316
 

@@ -1,23 +1,12 @@
 --!strict
 
--- Statistics Service
--- June 10th, 2022
--- Nick
-
--- // Variables \\
-
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService = game:GetService("ServerScriptService")
 
-local Services = ServerScriptService.services
-local Packages = ReplicatedStorage.packages
-
-local Freeze = require(Packages.Freeze)
-local PlayerDataService = require(Services.PlayerDataService)
-local ProfileSchema = require(Services.PlayerDataService.Schema)
-local ServerComm = require(ServerScriptService.ServerComm)
-local Signal = require(Packages.Signal)
+local Freeze = require("@packages/Freeze")
+local PlayerDataService = require("@services/PlayerDataService")
+local ProfileSchema = require("@services/PlayerDataService/Schema")
+local ServerComm = require("@server/ServerComm")
+local Signal = require("@packages/Signal")
 
 -- // Service Variables \\
 

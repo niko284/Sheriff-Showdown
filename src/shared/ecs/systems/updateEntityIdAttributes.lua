@@ -1,7 +1,6 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local Components = require(ReplicatedStorage.ecs.components)
+local Components = require("@ecs/components")
 
 local name = RunService:IsServer() and "serverEntityId" or "clientEntityId"
 

@@ -1,13 +1,12 @@
 --!strict
 
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
-local Types = require(ReplicatedStorage.constants.Types)
+local Types = require("@constants/Types")
 
 local function AllOnSameTeam(RoundInstance: Types.Round): boolean
-	local RoundService = require(ServerScriptService.services.RoundService) :: any
+	local RoundService = require("@services/RoundService") :: any
 
 	local plrsInMatch = RoundInstance.Players
 

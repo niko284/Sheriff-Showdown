@@ -1,15 +1,8 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Packages = ReplicatedStorage.packages
-local Network = ReplicatedStorage.network
-local Serde = Network.serde
-local Middleware = Network.middleware
-
-local Actions = require(ReplicatedStorage.ecs.actions)
-local Deserializer = require(Middleware.Deserializer)
-local Net = require(Packages.Net)
-local UUIDSerde = require(Serde.UUIDSerde)
-local t = require(Packages.t)
+local Actions = require("@ecs/actions")
+local Deserializer = require("@network/middleware/Deserializer")
+local Net = require("@packages/Net")
+local UUIDSerde = require("@network/serde/UUIDSerde")
+local t = require("@packages/t")
 
 return Net.CreateDefinitions({
 	Combat = Net.Definitions.Namespace({

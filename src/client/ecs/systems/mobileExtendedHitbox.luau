@@ -2,12 +2,10 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Packages = ReplicatedStorage.packages
-
-local Components = require(ReplicatedStorage.ecs.components)
-local Input = require(Packages.Input)
-local Matter = require(Packages.Matter)
-local Types = require(ReplicatedStorage.constants.Types)
+local Components = require("@ecs/components")
+local Input = require("@packages/Input")
+local Matter = require("@packages/Matter")
+local Types = require("@constants/Types")
 
 local Assets = ReplicatedStorage:FindFirstChild("assets") :: Folder
 local Other = Assets:FindFirstChild("other") :: Folder

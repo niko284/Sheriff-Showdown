@@ -1,10 +1,7 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService = game:GetService("ServerScriptService")
-
-local Components = require(ReplicatedStorage.ecs.components)
-local Matter = require(ReplicatedStorage.packages.Matter)
-local MatterTypes = require(ReplicatedStorage.ecs.MatterTypes)
-local RagdollService = require(ServerScriptService.services.RagdollService)
+local Components = require("@ecs/components")
+local Matter = require("@packages/Matter")
+local MatterTypes = require("@ecs/MatterTypes")
+local RagdollService = require("@services/RagdollService")
 
 type RagdolledRecord = MatterTypes.WorldChangeRecord<Components.Ragdolled>
 

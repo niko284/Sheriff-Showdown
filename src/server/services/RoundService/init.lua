@@ -2,29 +2,25 @@
 
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local ServerScriptService = game:GetService("ServerScriptService")
 local ServerStorage = game:GetService("ServerStorage")
 
 local Assets = ServerStorage.assets
-local Constants = ReplicatedStorage.constants
-local Packages = ReplicatedStorage.packages
 
-local Components = require(ReplicatedStorage.ecs.components)
-local ExperienceService = require(script.Parent.ExperienceService)
-local Maps = require(Constants.Maps)
-local Matter = require(Packages.Matter)
-local Promise = require(Packages.Promise)
-local Remotes = require(ReplicatedStorage.network.Remotes)
-local ResourceService = require(script.Parent.ResourceService)
-local RoundModes = require(Constants.RoundModes)
-local ServerComm = require(ServerScriptService.ServerComm)
-local SettingsService = require(ServerScriptService.services.SettingsService)
-local Sift = require(Packages.Sift)
-local Signal = require(Packages.Signal)
-local StatisticsService = require(ServerScriptService.services.StatisticsService)
-local Types = require(Constants.Types)
+local Components = require("@ecs/components")
+local ExperienceService = require("./ExperienceService")
+local Maps = require("@constants/Maps")
+local Matter = require("@packages/Matter")
+local Promise = require("@packages/Promise")
+local Remotes = require("@network/Remotes")
+local ResourceService = require("./ResourceService")
+local RoundModes = require("@constants/RoundModes")
+local ServerComm = require("@server/ServerComm")
+local SettingsService = require("@services/SettingsService")
+local Sift = require("@packages/Sift")
+local Signal = require("@packages/Signal")
+local StatisticsService = require("@services/StatisticsService")
+local Types = require("@constants/Types")
 
 local RoundNamespace = Remotes.Server:GetNamespace("Round")
 local VotingNamespace = Remotes.Server:GetNamespace("Voting")

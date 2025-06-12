@@ -4,12 +4,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Assets = ReplicatedStorage.assets :: Folder
 local Guns = Assets:FindFirstChild("guns") :: Folder
 
-local AudioUtils = require(ReplicatedStorage.utils.AudioUtils)
-local ItemUtils = require(ReplicatedStorage.utils.ItemUtils)
-local Matter = require(ReplicatedStorage.packages.Matter)
-local MatterReplication = require(ReplicatedStorage.packages.MatterReplication)
+local AudioUtils = require("@utilities/AudioUtils")
+local ItemUtils = require("@utilities/ItemUtils")
+local Matter = require("@packages/Matter")
+local MatterReplication = require("@packages/MatterReplication")
 
-local Components = require(ReplicatedStorage.ecs.components)
+local Components = require("@ecs/components")
 
 local function bulletsAreVisualized(world: Matter.World)
 	for eid, bullet: Components.Bullet, owner: Components.Owner in

@@ -1,6 +1,4 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local Types = require(ReplicatedStorage.constants.Types)
+local Types = require("@constants/Types")
 
 local Items: { Types.ItemInfo } = {
 	{

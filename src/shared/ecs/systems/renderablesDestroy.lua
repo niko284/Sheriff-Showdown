@@ -1,9 +1,8 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local Components = require(ReplicatedStorage.ecs.components)
-local Matter = require(ReplicatedStorage.packages.Matter)
-local MatterReplication = require(ReplicatedStorage.packages.MatterReplication)
+local Components = require("@ecs/components")
+local Matter = require("@packages/Matter")
+local MatterReplication = require("@packages/MatterReplication")
 
 local useEvent = Matter.useEvent
 local Renderable = Components.Renderable

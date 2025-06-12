@@ -1,18 +1,13 @@
 --!strict
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService = game:GetService("ServerScriptService")
-
-local Services = ServerScriptService.services
-
-local Net = require(ReplicatedStorage.packages.Net)
-local PlayerDataService = require(Services.PlayerDataService)
-local Remotes = require(ReplicatedStorage.network.Remotes)
-local ResourceService = require(Services.ResourceService)
-local Rewards = require(ReplicatedStorage.constants.Rewards)
-local ServerComm = require(ServerScriptService.ServerComm)
-local Signal = require(ReplicatedStorage.packages.Signal)
-local Types = require(ReplicatedStorage.constants.Types)
+local Net = require("@packages/Net")
+local PlayerDataService = require("@services/PlayerDataService")
+local Remotes = require("@network/Remotes")
+local ResourceService = require("@services/ResourceService")
+local Rewards = require("@constants/Rewards")
+local ServerComm = require("@server/ServerComm")
+local Signal = require("@packages/Signal")
+local Types = require("@constants/Types")
 
 local RewardsNamespace = Remotes.Server:GetNamespace("Rewards")
 

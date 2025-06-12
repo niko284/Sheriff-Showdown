@@ -1,5 +1,17 @@
 {
     "aliases": {
-        "lune": "~/.lune/.typedefs/0.8.9"
-    }    
+        "src": "src",
+        "packages": "Packages",
+        "client": "src/client",
+        "server": "src/server",
+        "shared": "src/shared",
+        "ServerPackages": "ServerPackages",
+        "ecs": "src/shared/ecs",
+        "services": "src/server/services",
+        "constants": "src/shared/constants",
+        "utilities": "src/shared/utilities",
+        "controllers": "src/client/controllers",
+        "network": "src/shared/network",
+        "ui": "src/client/ui"
+    }
 }

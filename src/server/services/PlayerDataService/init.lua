@@ -1,18 +1,13 @@
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local ServerScriptService = game:GetService("ServerScriptService")
 
-local ServerPackages = ServerScriptService.ServerPackages
-local Packages = ReplicatedStorage.packages
-
-local Lapis = require(ServerPackages.Lapis)
-local Migrations = require(script.Migrations)
-local Promise = require(Packages.Promise)
-local Signal = require(Packages.Signal)
-local Types = require(ReplicatedStorage.constants.Types)
-local t = require(Packages.t)
+local Lapis = require("@ServerPackages/Lapis")
+local Migrations = require("@self/Migrations")
+local Promise = require("@packages/Promise")
+local Signal = require("@packages/Signal")
+local Types = require("@constants/Types")
+local t = require("@packages/t")
 
 local collectionName = RunService:IsStudio() and "PlayerData" .. HttpService:GenerateGUID(false)
 	or "SheriffShowdownData123"

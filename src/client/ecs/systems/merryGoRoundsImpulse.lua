@@ -1,12 +1,11 @@
+local CollectionService = game:GetService("CollectionService")
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Components = require(ReplicatedStorage.ecs.components)
-local Matter = require(ReplicatedStorage.packages.Matter)
-local Remotes = require(ReplicatedStorage.network.Remotes)
-local UUIDSerde = require(ReplicatedStorage.utils.UUIDSerde)
-local CollectionService = game:GetService("CollectionService")
+local Components = require("@ecs/components")
+local Matter = require("@packages/Matter")
+local Remotes = require("@network/Remotes")
+local UUIDSerde = require("@utilities/UUIDSerde")
 
 local LocalPlayer = Players.LocalPlayer
 
