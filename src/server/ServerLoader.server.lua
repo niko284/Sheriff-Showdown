@@ -1,6 +1,9 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
+local jecs = require("@packages/jecs")
+local replecs = require("@packages/replecs")
+
 local Components = require("@ecs/components")
 local Promise = require("@packages/Promise")
 local bootstrapCollections = require("@ecs/BootstrapCollections")
@@ -16,7 +19,12 @@ local SERVICE_CONTAINERS = {
 local LIFECYCLE_METHODS = { "OnInit", "OnStart" }
 local COLLECTION_COMPONENTS = {
 	MerryGoRound = {
-		Components.MerryGoRound,
+		{ Components.MerryGoRound, {
+			targetAngularVelocity = 0,
+			currentAngularVelocity = 0,
+			angularAcceleration = 0.1,
+			maxAngularVelocity = 1.5,
+		} },
 	},
 }
 
@@ -50,7 +58,12 @@ local function loadServer()
 		end)
 		:andThen(function(services)
 			local world = ecsStart(SYSTEM_CONTAINERS, services)
-			bootstrapCollections(world, COLLECTION_COMPONENTS, { workspace })
+			bootstrapCollections(world, COLLECTION_COMPONENTS, { workspace }, function(eid: number)
+				world:add(eid, replecs.networked)
+				world:add(eid, jecs.pair(replecs.reliable, Components.MerryGoRound))
+				world:add(eid, jecs.pair(replecs.reliable, Components.Renderable))
+				world:add(eid, jecs.pair(replecs.unreliable, Components.Transform))
+			end)
 		end)
 end
 

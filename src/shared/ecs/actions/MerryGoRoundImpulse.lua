@@ -1,3 +1,5 @@
+--!strict
+
 local Components = require("@ecs/components")
 local Types = require("@constants/Types")
 local t = require("@packages/t")
@@ -6,8 +8,6 @@ type ImpulsePayload = Types.GenericPayload & { merryGoRoundId: number }
 
 return {
 	process = function(world, player, impulsePayload)
-		-- @TODO: Implement cooldown for this action on a merry-go-round per player specific basis to prevent spamming the action
-
 		if not world:contains(impulsePayload.merryGoRoundId) then
 			warn("Invalid merry go round id")
 			return
@@ -20,7 +20,7 @@ return {
 		end
 
 		if merryGoRound.currentAngularVelocity >= merryGoRound.maxAngularVelocity then
-			return -- they should not be able to increase the speed of the merry go round if it is already at max speed
+			return
 		end
 
 		local character = player.Character :: Model
@@ -29,10 +29,9 @@ return {
 		end
 
 		if character:GetAttribute("merryGoRoundImpulseCooldown" .. impulsePayload.merryGoRoundId) then
-			return -- player is on cooldown for this merry go round impulse action
+			return
 		end
 
-		-- verify that the character is on the merry go round
 		local rightFoot = character:FindFirstChild("RightFoot") :: BasePart?
 		if not rightFoot then
 			return
@@ -42,35 +41,34 @@ return {
 		rayParams.FilterDescendantsInstances = { character }
 		rayParams.FilterType = Enum.RaycastFilterType.Exclude
 		local rayDown = workspace:Raycast(rightFoot.Position, Vector3.new(0, -10, 0), rayParams)
+		if not rayDown then
+			return
+		end
 
 		local merryGoRoundModel = rayDown.Instance:FindFirstAncestor("MerryGoRound")
 		local merryGoRoundId = merryGoRoundModel and merryGoRoundModel:GetAttribute("serverEntityId")
 
 		if merryGoRoundModel and merryGoRoundId and merryGoRoundId == impulsePayload.merryGoRoundId then
-			if merryGoRound.hardStopIn == nil then -- we don't want to override the hard stop
-				--[[print(
-					`New target angular velocity after player-applied impulse: {merryGoRound.targetAngularVelocity + 0.1}`
-				)--]]
-				merryGoRound = merryGoRound:patch({
+			if merryGoRound.hardStopIn == nil then
+				world:set(impulsePayload.merryGoRoundId, Components.MerryGoRound, {
 					targetAngularVelocity = merryGoRound.targetAngularVelocity + 0.1,
+					currentAngularVelocity = merryGoRound.currentAngularVelocity,
+					angularAcceleration = merryGoRound.angularAcceleration,
+					maxAngularVelocity = merryGoRound.maxAngularVelocity,
+					hardStopIn = merryGoRound.hardStopIn,
 				})
 
-				-- implement cooldown for this action on a merry-go-round per player specific basis to prevent spamming the action
 				task.spawn(function()
 					character:SetAttribute("merryGoRoundImpulseCooldown" .. impulsePayload.merryGoRoundId, true)
 					task.wait(1)
 					character:SetAttribute("merryGoRoundImpulseCooldown" .. impulsePayload.merryGoRoundId, nil)
 				end)
-
-				world:insert(impulsePayload.merryGoRoundId, merryGoRound)
 			end
 		end
 	end,
-	validatePayload = function()
-		return t.strictInterface({
-			action = t.literal("MerryGoRoundImpulse"),
-			actionId = t.string,
-			merryGoRoundId = t.number,
-		})
-	end,
+	validatePayload = t.strictInterface({
+		action = t.literal("MerryGoRoundImpulse"),
+		actionId = t.string,
+		merryGoRoundId = t.number,
+	}),
 } :: Types.Action<ImpulsePayload>

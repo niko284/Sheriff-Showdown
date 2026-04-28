@@ -1,7 +1,7 @@
 --!strict
 
 local Comm = require("@packages/Comm")
-local Matter = require("@packages/Matter")
+local jecs = require("@packages/jecs")
 local Signal = require("@packages/Signal")
 
 export type ItemRarity = "Basic" | "Rare" | "Epic" | "Legendary" | "Exotic"
@@ -152,7 +152,7 @@ export type Round = {
 }
 export type RoundModeExtension = {
 	IsGameOver: (Round) -> boolean,
-	StartMatch: (Match, Round, Matter.World) -> (),
+	StartMatch: (Match, Round, jecs.World) -> (),
 	AllocateMatches: (({ Player }) -> { Match })?,
 	Data: RoundModeData,
 	ExtraRoundProperties: { [string]: any },
@@ -212,8 +212,8 @@ export type FrameProps = {
 	rotation: number?,
 }
 
-export type MiddlewareFn<T> = (world: Matter.World, player: Player, actionPayload: T) -> boolean
-export type AfterProcessFn<T> = (world: Matter.World, player: Player, actionPayload: T) -> ()
+export type MiddlewareFn<T> = (world: jecs.World, player: Player, actionPayload: T) -> boolean
+export type AfterProcessFn<T> = (world: jecs.World, player: Player, actionPayload: T) -> ()
 
 -- >> action types ecs
 export type GenericPayload = {
@@ -222,7 +222,7 @@ export type GenericPayload = {
 }
 
 export type Action<T> = {
-	process: (world: Matter.World, player: Player, actionPayload: T) -> (),
+	process: (world: jecs.World, player: Player, actionPayload: T) -> (),
 	middleware: { MiddlewareFn<T> }?,
 	validatePayload: (sentPayload: any) -> boolean,
 	afterProcess: { AfterProcessFn<T> },
@@ -230,7 +230,7 @@ export type Action<T> = {
 
 export type VisualEffect<T> = {
 	name: string,
-	visualize: (world: Matter.World, effectPayload: T) -> (),
+	visualize: (world: jecs.World, effectPayload: T) -> (),
 }
 
 export type PlayerlistPlayer = {

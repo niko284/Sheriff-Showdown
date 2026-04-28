@@ -1,15 +1,14 @@
-local Matter = require("@packages/Matter")
+local jecs = require("@packages/jecs")
 
 local Components = require("@ecs/components")
 
-local function lifetimesDespawn(world: Matter.World)
+local function lifetimesDespawn(world: jecs.World)
+	local now = DateTime.now().UnixTimestampMillis / 1000
 	for eid, lifetime in world:query(Components.Lifetime) do
-		if (DateTime.now().UnixTimestampMillis / 1000) >= lifetime.expiry then
-			world:despawn(eid)
+		if now >= lifetime.expiry then
+			world:delete(eid)
 		end
 	end
 end
 
-return {
-	system = lifetimesDespawn,
-}
+return lifetimesDespawn

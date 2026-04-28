@@ -1,17 +1,14 @@
 --!strict
 
+local BlinkClient = require("@client/modules/BlinkClient")
 local Button = require("@ui/components/buttons/Button")
 local Currencies = require("@constants/Currencies")
 local ItemUtils = require("@utilities/ItemUtils")
-local Net = require("@packages/Net")
+local Promise = require("@packages/Promise")
 local Rarities = require("@constants/Rarities")
 local React = require("@packages/React")
-local Remotes = require("@network/Remotes")
 local Types = require("@constants/Types")
-local UUIDSerde = require("@network/serde/UUIDSerde")
-
-local AchievementNamespace = Remotes.Client:GetNamespace("Achievements")
-local ClaimAchievement = AchievementNamespace:Get("ClaimAchievement") :: Net.ClientAsyncCaller
+local UUIDSerde = require("@utilities/UUIDSerde")
 
 local e = React.createElement
 local useCallback = React.useCallback
@@ -31,7 +28,10 @@ local function AchievementDisplay(props: AchievementDisplayProps)
 		local serializedUUID = UUIDSerde.Serialize(achievement.UUID)
 
 		props.setSelectedAchievementUUID(nil)
-		ClaimAchievement:CallServerAsync(serializedUUID)
+		Promise.new(function(resolve, reject)
+			local ok, result = pcall(BlinkClient.AchievementsClaimAchievement.Invoke, serializedUUID)
+			if ok then resolve(result) else reject(result) end
+		end)
 			:andThen(function(networkResponse: Types.NetworkResponse)
 				if networkResponse.Success == false then
 					warn(networkResponse.Response)

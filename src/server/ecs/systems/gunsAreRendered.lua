@@ -1,104 +1,107 @@
+--!strict
+
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Assets = ReplicatedStorage:FindFirstChild("assets") :: Folder
 local Guns = Assets:FindFirstChild("guns") :: Folder
 
+local jecs = require("@packages/jecs")
+
 local Components = require("@ecs/components")
 local ItemUtils = require("@utilities/ItemUtils")
-local Matter = require("@packages/Matter")
-local MatterTypes = require("@ecs/MatterTypes")
-local Types = require("@constants/Types")
 
-local function gunsAreRendered(world: Matter.World, server)
-	for eid, gunRecord: MatterTypes.WorldChangeRecord<Components.Gun> in world:queryChanged(Components.Gun) do
-		if
-			gunRecord.new
-			and ((not gunRecord.old or gunRecord.old.Disabled == true) and gunRecord.new.Disabled ~= true)
-		then -- put in their hand
-			local parent: Components.Parent? = world:get(eid, Components.Parent)
+type State = {
+	services: { [string]: any },
+}
 
-			if not parent or not world:contains(parent.id) then
-				continue
+local function gunsAreRendered(world: jecs.World, state: State)
+	-- Ensure active guns have a hand renderable; clean up when disabled.
+	for eid, gun, gunItem in world:query(Components.Gun, Components.Item) do
+		local children = world:get(eid, Components.Children) or {}
+		local handRenderableId: number? = children.handRenderableId
+
+		if gun.Disabled == true then
+			if handRenderableId and world:contains(handRenderableId) then
+				world:delete(handRenderableId)
+				world:set(eid, Components.Children, { handRenderableId = nil, waistRenderableGunId = children.waistRenderableGunId })
 			end
-
-			local renderable: Components.Renderable<Types.Character>? = world:get(parent.id, Components.Renderable)
-
-			local gunItem: Components.Item = world:get(eid, Components.Item)
-			local itemInfo = ItemUtils.GetItemInfoFromId(gunItem.Id)
-			local gunFolder = Guns:FindFirstChild(itemInfo.Name) :: Folder?
-
-			if gunFolder and renderable then
-				local handsFolder = gunFolder:FindFirstChild("Hands") :: Folder?
-				if handsFolder then
-					local accessory = handsFolder:FindFirstChildOfClass("Accessory") :: Accessory?
-					if accessory then
-						local access = accessory:Clone()
-						renderable.instance.Humanoid:AddAccessory(access)
-						local handRenderableId = world:spawn(
-							Components.Renderable({
-								instance = access,
-							}),
-							Components.Parent({ id = eid })
-						)
-
-						local children: Components.Children<Types.GunChildren> = world:get(eid, Components.Children)
-						local newChildren = children and table.clone(children.children or {})
-						newChildren.handRenderableId = handRenderableId
-
-						world:insert(
-							eid,
-							children:patch({
-								children = newChildren,
-							})
-						)
-					end
-				end
-			end
-		elseif gunRecord.new and gunRecord.new.Disabled == true then -- remove from their hand. the gun component getting removed is handled automatically by children cleanup. so we don't check here.
-			local children: Components.Children<Types.GunChildren> = world:get(eid, Components.Children)
-			if children then
-				local handRenderableId = children.children.handRenderableId
-				if handRenderableId then
-					world:despawn(handRenderableId)
-				end
-			end
+			continue
 		end
+
+		if handRenderableId and world:contains(handRenderableId) then
+			continue
+		end
+
+		local parentId = world:parent(eid)
+		if not parentId or not world:contains(parentId) then
+			continue
+		end
+
+		local renderable = world:get(parentId, Components.Renderable)
+		if not renderable then
+			continue
+		end
+
+		local itemInfo = ItemUtils.GetItemInfoFromId(gunItem.Id)
+		local gunFolder = Guns:FindFirstChild(itemInfo.Name) :: Folder?
+		if not gunFolder then
+			continue
+		end
+
+		local handsFolder = gunFolder:FindFirstChild("Hands") :: Folder?
+		if not handsFolder then
+			continue
+		end
+
+		local accessory = handsFolder:FindFirstChildOfClass("Accessory") :: Accessory?
+		if not accessory then
+			continue
+		end
+
+		local humanoid = renderable.instance:FindFirstChildOfClass("Humanoid")
+		if not humanoid then
+			continue
+		end
+
+		local access = accessory:Clone()
+		humanoid:AddAccessory(access)
+
+		local handId = world:entity()
+		world:set(handId, Components.Renderable, { instance = access })
+		world:add(handId, jecs.pair(jecs.ChildOf, eid))
+
+		world:set(eid, Components.Children, {
+			handRenderableId = handId,
+			waistRenderableGunId = children.waistRenderableGunId,
+		})
 	end
 
-	-- waist should show gun if player doesn't have gun in hand or has gun in hand but it's disabled
-	for
-		eid,
-		_player: Components.Target,
-		renderable: Components.Renderable<Types.Character>,
-		children: Components.Children<Types.TargetChildren>
-	in world:query(Components.Player, Components.Renderable, Components.Children) do
-		local gunEntityId = children.children.gunEntityId
-		local waistRenderableGunId = children.children.waistRenderableGunId
+	-- Waist gun: show when player has no active gun in hand or has a disabled gun.
+	for eid, _player, renderable, children in world:query(Components.Player, Components.Renderable, Components.Children) do
+		local gunEntityId: number? = children.gunEntityId
+		local waistRenderableGunId: number? = children.waistRenderableGunId
 
-		local gun = world:contains(gunEntityId) and world:get(gunEntityId, Components.Gun) or nil
-
-		local playerComponent: Components.PlayerComponent? = world:get(eid, Components.Player)
+		local gun = (gunEntityId and world:contains(gunEntityId)) and world:get(gunEntityId, Components.Gun) or nil
+		local playerComp = world:get(eid, Components.Player)
 
 		if not gunEntityId or (gun and gun.Disabled == true) then
-			local item: Components.Item = world:contains(gunEntityId) and world:get(gunEntityId, Components.Item) or nil
+			local item = (gunEntityId and world:contains(gunEntityId)) and world:get(gunEntityId, Components.Item) or nil
 
-			if item == nil and playerComponent then
-				item =
-					server.services.InventoryService:GetItemsOfType(playerComponent.player, "Gun", true)[1] :: Types.ItemInfo
+			if item == nil and playerComp then
+				item = state.services.InventoryService:GetItemsOfType(playerComp.player, "Gun", true)[1] :: any
 			end
 
 			local hasWaistGun = waistRenderableGunId and world:contains(waistRenderableGunId)
-			local waistRenderableGun: Components.Renderable<Accessory> = hasWaistGun
-					and world:get(waistRenderableGunId, Components.Renderable)
-				or nil
+			local waistRenderable = hasWaistGun and world:get(waistRenderableGunId, Components.Renderable) or nil
 
-			if
-				item == nil or (waistRenderableGun and waistRenderableGun.instance:GetAttribute("ItemId") ~= item.Id)
-			then
-				if hasWaistGun then -- unequipped from inventory OR switched to another gun in inventory with different id.
-					world:despawn(waistRenderableGunId)
+			if item == nil or (waistRenderable and waistRenderable.instance:GetAttribute("ItemId") ~= item.Id) then
+				if hasWaistGun then
+					world:delete(waistRenderableGunId)
+					world:set(eid, Components.Children, {
+						gunEntityId = children.gunEntityId,
+						waistRenderableGunId = nil,
+					})
 				end
-
 				continue
 			end
 
@@ -107,41 +110,45 @@ local function gunsAreRendered(world: Matter.World, server)
 			end
 
 			local itemInfo = ItemUtils.GetItemInfoFromId(item.Id)
-
 			local gunFolder = Guns:FindFirstChild(itemInfo.Name) :: Folder?
-
-			if gunFolder then
-				local waistFolder = gunFolder:FindFirstChild("Waist") :: Folder?
-				if waistFolder then
-					local accessory = waistFolder:FindFirstChildOfClass("Accessory") :: Accessory?
-					if accessory then
-						local access = accessory:Clone()
-						renderable.instance.Humanoid:AddAccessory(access)
-
-						access:SetAttribute("ItemId", item.Id)
-
-						local id = world:spawn(
-							Components.Renderable({
-								instance = access,
-							}),
-							Components.Parent({ id = eid })
-						)
-
-						local newChildren = children and table.clone(children.children or {})
-						newChildren.waistRenderableGunId = id
-
-						world:insert(
-							eid,
-							children:patch({
-								children = newChildren,
-							})
-						)
-					end
-				end
+			if not gunFolder then
+				continue
 			end
+
+			local waistFolder = gunFolder:FindFirstChild("Waist") :: Folder?
+			if not waistFolder then
+				continue
+			end
+
+			local accessory = waistFolder:FindFirstChildOfClass("Accessory") :: Accessory?
+			if not accessory then
+				continue
+			end
+
+			local humanoid = renderable.instance:FindFirstChildOfClass("Humanoid")
+			if not humanoid then
+				continue
+			end
+
+			local access = accessory:Clone()
+			humanoid:AddAccessory(access)
+			access:SetAttribute("ItemId", item.Id)
+
+			local waistId = world:entity()
+			world:set(waistId, Components.Renderable, { instance = access })
+			world:add(waistId, jecs.pair(jecs.ChildOf, eid))
+
+			world:set(eid, Components.Children, {
+				gunEntityId = children.gunEntityId,
+				waistRenderableGunId = waistId,
+			})
 		else
-			if waistRenderableGunId then
-				world:despawn(waistRenderableGunId)
+			if waistRenderableGunId and world:contains(waistRenderableGunId) then
+				world:delete(waistRenderableGunId)
+				world:set(eid, Components.Children, {
+					gunEntityId = children.gunEntityId,
+					waistRenderableGunId = nil,
+				})
 			end
 		end
 	end

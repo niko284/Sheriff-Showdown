@@ -1,8 +1,11 @@
+--!strict
+
 local HttpService = game:GetService("HttpService")
+
+local jecs = require("@packages/jecs")
 
 local Components = require("@ecs/components")
 local Generic = require("../Generic")
-local Matter = require("@packages/Matter")
 local RoundService = require("@services/RoundService")
 local Types = require("@constants/Types")
 
@@ -21,7 +24,7 @@ function JuggernautExtension.AllocateMatches(playerPool: { Player }): { Types.Ma
 		team.Entities = {}
 		team.Name = i == 1 and "Juggernaut" or "Hunters"
 
-		local teamSize = i == 1 and 1 or #playerPool -- Juggernaut team size is 1, Hunter team size is the rest of the players
+		local teamSize = i == 1 and 1 or #playerPool
 
 		for _j = 1, teamSize do
 			if #playerPool == 0 then
@@ -37,25 +40,21 @@ function JuggernautExtension.AllocateMatches(playerPool: { Player }): { Types.Ma
 	return { match }
 end
 
-function JuggernautExtension.StartMatch(Match: Types.Match, RoundInstance: Types.Round, World: Matter.World)
+function JuggernautExtension.StartMatch(Match: Types.Match, RoundInstance: Types.Round, World: jecs.World)
 	Generic.StartMatch(Match, RoundInstance, World)
 
 	local juggernautTeam = Match.Teams[1]
-
 	local juggernautEntity = juggernautTeam.Entities[1]
 
-	local healthComponent: Components.Health? = World:get(juggernautEntity, Components.Health)
-	local renderable: Components.Renderable<Types.Character>? = World:get(juggernautEntity, Components.Renderable)
+	local health: Components.Health? = World:get(juggernautEntity, Components.Health)
+	local renderable: Components.Renderable? = World:get(juggernautEntity, Components.Renderable)
 
-	if healthComponent then
-		World:insert(
-			juggernautEntity,
-			healthComponent:patch({
-				maxHealth = 750,
-				health = 750,
-				regenRate = 0,
-			})
-		)
+	if health then
+		World:set(juggernautEntity, Components.Health, {
+			health = 750,
+			maxHealth = 750,
+			regenRate = health.regenRate,
+		})
 	end
 
 	if renderable then

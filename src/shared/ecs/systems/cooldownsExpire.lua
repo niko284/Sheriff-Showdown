@@ -1,10 +1,11 @@
-local Components = require("@ecs/components")
-local Matter = require("@packages/Matter")
+local jecs = require("@packages/jecs")
 
-local function cooldownsExpire(world: Matter.World)
-	local now = DateTime.now()
-	for eid, cooldown: Components.Cooldown in world:query(Components.Cooldown) do
-		if now.UnixTimestampMillis >= cooldown.expiry then
+local Components = require("@ecs/components")
+
+local function cooldownsExpire(world: jecs.World)
+	local now = DateTime.now().UnixTimestampMillis
+	for eid, cooldown in world:query(Components.Cooldown) do
+		if now >= cooldown.expiry then
 			world:remove(eid, Components.Cooldown)
 		end
 	end

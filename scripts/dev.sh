@@ -3,7 +3,7 @@
 set -e
 
 # If Packages aren't installed, install them.
-if [ ! -d "Packages" ]; then
+if [ ! -d "roblox_packages" ]; then
     sh scripts/install-packages.sh
 fi
 

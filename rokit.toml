@@ -1,0 +1,7 @@
+[tools]
+stylua = "JohnnyMorganz/StyLua@2.1.0"
+rojo = "rojo-rbx/rojo@7.5.1"
+selene = "Kampfkarren/selene@0.28.0"
+darklua = "seaofvoices/darklua@0.16.0"
+pesde = "pesde-pkg/pesde@0.7.3+registry.0.2.3"
+blink = "1Axen/blink@0.18.8"

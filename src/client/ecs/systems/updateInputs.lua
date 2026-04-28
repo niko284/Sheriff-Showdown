@@ -1,10 +1,8 @@
-local function updateInput(_, state)
+--!strict
+
+local function updateInputs(_world: any, state: any)
 	state.actions:update(state.inputState, state.inputMap)
 	state.inputState:clear()
 end
 
-return {
-	system = updateInput,
-	event = "RenderStepped",
-	priority = -math.huge, -- You want to update input before all other systems run.
-}
+return updateInputs

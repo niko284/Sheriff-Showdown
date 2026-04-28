@@ -1,10 +1,14 @@
-local Components = require("@ecs/components")
-local Matter = require("@packages/Matter")
+--!strict
 
-local function adjustWalkSpeed(world: Matter.World)
+local jecs = require("@packages/jecs")
+
+local Components = require("@ecs/components")
+
+local function adjustWalkSpeed(world: jecs.World)
 	for _id, walkSpeed, renderable in world:query(Components.WalkSpeed, Components.Renderable) do
-		if renderable.instance:FindFirstChildOfClass("Humanoid") then
-			renderable.instance.Humanoid.WalkSpeed = walkSpeed.speed
+		local humanoid = renderable.instance:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			humanoid.WalkSpeed = walkSpeed.speed
 		end
 	end
 end

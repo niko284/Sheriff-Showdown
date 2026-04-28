@@ -2,7 +2,6 @@
 
 local Components = require("@ecs/components")
 local ItemUtils = require("@utilities/ItemUtils")
-local MatterReplication = require("@packages/MatterReplication")
 local Types = require("@constants/Types")
 
 local KillEffects = {} :: Types.VisualEffect<KillEffectPayload>
@@ -10,6 +9,7 @@ local KillEffects = {} :: Types.VisualEffect<KillEffectPayload>
 type KillEffectPayload = {
 	killerServerEntityId: number,
 	killedServerEntityId: number,
+	replecsClient: any,
 }
 for _, killEffectModule in script:GetChildren() do
 	local killEffect = require(killEffectModule) :: Types.VisualEffect<KillEffectPayload>
@@ -19,7 +19,8 @@ end
 return {
 	name = "KillEffect",
 	visualize = function(world, payload)
-		local clientKillerEntityId = MatterReplication.resolveServerId(world, payload.killerServerEntityId)
+		local clientKillerEntityId = payload.replecsClient
+			and payload.replecsClient:get_client_entity(payload.killerServerEntityId)
 		if not clientKillerEntityId then
 			warn("KillEffect: killer entity not found")
 			return
@@ -27,7 +28,6 @@ return {
 
 		local killerGun: Components.Gun? = world:get(clientKillerEntityId, Components.Gun)
 
-		-- if the killer has a gun, propagate this function to the gun's visual effect
 		if killerGun then
 			local gunItem: Components.Item = world:get(clientKillerEntityId, Components.Item)
 			local gunInfo: Types.ItemInfo = ItemUtils.GetItemInfoFromId(gunItem.Id)

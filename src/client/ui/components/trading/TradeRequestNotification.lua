@@ -1,16 +1,13 @@
 --!strict
 
+local BlinkClient = require("@client/modules/BlinkClient")
 local Button = require("@ui/components/buttons/Button")
-local Net = require("@packages/Net")
 local NotificationElement = require("@ui/components/notification/NotificationElement")
+local Promise = require("@packages/Promise")
 local React = require("@packages/React")
-local Remotes = require("@network/Remotes")
 local Types = require("@constants/Types")
 local UUIDSerde = require("@utilities/UUIDSerde")
 local usePlayerThumbnail = require("@ui/hooks/usePlayerThumbnail")
-
-local TradingNamespace = Remotes.Client:GetNamespace("Trading")
-local AcceptTradeRequest = TradingNamespace:Get("AcceptTradeRequest") :: Net.ClientAsyncCaller
 
 local useCallback = React.useCallback
 local e = React.createElement
@@ -26,7 +23,14 @@ local function TradeRequestNotification(props: TradeRequestNotificationProps)
 	local acceptTradeRequest = useCallback(function()
 		props.closeNotification(props.id)
 		local serializedTradeUUID = UUIDSerde.Serialize(props.tradeUUID)
-		AcceptTradeRequest:CallServerAsync(serializedTradeUUID)
+		Promise.new(function(resolve, reject)
+			local ok, result = pcall(BlinkClient.TradingAcceptTradeRequest.Invoke, serializedTradeUUID)
+			if ok then
+				resolve(result)
+			else
+				reject(result)
+			end
+		end)
 			:andThen(function(response: Types.NetworkResponse)
 				if response.Success == false then
 					warn(response.Message)

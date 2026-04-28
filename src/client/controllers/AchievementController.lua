@@ -7,14 +7,9 @@
 -- // Variables \\
 
 local Achievements = require("@constants/Achievements")
-local Net = require("@packages/Net")
-local Remotes = require("@network/Remotes")
+local BlinkClient = require("@client/modules/BlinkClient")
 local Signal = require("@packages/Signal")
 local Types = require("@constants/Types")
-
-local AchievementsNamespace = Remotes.Client:GetNamespace("Achievements")
-local AchievementsChanged = AchievementsNamespace:Get("AchievementsChanged") :: Net.ClientListenerEvent
-local GetAchievements = AchievementsNamespace:Get("GetAchievements") :: Net.ClientAsyncCaller
 
 -- // Controller Variables \\
 
@@ -28,7 +23,7 @@ local AchievementController = {
 -- // Functions \\
 
 function AchievementController:OnInit()
-	AchievementsChanged:Connect(function(partialAchievementState)
+	BlinkClient.AchievementsChanged.On(function(partialAchievementState)
 		AchievementController.PartialAchievementsChanged:Fire(partialAchievementState)
 	end)
 end
@@ -94,7 +89,7 @@ function AchievementController:GetAchievementInfoFromId(Id: number): Types.Achie
 end
 
 function AchievementController:GetAchievementsFromServer()
-	return GetAchievements:CallServerAsync():expect()
+	return BlinkClient.AchievementsGetAchievements.Invoke()
 end
 
 return AchievementController

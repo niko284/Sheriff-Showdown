@@ -1,18 +1,13 @@
 --!strict
 
+local BlinkServer = require("@server/modules/BlinkServer")
 local EnumUtils = require("@utilities/EnumUtils")
 local Freeze = require("@packages/Freeze")
-local Net = require("@packages/Net")
 local PlayerDataService = require("@services/PlayerDataService")
-local Remotes = require("@network/Remotes")
-local ServerComm = require("@server/ServerComm")
 local Settings = require("@constants/Settings")
 local Signal = require("@packages/Signal")
 local Types = require("@constants/Types")
 local t = require("@packages/t")
-
-local SettingsRemotes = Remotes.Server:GetNamespace("Settings")
-local ChangeSetting = SettingsRemotes:Get("ChangeSetting") :: Net.ServerAsyncCallback
 
 local SettingTypes = {
 	Toggle = t.boolean,
@@ -38,7 +33,6 @@ local RestrictedKeybinds = { -- TODO: Add more keybinds. Table defines the keybi
 
 local SettingsService = {
 	Name = "SettingsService",
-	PlayerSettings = ServerComm:CreateProperty("PlayerSettings", {}),
 	SettingsTemplate = {},
 	Settings = {},
 	SettingChanged = Signal.new() :: Signal.Signal<Player, string, Types.SettingValue>,
@@ -47,9 +41,9 @@ local SettingsService = {
 function SettingsService:OnInit()
 	PlayerDataService.DocumentLoaded:Connect(function(Player: Player, Document)
 		local Data = Document:read()
-		self.PlayerSettings:SetFor(Player, Data.Settings)
+		BlinkServer.SettingsSync.Fire(Player, Data.Settings)
 	end)
-	ChangeSetting:SetCallback(function(Player: Player, SettingName: string, Value: Types.SettingValue)
+	BlinkServer.SettingsChangeSetting.On(function(Player: Player, SettingName: string, Value: Types.SettingValue)
 		return self:ChangeSettingNetworkRequest(Player, SettingName, Value)
 	end)
 end

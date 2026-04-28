@@ -1,17 +1,14 @@
 --!strict
 
+local BlinkClient = require("@client/modules/BlinkClient")
 local InterfaceController = require("@controllers/InterfaceController")
 local ItemUtils = require("@utilities/ItemUtils")
-local Net = require("@packages/Net")
+local Promise = require("@packages/Promise")
 local React = require("@packages/React")
-local Remotes = require("@network/Remotes")
 local TradeContext = require("@ui/contexts/TradeContext")
 local Types = require("@constants/Types")
 local UIStroke = require("@ui/components/other/UIStroke")
 local UUIDSerde = require("@utilities/UUIDSerde")
-
-local TradingNamespace = Remotes.Client:GetNamespace("Trading")
-local RemoveItemFromTrade = TradingNamespace:Get("RemoveItemFromTrade") :: Net.ClientAsyncCaller
 
 local useCallback = React.useCallback
 local useContext = React.useContext
@@ -41,7 +38,11 @@ local function TradeItemTemplate(props: TradeItemTemplateProps)
 
 		InterfaceController.InterfaceChanged:Fire("ActiveTrade")
 
-		RemoveItemFromTrade:CallServerAsync(serializedTradeUUID, serializedItemUUID)
+		Promise.new(function(resolve, reject)
+			local ok, result =
+				pcall(BlinkClient.TradingRemoveItem.Invoke, { tradeUuid = serializedTradeUUID, itemUuid = serializedItemUUID })
+			if ok then resolve(result) else reject(result) end
+		end)
 			:andThen(function(response: Types.NetworkResponse)
 				if response.Success == false then
 					warn(response.Message)

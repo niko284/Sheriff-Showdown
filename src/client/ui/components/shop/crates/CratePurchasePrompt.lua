@@ -1,19 +1,16 @@
 --!strict
 
+local BlinkClient = require("@client/modules/BlinkClient")
 local ConfirmationPrompt = require("@ui/components/other/ConfirmationPrompt")
 local Crates = require("@constants/Crates")
 local FormatNumber = require("@utilities/FormatNumber")
 local InventoryContext = require("@ui/contexts/InventoryContext")
-local Net = require("@packages/Net")
+local Promise = require("@packages/Promise")
 local React = require("@packages/React")
-local Remotes = require("@network/Remotes")
 local ResourceContext = require("@ui/contexts/ResourceContext")
 local Types = require("@constants/Types")
 
 local NumberFormatter = FormatNumber.NumberFormatter
-
-local ShopNamespace = Remotes.Client:GetNamespace("Shop")
-local PurchaseCrate = ShopNamespace:Get("PurchaseCrate") :: Net.ClientAsyncCaller
 
 local useCallback = React.useCallback
 local e = React.createElement
@@ -43,7 +40,11 @@ local function CratePurchasePrompt(props: CratePurchasePromptProps)
 			if resources[purchaseMethod.Type] >= purchaseMethod.Price then
 				-- purchase the crate
 				props.onCancel()
-				PurchaseCrate:CallServerAsync(props.crateName, 1)
+				Promise.new(function(resolve, reject)
+					local ok, result =
+						pcall(BlinkClient.ShopPurchaseCrate.Invoke, { crateType = props.crateName, quantity = 1 })
+					if ok then resolve(result) else reject(result) end
+				end)
 					:andThen(function(response: Types.NetworkResponse)
 						if response.Success == false then
 							warn(response.Message)

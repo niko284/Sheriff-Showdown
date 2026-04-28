@@ -2,9 +2,9 @@
 
 local Players = game:GetService("Players")
 
+local BlinkServer = require("@server/modules/BlinkServer")
 local PlayerDataService = require("@services/PlayerDataService")
 local ResourceService = require("@services/ResourceService")
-local ServerComm = require("@server/ServerComm")
 local StatisticsService = require("@services/StatisticsService")
 local Types = require("@constants/Types")
 
@@ -12,7 +12,6 @@ local Types = require("@constants/Types")
 
 local PlayerlistService = {
 	Name = "PlayerlistService",
-	ReplicatedPlayerList = ServerComm:CreateProperty("ReplicatedPlayerList", {}),
 	PlayerList = {},
 }
 
@@ -42,6 +41,10 @@ function PlayerlistService:OnInit()
 end
 
 function PlayerlistService:OnStart()
+	Players.PlayerAdded:Connect(function(player)
+		BlinkServer.PlayerlistSync.Fire(player, PlayerlistService.PlayerList)
+	end)
+
 	-- update kills and deaths and level in live time, and longest kill streak.
 
 	StatisticsService:GetStatisticChangedSignal("TotalKills"):Connect(function(Player: Player, Kills: number)
@@ -70,7 +73,7 @@ function PlayerlistService:UpdatePlayerProperty(Player: Player, Property: string
 	for _, PlayerData in pairs(PlayerlistService.PlayerList) do
 		if PlayerData.Player.UserId == Player.UserId then
 			PlayerData[Property] = Value
-			PlayerlistService.ReplicatedPlayerList:Set(PlayerlistService.PlayerList)
+			BlinkServer.PlayerlistSync.FireAll(PlayerlistService.PlayerList)
 			break
 		end
 	end
@@ -78,14 +81,14 @@ end
 
 function PlayerlistService:AddPlayerToList(PlayerListData: Types.PlayerlistPlayer): ()
 	table.insert(PlayerlistService.PlayerList, PlayerListData)
-	PlayerlistService.ReplicatedPlayerList:Set(PlayerlistService.PlayerList)
+	BlinkServer.PlayerlistSync.FireAll(PlayerlistService.PlayerList)
 end
 
 function PlayerlistService:RemovePlayerFromList(Player: Player): ()
 	for Index, PlayerData in PlayerlistService.PlayerList do
 		if PlayerData.Player.UserId == Player.UserId then
 			table.remove(PlayerlistService.PlayerList, Index)
-			PlayerlistService.ReplicatedPlayerList:Set(PlayerlistService.PlayerList)
+			BlinkServer.PlayerlistSync.FireAll(PlayerlistService.PlayerList)
 			break
 		end
 	end
@@ -95,7 +98,7 @@ function PlayerlistService:UpdatePlayerLevel(Player: Player, Level: number): ()
 	for _, PlayerData in PlayerlistService.PlayerList do
 		if PlayerData.Player.UserId == Player.UserId then
 			PlayerData.Level = Level
-			PlayerlistService.ReplicatedPlayerList:Set(PlayerlistService.PlayerList)
+			BlinkServer.PlayerlistSync.FireAll(PlayerlistService.PlayerList)
 			break
 		end
 	end

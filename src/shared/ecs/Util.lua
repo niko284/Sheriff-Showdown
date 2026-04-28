@@ -1,15 +1,14 @@
 --!strict
 
+local jecs = require("@packages/jecs")
+
 local Components = require("@ecs/components")
-local Matter = require("@packages/Matter")
 
 local Util = {}
 
-function Util.GetTargetEntityIdFromPlayer(World: Matter.World, Player: Player): number?
-	for eid, _target: Components.Target, player: Components.PlayerComponent in
-		World:query(Components.Target, Components.Player)
-	do
-		if player.player == Player then
+function Util.GetTargetEntityIdFromPlayer(world: jecs.World, player: Player): jecs.Entity?
+	for eid, _, playerData in world:query(Components.Target, Components.Player) do
+		if playerData.player == player then
 			return eid
 		end
 	end

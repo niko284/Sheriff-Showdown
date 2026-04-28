@@ -3,11 +3,10 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
-local React = require("@packages/React")
-local WorldContext = require("@ui/contexts/WorldContext")
 local Components = require("@ecs/components")
-local MatterTypes = require("@ecs/MatterTypes")
+local React = require("@packages/React")
 local UIStroke = require("@ui/components/other/UIStroke")
+local WorldContext = require("@ui/contexts/WorldContext")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -16,24 +15,19 @@ local useEffect = React.useEffect
 local e = React.createElement
 local useState = React.useState
 
-type GunRecord = MatterTypes.WorldChangeRecord<MatterTypes.ComponentInstance<Components.Gun>>
-
 local function GunCounter(_props)
-
-
 	local worldContext = useContext(WorldContext)
-    local gunData, setGunData = useState(nil :: Components.Gun?)
+	local gunData, setGunData = useState(nil :: Components.Gun?)
 
-    local isReloading, setIsReloading = useState(false)
+	local isReloading, setIsReloading = useState(false)
 
 	useEffect(function()
-		local loop 
+		local loop
 		if worldContext.world then
+			local world = worldContext.world
 
-            local world = worldContext.world
-			
-			loop = RunService.RenderStepped:Connect(function() 
-				local gunFound = false 
+			loop = RunService.RenderStepped:Connect(function()
+				local gunFound = false
 				for entityId, gun: Components.Gun, owner in world:query(Components.Gun, Components.Owner) do
 					if owner and owner.OwnedBy == LocalPlayer and not gun.Disabled then
 						setGunData(gun) -- will only update when component updates (aka new table address)
@@ -45,7 +39,7 @@ local function GunCounter(_props)
 							setIsReloading(false)
 						end
 
-						gunFound = true 
+						gunFound = true
 					end
 				end
 				if not gunFound then
@@ -53,14 +47,12 @@ local function GunCounter(_props)
 					setIsReloading(false)
 				end
 			end)
- 
-
 		end
-        return function() 
-            if loop then
+		return function()
+			if loop then
 				loop:Disconnect()
-            end
-        end
+			end
+		end
 	end, { worldContext } :: { any })
 
 	return e("Frame", {
@@ -77,7 +69,8 @@ local function GunCounter(_props)
 				Enum.FontWeight.Bold,
 				Enum.FontStyle.Normal
 			),
-			Text = isReloading and "Reloading..." or string.format(`{gunData.CurrentCapacity}/{gunData.MaxCapacity}`, "%d%d"),
+			Text = isReloading and "Reloading..."
+				or string.format(`{gunData.CurrentCapacity}/{gunData.MaxCapacity}`, "%d%d"),
 			TextColor3 = Color3.fromRGB(255, 255, 255),
 			TextSize = 34,
 			TextWrapped = true,

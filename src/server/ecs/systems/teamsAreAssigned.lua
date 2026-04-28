@@ -1,31 +1,26 @@
+--!strict
+
+local jecs = require("@packages/jecs")
+local replecs = require("@packages/replecs")
+
 local Components = require("@ecs/components")
-local Matter = require("@packages/Matter")
-local Types = require("@constants/Types")
 
-local useEvent = Matter.useEvent
-
-local function teamsAreAssigned(world: Matter.World)
-	-- newly assigned teams
-	for eid, _target: Components.Target, renderable: Components.Renderable<Types.Character> in
-		world:query(Components.Target, Components.Renderable):without(Components.Team)
-	do
+local function teamsAreAssigned(world: jecs.World)
+	for eid, _target, renderable in world:query(Components.Target, Components.Renderable):without(Components.Team) do
 		local teamAttribute = renderable.instance:GetAttribute("Team")
 		if teamAttribute then
-			world:insert(eid, Components.Team({ name = teamAttribute }))
+			world:set(eid, Components.Team, { name = teamAttribute })
+			world:add(eid, jecs.pair(replecs.reliable, Components.Team))
 		end
 	end
 
-	-- account for the case where we change the team of a player after it has been assigned.
-	for eid, _target: Components.Target, renderable: Components.Renderable<Types.Character>, team in
-		world:query(Components.Target, Components.Renderable, Components.Team)
-	do
-		for _ in useEvent(renderable.instance, renderable.instance:GetAttributeChangedSignal("Team")) do
-			local teamAttribute = renderable.instance:GetAttribute("Team")
-			if teamAttribute == nil then
-				world:remove(eid, Components.Team)
-			else
-				world:insert(eid, team:patch({ name = teamAttribute }))
-			end
+	for eid, _target, renderable, team in world:query(Components.Target, Components.Renderable, Components.Team) do
+		local teamAttribute = renderable.instance:GetAttribute("Team")
+		if teamAttribute == nil then
+			world:remove(eid, Components.Team)
+			world:remove(eid, jecs.pair(replecs.reliable, Components.Team))
+		elseif teamAttribute ~= team.name then
+			world:set(eid, Components.Team, { name = teamAttribute })
 		end
 	end
 end

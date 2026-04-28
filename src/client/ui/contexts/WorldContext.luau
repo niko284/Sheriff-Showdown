@@ -1,8 +1,8 @@
 --!strict
 
-local Matter = require("@packages/Matter")
+local jecs = require("@packages/jecs")
 local React = require("@packages/React")
 
 return React.createContext({
-	world = nil :: Matter.World?,
+	world = nil :: jecs.World?,
 })

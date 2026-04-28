@@ -2,19 +2,12 @@
 
 local HttpService = game:GetService("HttpService")
 
-local ClientComm = require("../ClientComm")
-local Net = require("@packages/Net")
+local BlinkClient = require("@client/modules/BlinkClient")
 local NotificationController = require("@controllers/NotificationController")
-local Remotes = require("@network/Remotes")
 local Signal = require("@packages/Signal")
 local TradeRequestNotification = require("@ui/components/trading/TradeRequestNotification")
 local TradeSerde = require("@network/serde/TradeSerde")
 local Types = require("@constants/Types")
-
-local TradingNamespace = Remotes.Client:GetNamespace("Trading")
-local TradeReceived = TradingNamespace:Get("TradeReceived") :: Net.ClientListenerEvent
-
-local ActiveTradeProperty = ClientComm:GetProperty("ActiveTrade")
 
 local TradingController = {
 	Name = "TradingController",
@@ -23,11 +16,11 @@ local TradingController = {
 }
 
 function TradingController:OnInit()
-	ActiveTradeProperty:Observe(function(SerializedTrade: string)
+	BlinkClient.TradingActiveTradeSync.On(function(SerializedTrade: string)
 		local Trade: Types.Trade? = TradeSerde.Deserialize(SerializedTrade)
 		TradingController.ActiveTradeChanged:Fire(Trade)
 	end)
-	TradeReceived:Connect(function(SerializedTrade: string)
+	BlinkClient.TradingTradeReceived.On(function(SerializedTrade: string)
 		local Trade = TradeSerde.Deserialize(SerializedTrade) :: Types.Trade
 
 		local tradeWith = string.format("%s wants to trade with you", Trade.Sender.Name)

@@ -7,33 +7,24 @@ local ServerStorage = game:GetService("ServerStorage")
 
 local Assets = ServerStorage.assets
 
+local BlinkServer = require("@server/modules/BlinkServer")
 local Components = require("@ecs/components")
 local ExperienceService = require("./ExperienceService")
 local Maps = require("@constants/Maps")
-local Matter = require("@packages/Matter")
 local Promise = require("@packages/Promise")
-local Remotes = require("@network/Remotes")
 local ResourceService = require("./ResourceService")
 local RoundModes = require("@constants/RoundModes")
-local ServerComm = require("@server/ServerComm")
 local SettingsService = require("@services/SettingsService")
 local Sift = require("@packages/Sift")
 local Signal = require("@packages/Signal")
 local StatisticsService = require("@services/StatisticsService")
 local Types = require("@constants/Types")
-
-local RoundNamespace = Remotes.Server:GetNamespace("Round")
-local VotingNamespace = Remotes.Server:GetNamespace("Voting")
-
-local StartMatchClient = RoundNamespace:Get("StartMatch")
-local ProcessVote = VotingNamespace:Get("ProcessVote")
-local EndMatchClient = RoundNamespace:Get("EndMatch")
-local ApplyTeamIndicator = RoundNamespace:Get("ApplyTeamIndicator")
+local jecs = require("@packages/jecs")
 
 local MAPS_FOLDER = Assets:WaitForChild("maps", 3)
 local ExtensionsFolder = script.ModeExtensions
 local VOTING_DURATION = 25
-local MINIMUM_PLAYERS = 2
+local MINIMUM_PLAYERS = 1
 local MAP_VOTING_COUNT = 3
 local ROUND_MODE_VOTING_COUNT = 3
 local WINNER_CELEBRATION_DURATION = 6
@@ -49,13 +40,23 @@ local RoundService = {
 	MatchFinished = Signal.new(),
 	RoundExtensions = {} :: { [Types.RoundMode]: Types.RoundModeExtension },
 	CurrentRound = nil :: Types.Round?,
-	VotingPoolClient = ServerComm:CreateProperty("VotingPoolClient", nil),
-	RoundStatus = ServerComm:CreateProperty("RoundStatus", nil),
 	VotingPool = nil :: Types.VotingPool?,
-	World = nil :: Matter.World, -- injected by our ECS system
+	CurrentStatus = "" :: string,
+	CurrentVotingData = nil :: any,
+	World = nil :: jecs.World, -- injected by our ECS system
 }
 
 -- // Functions \\
+
+function RoundService:SetStatus(status: string)
+	RoundService.CurrentStatus = status
+	BlinkServer.RoundStatusSync.FireAll(status)
+end
+
+function RoundService:SetVotingData(data: any)
+	RoundService.CurrentVotingData = data
+	BlinkServer.VotingSync.FireAll(data)
+end
 
 function RoundService:OnStart()
 	-- load our round extensions
@@ -74,9 +75,17 @@ function RoundService:OnStart()
 
 	-- loop our rounds. we do this in a thread b/c we don't want to infinitely yield our server loader.
 
-	ProcessVote:Connect(function(Player: Player, VotingField: string, VotingChoice: string)
-		-- process the vote in the voting pool.
-		RoundService:ProcessVote(Player, VotingField, VotingChoice)
+	BlinkServer.VoteSubmit.On(function(Player: Player, args: { field: string, choice: string })
+		RoundService:ProcessVote(Player, args.field, args.choice)
+	end)
+
+	Players.PlayerAdded:Connect(function(player: Player)
+		if RoundService.CurrentStatus ~= "" then
+			BlinkServer.RoundStatusSync.Fire(player, RoundService.CurrentStatus)
+		end
+		if RoundService.CurrentVotingData ~= nil then
+			BlinkServer.VotingSync.Fire(player, RoundService.CurrentVotingData)
+		end
 	end)
 
 	Players.PlayerRemoving:Connect(function(Player: Player)
@@ -101,6 +110,7 @@ function RoundService:OnStart()
 
 	task.spawn(function()
 		while true do
+			print("Waiting for players to start a round...")
 			RoundService:WaitForPlayers(MINIMUM_PLAYERS)
 				:andThen(function()
 					return Promise.race({
@@ -166,7 +176,7 @@ function RoundService:ProcessVote(Player: Player, VotingField: string, VotingCho
 end
 
 function RoundService:DoIntermission()
-	RoundService.RoundStatus:Set("Intermission...")
+	RoundService:SetStatus("Intermission...")
 	return Promise.delay(10)
 end
 
@@ -212,7 +222,7 @@ function RoundService:DoVoting()
 	local shuffledMaps = Sift.Array.shuffle(Maps)
 	local shuffledRoundModes = Sift.Array.shuffle(RoundModes)
 
-	RoundService.RoundStatus:Set("Voting in progress...")
+	RoundService:SetStatus("Voting in progress...")
 
 	-- pick MAP_VOTING_COUNT maps and ROUND_MODE_VOTING_COUNT round modes
 
@@ -248,7 +258,7 @@ function RoundService:DoVoting()
 	end
 
 	-- to reduce bandwidth we can also just pass the non-shuffled indices of the maps and round modes to the client but not necessary, very negligible
-	RoundService.VotingPoolClient:Set({
+	RoundService:SetVotingData({
 		VotingFields = {
 			{
 				Field = "Maps",
@@ -297,9 +307,8 @@ function RoundService:DoVoting()
 		end
 
 		local roundModeData = RoundService:GetRoundModeData(fieldsWithWinningChoices.RoundModes.Name)
-		RoundService.RoundStatus:Set(fieldsWithWinningChoices.RoundModes.Name .. ": " .. roundModeData.Description)
-
-		RoundService.VotingPoolClient:Set(nil) -- close the voting interface
+		RoundService:SetStatus(fieldsWithWinningChoices.RoundModes.Name .. ": " .. roundModeData.Description)
+		RoundService:SetVotingData(nil) -- close the voting interface
 
 		return fieldsWithWinningChoices
 	end)
@@ -310,7 +319,7 @@ function RoundService:WaitForPlayers(MinimumPlayers: number)
 	if playerCount >= MinimumPlayers then
 		return Promise.resolve()
 	else
-		RoundService.RoundStatus:Set("Waiting for players...")
+		RoundService:SetStatus("Waiting for players...")
 		return Promise.any({
 			Promise.fromEvent(Players.PlayerAdded, function()
 				return #Players:GetPlayers() >= MinimumPlayers
@@ -418,9 +427,9 @@ function RoundService:StartMatch(RoundInstance: Types.Round, Match: Types.Match)
 	-- teleport players to their spawn points
 	local mapFolder = RoundInstance.Map
 
-	RoundService.RoundStatus:Set("StartMatch")
+	RoundService:SetStatus("StartMatch")
 
-	local world = RoundService.World :: Matter.World
+	local world = RoundService.World :: jecs.World
 
 	local roundModeInfo = RoundService:GetRoundModeData(RoundInstance.RoundMode)
 
@@ -450,7 +459,7 @@ function RoundService:StartMatch(RoundInstance: Types.Round, Match: Types.Match)
 
 		local teamPlayers = RoundService:GetPlayersInTeam(team)
 
-		StartMatchClient:SendToPlayers(teamPlayers)
+		BlinkServer.RoundStartMatch.FireList(teamPlayers, nil)
 		RunService.Heartbeat:Wait()
 
 		teamPlayerColors[team.Name] = {
@@ -482,11 +491,11 @@ function RoundService:StartMatch(RoundInstance: Types.Round, Match: Types.Match)
 				table.remove(spawners, randomSpawnerIndex) -- we don't want to spawn two players at the same spawn point
 			end
 
-			RoundService.World:insert(entityId, Components.Target())
+			RoundService.World:set(entityId, Components.Target, { CanTarget = true })
 		end
 	end
 
-	ApplyTeamIndicator:SendToPlayers(RoundService:GetAllPlayersInMatch(Match), teamPlayerColors)
+	BlinkServer.RoundApplyTeamIndicator.FireList(RoundService:GetAllPlayersInMatch(Match), teamPlayerColors)
 
 	local roundModeExtension = RoundService:GetRoundModeExtension(RoundInstance.RoundMode)
 
@@ -556,7 +565,7 @@ function RoundService:WaitForMatchesToFinish(RoundInstance: Types.Round)
 					-- start the next match in the RoundInstance (if there are any left)
 
 					if not winningTeam then
-						RoundService.RoundStatus:Set("No winners for this round!")
+						RoundService:SetStatus("No winners for this round!")
 					end
 
 					-- calculate the # of coins to give to winning team based on how long match took relative to time limit.
@@ -580,7 +589,7 @@ function RoundService:WaitForMatchesToFinish(RoundInstance: Types.Round)
 								end
 
 								StatisticsService:IncrementStatistic(winningPlayer, "TotalWins", 1)
-								EndMatchClient:SendToPlayer(winningPlayer)
+								BlinkServer.RoundEndMatch.Fire(winningPlayer, nil)
 								winningPlayer:LoadCharacter()
 
 								local level = ResourceService:GetResource(winningPlayer, "Level")
@@ -597,7 +606,7 @@ function RoundService:WaitForMatchesToFinish(RoundInstance: Types.Round)
 										RoundService.World:get(entityId, Components.Player)
 									if not wasKilled and playerComponent then
 										playerComponent.player:LoadCharacter()
-										EndMatchClient:SendToPlayer(playerComponent.player)
+										BlinkServer.RoundEndMatch.Fire(playerComponent.player, nil)
 									end
 								end
 							end
@@ -728,9 +737,6 @@ function RoundService:AllocateMatches(PlayerPool: { Player }, RoundMode: Types.R
 			end
 		end
 
-		if #shuffledPool <= 1 then
-			--	break -- no match should have only 1 player (uneven number of players in the pool). they will play in the next round.
-		end
 		for j = 1, teamsPerMatch do
 			local teamName = RoundModeData.TeamNames and RoundModeData.TeamNames[j]
 				or string.format("Team %s", tostring(i .. j))

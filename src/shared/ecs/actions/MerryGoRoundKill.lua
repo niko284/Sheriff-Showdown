@@ -20,7 +20,7 @@ return {
 		end
 
 		if merryGoRound.currentAngularVelocity < merryGoRound.maxAngularVelocity then
-			return -- merry go round is not spinning fast enough to kill. this check isn't 100% necessary but it's good to have.
+			return
 		end
 
 		local character = player.Character
@@ -35,24 +35,19 @@ return {
 		end
 
 		if world:get(serverEntityIdCharacter, Components.Killed) then
-			return -- character is already dead
+			return
 		end
 
-		world:insert(
-			serverEntityIdCharacter,
-			Components.Killed({
-				killerEntityId = actionPayload.merryGoRoundId,
-				expiry = os.time() + 6,
-				processRemoval = false,
-			})
-		)
-	end,
-	validatePayload = function()
-		return t.strictInterface({
-			merryGoRoundId = t.number,
-			action = t.literal("MerryGoRoundKill"),
-			actionId = t.string,
+		world:set(serverEntityIdCharacter, Components.Killed, {
+			killerEntityId = actionPayload.merryGoRoundId,
+			expiry = os.time() + 6,
+			processRemoval = false,
 		})
 	end,
+	validatePayload = t.strictInterface({
+		merryGoRoundId = t.number,
+		action = t.literal("MerryGoRoundKill"),
+		actionId = t.string,
+	}),
 	afterProcess = {},
 } :: Types.Action<MerryGoRoundKillPayload>

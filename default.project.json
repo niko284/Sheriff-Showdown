@@ -1,5 +1,11 @@
 {
     "name": "Sheriff Showdown",
+    "globIgnorePaths": [
+        "**/*.spec.lua",
+        "**/*.spec.luau",
+        "**/jest.config.lua",
+        "**/jest.config.luau"
+    ],
     "servePlaceIds": [
         17516619149
     ],
@@ -7,10 +13,13 @@
         "$className": "DataModel",
         "ReplicatedStorage": {
             "packages": {
-                "$path": "Packages"
+                "$path": "roblox_packages"
             },
             "shared": {
                 "$path": "src/shared"
+            },
+            "client": {
+                "$path": "src/client"
             }
         },
         "ServerScriptService": {
@@ -19,17 +28,15 @@
             },
             "nodeModules": {
                 "$path": "node_modules"
-            },
-            "ServerPackages": {
-                "$path": "ServerPackages"
             }
         },
         "StarterPlayer": {
             "$className": "StarterPlayer",
             "StarterPlayerScripts": {
                 "$className": "StarterPlayerScripts",
-                "client": {
-                    "$path": "src/client"
+                "$ignoreUnknownInstances": false,
+                "boot_client": {
+                    "$path": "src/boot_client"
                 }
             },
             "StarterCharacterScripts": {

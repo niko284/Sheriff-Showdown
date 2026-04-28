@@ -8,22 +8,15 @@
 
 local HttpService = game:GetService("HttpService")
 
+local BlinkServer = require("@server/modules/BlinkServer")
 local Freeze = require("@packages/Freeze")
-local Net = require("@packages/Net")
 local PlayerDataService = require("@services/PlayerDataService")
-local Remotes = require("@network/Remotes")
 local ResourceService = require("@services/ResourceService")
 local Sift = require("@packages/Sift")
 local Signal = require("@packages/Signal")
 local StatisticsService = require("@services/StatisticsService")
 local Timer = require("@packages/Timer")
 local Types = require("@constants/Types")
-
-local AchievementNamespace = Remotes.Server:GetNamespace("Achievements")
-
-local ClaimAchievement = AchievementNamespace:Get("ClaimAchievement") :: Net.ServerAsyncCallback
-local GetAchievements = AchievementNamespace:Get("GetAchievements") :: Net.ServerAsyncCallback
-local AchievementsChanged = AchievementNamespace:Get("AchievementsChanged") :: Net.ServerSenderEvent
 
 local DAILY_ACHIEVEMENT_COUNT = 5 -- Number of daily achievements to give a player.
 
@@ -46,14 +39,14 @@ function AchievementService:OnInit()
 	for _, Achievement in AchievementModule do
 		AchievementService.Achievements[Achievement.Id] = Achievement
 	end
-	GetAchievements:SetCallback(function(Player: Player)
+	BlinkServer.AchievementsGetAchievements.On(function(Player: Player)
 		local PlayerDocument = PlayerDataService:GetDocument(Player)
 		if PlayerDocument then
 			return PlayerDocument:read().Achievements
 		end
 		return nil
 	end)
-	ClaimAchievement:SetCallback(function(Player: Player, AchievementUUID: string)
+	BlinkServer.AchievementsClaimAchievement.On(function(Player: Player, AchievementUUID: string)
 		return AchievementService:ClaimAchievementRequest(Player, AchievementUUID)
 	end)
 end
@@ -163,7 +156,7 @@ function AchievementService:OnStart()
 
 		AchievementService.NewRewardTimers[Player.UserId :: any] =
 			AchievementService:ListenForDailyRotation(Player, PlayerDocument:read().Achievements.LastDailyRotation)
-		AchievementsChanged:SendToPlayer(Player, PlayerDocument:read().Achievements) -- Send client their achievements once their data loads in
+		BlinkServer.AchievementsChanged.Fire(Player, PlayerDocument:read().Achievements) -- Send client their achievements once their data loads in
 	end)
 
 	-- For statistic and resource action requirements, we need to listen for changes to the statistic/resource and update the achievement progress accordingly.
@@ -280,7 +273,7 @@ function AchievementService:RotateDailyAchievements(Player: Player)
 			newAchievements -- Add new daily achievements.
 		)
 		playerDocument:write(Freeze.Dictionary.set(playerDocument:read(), "Achievements", playerAchievements))
-		AchievementsChanged:SendToPlayer(Player, playerAchievements)
+		BlinkServer.AchievementsChanged.Fire(Player, playerAchievements)
 		AchievementService.NewRewardTimers[Player.UserId] =
 			AchievementService:ListenForDailyRotation(Player, playerAchievements.LastDailyRotation)
 	end
@@ -404,7 +397,7 @@ function AchievementService:RegisterAchievementProgress(
 
 	-- @IMPORTANT: We only send the achievements that changed to the client, so we don't send the entire state every time.
 
-	AchievementsChanged:SendToPlayer(Player, {
+	BlinkServer.AchievementsChanged.Fire(Player, {
 		ActiveAchievements = changedActiveAchievements,
 	}) -- Update client
 end
@@ -640,7 +633,7 @@ function AchievementService:ClaimAchievement(Player: Player, Achievement: Types.
 				)
 			)
 
-			AchievementsChanged:SendToPlayer(Player, {
+			BlinkServer.AchievementsChanged.Fire(Player, {
 				ActiveAchievements = {
 					[tostring(index)] = newActiveAchievements[index],
 				},

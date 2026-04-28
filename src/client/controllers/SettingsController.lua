@@ -1,11 +1,9 @@
 --!strict
 
-local ClientComm = require("../ClientComm")
+local BlinkClient = require("@client/modules/BlinkClient")
 local Settings = require("@constants/Settings")
 local Signal = require("@packages/Signal")
 local Types = require("@constants/Types")
-
-local PlayerSettingsProperty = ClientComm:GetProperty("PlayerSettings")
 
 local SettingsController = {
 	Name = "SettingsController",
@@ -43,11 +41,9 @@ local SettingsController = {
 -- // Functions \\
 
 function SettingsController:OnInit()
-	PlayerSettingsProperty:Observe(function(playerSettings: Types.PlayerDataSettings?)
-		if playerSettings then
-			SettingsController.CurrentSettings = playerSettings
-			SettingsController.SettingsChanged:Fire(playerSettings, nil)
-		end
+	BlinkClient.SettingsSync.On(function(playerSettings: Types.PlayerDataSettings)
+		SettingsController.CurrentSettings = playerSettings
+		SettingsController.SettingsChanged:Fire(playerSettings, nil)
 	end)
 	SettingsController.SettingsChanged:Connect(
 		function(playerSettings: Types.PlayerDataSettings, _oldSettings: Types.PlayerDataSettings?)
@@ -57,19 +53,19 @@ function SettingsController:OnInit()
 end
 
 function SettingsController:GetReplicatedSettings()
-	return PlayerSettingsProperty:Get()
+	return SettingsController.CurrentSettings
 end
 
 function SettingsController:GetSetting(settingName: string): Types.SettingInternal
 	local playerSettings =
-		SettingsController:FillInSettings(SettingsController.CurrentSettings or PlayerSettingsProperty:Get())
+		SettingsController:FillInSettings(SettingsController.CurrentSettings or {} :: Types.PlayerDataSettings)
 	return playerSettings[settingName]
 end
 
 function SettingsController:ObserveSettingsChanged(
 	callback: (Types.PlayerDataSettings, Types.PlayerDataSettings?) -> ()
 )
-	local playerSettings = PlayerSettingsProperty:Get()
+	local playerSettings = SettingsController.CurrentSettings
 	if playerSettings then
 		callback(playerSettings, nil)
 	end

@@ -2,13 +2,11 @@
 
 local Players = game:GetService("Players")
 
+local BlinkServer = require("@server/modules/BlinkServer")
 local PlayerDataService = require("@services/PlayerDataService")
 local Schema = require("@services/PlayerDataService/Schema")
-local ServerComm = require("@server/ServerComm")
 local Sift = require("@packages/Sift")
 local Signal = require("@packages/Signal")
-
-local PlayerResourcesProperty = ServerComm:CreateProperty("PlayerResources", nil)
 
 local ResourceService = { Name = "ResourceService", ResourceSignals = {} :: { [string]: Signal.Signal<Player, any> } }
 
@@ -18,7 +16,7 @@ function ResourceService:OnInit()
 	end
 	PlayerDataService.DocumentLoaded:Connect(function(Player, Document)
 		local Data = Document:read()
-		PlayerResourcesProperty:SetFor(Player, Data.Resources)
+		BlinkServer.ResourcesSync.Fire(Player, Data.Resources)
 	end)
 end
 
@@ -31,7 +29,7 @@ function ResourceService:SetResource(Player: Player, Resource: string, Value: an
 	local newData = table.clone(document:read())
 	newData.Resources = Sift.Dictionary.set(newData.Resources, Resource, Value)
 	document:write(newData)
-	PlayerResourcesProperty:SetFor(Player, newData.Resources)
+	BlinkServer.ResourcesSync.Fire(Player, newData.Resources)
 end
 
 function ResourceService:IncrementResource(Player: Player, Resource: string, Amount: number): ()
@@ -39,7 +37,7 @@ function ResourceService:IncrementResource(Player: Player, Resource: string, Amo
 	local newData = table.clone(document:read())
 	newData.Resources = Sift.Dictionary.set(newData.Resources, Resource, (newData.Resources[Resource] or 0) + Amount)
 	document:write(newData)
-	PlayerResourcesProperty:SetFor(Player, newData.Resources)
+	BlinkServer.ResourcesSync.Fire(Player, newData.Resources)
 end
 
 function ResourceService:GetResource(Player: Player, Resource: string): any

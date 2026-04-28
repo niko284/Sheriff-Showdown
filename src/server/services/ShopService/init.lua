@@ -2,6 +2,7 @@
 
 local Players = game:GetService("Players")
 
+local BlinkServer = require("@server/modules/BlinkServer")
 local Codes = require("@self/Codes")
 local Crates = require("@constants/Crates")
 local Currencies = require("@constants/Currencies")
@@ -10,38 +11,30 @@ local Gamepasses = require("@constants/Gamepasses")
 local InventoryService = require("@services/InventoryService")
 local ItemService = require("@services/ItemService")
 local ItemUtils = require("@utilities/ItemUtils")
-local Net = require("@packages/Net")
 local PlayerDataService = require("@services/PlayerDataService")
 local Promise = require("@packages/Promise")
-local Remotes = require("@network/Remotes")
 local ResourceService = require("@services/ResourceService")
 local TransactionService = require("@services/TransactionService")
 local Types = require("@constants/Types")
 
-local ShopNamespace = Remotes.Server:GetNamespace("Shop")
-local SubmitCode = ShopNamespace:Get("SubmitCode") :: Net.ServerAsyncCallback
-local PurchaseCrate = ShopNamespace:Get("PurchaseCrate") :: Net.ServerAsyncCallback
-local SetGiftPlayer = ShopNamespace:Get("SetGiftPlayer") :: Net.ServerListenerEvent
-local GetGiftedGamepasses = ShopNamespace:Get("GetGiftedGamepasses") :: Net.ServerAsyncCallback
-
 local ShopService = { Name = "ShopService", GiftPlayerMap = {} }
 
 function ShopService:OnInit()
-	SubmitCode:SetCallback(function(Player: Player, Code: string)
+	BlinkServer.ShopSubmitCode.On(function(Player: Player, Code: string)
 		return ShopService:SubmitCodeNetworkRequest(Player, Code)
 	end)
-	PurchaseCrate:SetCallback(function(Player: Player, CrateName: Types.Crate, PurchaseMethodIndex: number)
-		return ShopService:PurchaseCrateNetworkRequest(Player, CrateName, PurchaseMethodIndex)
+	BlinkServer.ShopPurchaseCrate.On(function(Player: Player, args: { crateType: string, quantity: number })
+		return ShopService:PurchaseCrateNetworkRequest(Player, args.crateType :: Types.Crate, args.quantity)
 	end)
 
-	SetGiftPlayer:Connect(function(Player: Player, GiftPlayer: Player)
+	BlinkServer.ShopSetGiftPlayer.On(function(Player: Player, GiftPlayer: Player)
 		if Player == GiftPlayer then
 			return
 		end
 		ShopService.GiftPlayerMap[Player] = GiftPlayer
 	end)
 
-	GetGiftedGamepasses:SetCallback(function(_Player: Player, GiftPlayer: Player)
+	BlinkServer.ShopGetGiftedGamepasses.On(function(_Player: Player, GiftPlayer: Player)
 		local giftPlayerDocument = PlayerDataService:GetDocument(GiftPlayer)
 		if not giftPlayerDocument then
 			return {}

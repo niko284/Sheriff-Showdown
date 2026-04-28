@@ -1,15 +1,19 @@
-local Components = require("@ecs/components")
-local Matter = require("@packages/Matter")
+--!strict
 
+local jecs = require("@packages/jecs")
+
+local Components = require("@ecs/components")
+
+-- Slowed is now a tag propagated from status effect entities that carry Lifetime components;
+-- it is removed automatically when those entities despawn via lifetimesDespawn.
 local STATUS_EFFECT_COMPONENTS = {
 	Components.Killed,
-	Components.Slowed,
 	Components.Knocked,
 }
 
-local function statusEffectsExpire(world: Matter.World)
-	for _, statusEffectComponent in ipairs(STATUS_EFFECT_COMPONENTS) do
-		for eid, statusEffect: Components.StatusEffect in world:query(statusEffectComponent) do
+local function statusEffectsExpire(world: jecs.World)
+	for _, statusEffectComponent in STATUS_EFFECT_COMPONENTS do
+		for eid, statusEffect in world:query(statusEffectComponent) do
 			if
 				statusEffect.expiry
 				and (DateTime.now().UnixTimestampMillis / 1000) >= statusEffect.expiry
@@ -21,7 +25,4 @@ local function statusEffectsExpire(world: Matter.World)
 	end
 end
 
-return {
-	system = statusEffectsExpire,
-	priority = 10,
-}
+return statusEffectsExpire

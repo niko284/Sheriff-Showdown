@@ -1,26 +1,54 @@
+--!strict
+
+local jecs = require("@packages/jecs")
+
 local Actions = require("@ecs/actions")
-local Matter = require("@packages/Matter")
-local Remotes = require("@network/Remotes")
 local UUIDSerde = require("@utilities/UUIDSerde")
 
-local CombatNamespace = Remotes.Server:GetNamespace("Combat")
-local ProcessAction = CombatNamespace:Get("ProcessAction")
+type ActionPayload = {
+	actionId: string,
+	action: string,
+	velocity: Vector3?,
+	origin: CFrame?,
+	fromGun: number?,
+	timestamp: number?,
+	targetEntityId: number?,
+	merryGoRoundId: number?,
+	hitPosition: Vector3?,
+	[string]: any,
+}
 
-local useEvent = Matter.useEvent
+type QueuedAction = {
+	player: Player,
+	payload: ActionPayload,
+}
 
-local function actionsAreConsumed(world: Matter.World)
-	for _, player, actionPayload in useEvent("ProcessAction", ProcessAction) do
+type State = {
+	actionQueue: { QueuedAction },
+}
+
+local function actionsAreConsumed(world: jecs.World, state: State)
+	local queue = state.actionQueue
+	state.actionQueue = {}
+
+	for _, queued in queue do
+		local player = queued.player
+		local actionPayload: { [string]: any } = queued.payload
+
 		local action = Actions[actionPayload.action]
+		if not action then
+			warn(`Unknown action: {actionPayload.action}`)
+			continue
+		end
 
 		local success, actionId = pcall(function()
 			return UUIDSerde.Deserialize(actionPayload.actionId)
 		end)
-
 		if not success then
 			warn(`Invalid actionId: {actionId}`)
 			continue
 		end
-		actionPayload.actionId = actionId -- Replace the serialized actionId with the deserialized actionId
+		actionPayload.actionId = actionId
 
 		local validatePayload = action.validatePayload
 		if validatePayload then
@@ -32,18 +60,14 @@ local function actionsAreConsumed(world: Matter.World)
 		end
 
 		local middlewareFns = action.middleware
-		local afterProcessFns = action.afterProcess
-
-		-- any middleware that returns false will prevent the action from being processed
 		if middlewareFns then
 			local shouldProcess = true
-			for _, middlewareFn in ipairs(middlewareFns) do
+			for _, middlewareFn in middlewareFns do
 				shouldProcess = middlewareFn(world, player, actionPayload)
 				if not shouldProcess then
 					break
 				end
 			end
-
 			if not shouldProcess then
 				continue
 			end
@@ -51,8 +75,9 @@ local function actionsAreConsumed(world: Matter.World)
 
 		action.process(world, player, actionPayload)
 
+		local afterProcessFns = action.afterProcess
 		if afterProcessFns then
-			for _, afterProcessFn in ipairs(afterProcessFns) do
+			for _, afterProcessFn in afterProcessFns do
 				afterProcessFn(world, player, actionPayload)
 			end
 		end

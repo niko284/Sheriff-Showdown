@@ -1,49 +1,28 @@
+--!strict
+
+local jecs = require("@packages/jecs")
+
 local Components = require("@ecs/components")
-local Matter = require("@packages/Matter")
-local MatterTypes = require("@ecs/MatterTypes")
-local Types = require("@constants/Types")
 
-type HealthRecord = MatterTypes.WorldChangeRecord<Components.Health>
+type State = {
+	scheduler: any,
+}
 
-local useDeltaTime = Matter.useDeltaTime
+local function healthUpdates(world: jecs.World, state: State)
+	local deltaTime = state.scheduler:getDeltaTime()
 
-local function healthUpdates(world: Matter.World)
-	local deltaTime = useDeltaTime()
-	-- regenerate health
 	for eid, health in world:query(Components.Health) do
 		if health.regenRate ~= 0 and health.health ~= health.maxHealth then
-			health = health:patch({ health = math.min(health.health + health.regenRate * deltaTime, health.maxHealth) })
-			world:insert(eid, health)
+			world:set(eid, Components.Health, {
+				health = math.min(health.health + health.regenRate * deltaTime, health.maxHealth),
+				maxHealth = health.maxHealth,
+				regenRate = health.regenRate,
+				causedBy = health.causedBy,
+			})
 		end
 	end
-
-	-- apply health to entities with renderable components when the health changes
-	for eid, healthRecord: HealthRecord in world:queryChanged(Components.Health) do
-		if healthRecord.new then
-			local renderable = world:get(eid, Components.Renderable) :: Components.Renderable<Types.Character>?
-			if renderable then
-				local humanoid = renderable.instance:FindFirstChildOfClass("Humanoid")
-				if humanoid then
-					if (healthRecord.new.health :: any) <= 0 then
-						humanoid.Health = 1 -- set to 1 so the character doesn't die immediately
-						-- insert kill logic afterwards:
-						print("Killed")
-						world:insert(
-							eid,
-							Components.Killed({
-								killerEntityId = healthRecord.new.causedBy,
-								expiry = os.time() + 6, -- 6 seconds duration
-								processRemoval = false,
-							})
-						)
-					else
-						humanoid.MaxHealth = healthRecord.new.maxHealth or humanoid.MaxHealth
-						humanoid.Health = healthRecord.new.health
-					end
-				end
-			end
-		end
-	end
+	-- Humanoid sync and kill insertion on health-reaches-zero are handled by
+	-- the Health OnChange observer in server/ecs/observers.lua.
 end
 
 return healthUpdates

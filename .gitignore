@@ -1,5 +1,9 @@
 /Packages/
 /ServerPackages/
+/luau_packages/
+/roblox_packages/
+/lune_packages/
+/.pesde/
 /*.lock
 /roblox.toml
 /sourcemap.json

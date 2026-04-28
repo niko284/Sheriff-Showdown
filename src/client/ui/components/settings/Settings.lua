@@ -1,6 +1,7 @@
 --!strict
 
 local AutomaticScrollingFrame = require("@ui/components/frames/AutomaticScrollingFrame")
+local BlinkClient = require("@client/modules/BlinkClient")
 local CategoryTemplate = require("@ui/components/settings/CategoryTemplate")
 local CloseButton = require("@ui/components/buttons/CloseButton")
 local DropdownTemplate = require("@ui/components/settings/DropdownTemplate")
@@ -8,9 +9,8 @@ local Freeze = require("@packages/Freeze")
 local InputTemplate = require("@ui/components/settings/InputTemplate")
 local InterfaceController = require("@controllers/InterfaceController")
 local KeybindTemplate = require("@ui/components/settings/KeybindTemplate")
-local Net = require("@packages/Net")
+local Promise = require("@packages/Promise")
 local React = require("@packages/React")
-local Remotes = require("@network/Remotes")
 local SettingsContext = require("@ui/contexts/SettingsContext")
 local SettingsController = require("@controllers/SettingsController")
 local SettingsInfo = require("@constants/Settings")
@@ -19,9 +19,6 @@ local ToggleTemplate = require("@ui/components/settings/ToggleTemplate")
 local Types = require("@constants/Types")
 local animateCurrentInterface = require("@ui/hooks/animateCurrentInterface")
 local createNextOrder = require("@ui/hooks/createNextOrder")
-
-local SettingsNamespace = Remotes.Client:GetNamespace("Settings")
-local ChangeSetting = SettingsNamespace:Get("ChangeSetting") :: Net.ClientAsyncCaller
 
 local e = React.createElement
 local useContext = React.useContext
@@ -56,7 +53,10 @@ local function Settings(_props: SettingsProps)
 		newSettingsState[settingName] = newSetting
 
 		SettingsController.SettingsChanged:Fire(newSettingsState, oldSettingsState)
-		ChangeSetting:CallServerAsync(settingName, settingValue)
+		Promise.new(function(resolve, reject)
+			local ok, result = pcall(BlinkClient.SettingsChangeSetting.Invoke, settingName, settingValue)
+			if ok then resolve(result) else reject(result) end
+		end)
 			:andThen(function(response: Types.NetworkResponse)
 				if response.Success == false then
 					warn(response.Message)

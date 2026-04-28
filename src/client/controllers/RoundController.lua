@@ -7,20 +7,11 @@ local SoundService = game:GetService("SoundService")
 local Assets = ReplicatedStorage:FindFirstChild("assets") :: Folder
 
 local AudioUtils = require("@utilities/AudioUtils")
-local ClientComm = require("../ClientComm")
+local BlinkClient = require("@client/modules/BlinkClient")
 local Distractions = require("@constants/Distractions")
 local KeybindInputController = require("@controllers/KeybindInputController")
-local Net = require("@packages/Net")
-local Remotes = require("@network/Remotes")
 local Signal = require("@packages/Signal")
 local Types = require("@constants/Types")
-
-local RoundNamespace = Remotes.Client:GetNamespace("Round")
-local StartMatch = RoundNamespace:Get("StartMatch") :: Net.ClientListenerEvent
-local EndMatch = RoundNamespace:Get("EndMatch") :: Net.ClientListenerEvent
-local SendDistraction = RoundNamespace:Get("SendDistraction") :: Net.ClientListenerEvent
-local VotingPoolClient = ClientComm:GetProperty("VotingPoolClient")
-local RoundStatus = ClientComm:GetProperty("RoundStatus")
 
 local DISTRACTION_SIGNS = Assets:FindFirstChild("distractions") :: Folder
 local CROSSHAIR_ICON = "rbxassetid://16896087891"
@@ -33,13 +24,15 @@ local RoundController = {
 	EndVoting = Signal.new(),
 	DistractionReceived = Signal.new() :: Signal.Signal<Types.Distraction>,
 	StartMatch = Signal.new() :: Signal.Signal<number>,
+	CurrentVotingPool = nil :: Types.VotingPoolClient?,
+	CurrentRoundStatus = nil :: string?,
 }
 
 function RoundController:OnStart()
-	StartMatch:Connect(function()
+	BlinkClient.RoundStartMatch.On(function()
 		KeybindInputController:SetMouseIcon(CROSSHAIR_ICON)
 	end)
-	EndMatch:Connect(function()
+	BlinkClient.RoundEndMatch.On(function()
 		KeybindInputController:SetMouseIcon("")
 
 		-- clear any team indicators
@@ -47,7 +40,7 @@ function RoundController:OnStart()
 			teamIndicator:Destroy()
 		end
 	end)
-	SendDistraction:Connect(function(Distraction: Types.Distraction)
+	BlinkClient.RoundSendDistraction.On(function(Distraction: Types.Distraction)
 		RoundController.DistractionReceived:Fire(Distraction) -- trigger the DistractionViewport component to show the sign for the distraction
 
 		-- play the distraction audio
@@ -56,7 +49,11 @@ function RoundController:OnStart()
 			AudioUtils.PlaySoundOnInstance(distractionInfo.AudioId, SoundService)
 		end
 	end)
-	VotingPoolClient:Observe(function(VotingPool: Types.VotingPoolClient)
+	BlinkClient.RoundApplyTeamIndicator.On(function(...)
+		RoundController.StartMatch:Fire(...)
+	end)
+	BlinkClient.VotingSync.On(function(VotingPool: Types.VotingPoolClient)
+		RoundController.CurrentVotingPool = VotingPool
 		if VotingPool then
 			RoundController.StartVoting:Fire(VotingPool)
 		else
@@ -66,19 +63,20 @@ function RoundController:OnStart()
 end
 
 function RoundController:ObserveStatusChanged(callback: (string, boolean) -> ())
-	return RoundStatus:Observe(function(currStatus: string?)
+	return BlinkClient.RoundStatusSync.On(function(currStatus: string?)
 		if currStatus then
+			RoundController.CurrentRoundStatus = currStatus
 			callback(currStatus, true)
 		end
 	end)
 end
 
 function RoundController:ObserveVotingStarted(callback: (Types.VotingPoolClient) -> ())
-	local pool = VotingPoolClient:Get()
+	local pool = RoundController.CurrentVotingPool
 	if pool then
 		callback(pool)
 	end
-	return VotingPoolClient.Changed:Connect(callback)
+	return RoundController.StartVoting:Connect(callback)
 end
 
 function RoundController:ShowDistraction(Distraction: Types.Distraction)

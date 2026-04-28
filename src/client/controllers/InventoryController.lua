@@ -1,24 +1,17 @@
 --!strict
 
-local ClientComm = require("../ClientComm")
+local BlinkClient = require("@client/modules/BlinkClient")
 local ItemUtils = require("@utilities/ItemUtils")
-local Net = require("@packages/Net")
 local Rarities = require("@constants/Rarities")
-local Remotes = require("@network/Remotes")
 local Signal = require("@packages/Signal")
 local Types = require("@constants/Types")
-
-local InventoryNamespace = Remotes.Client:GetNamespace("Inventory")
-local ItemAdded = InventoryNamespace:Get("ItemAdded") :: Net.ClientListenerEvent
-local ItemRemoved = InventoryNamespace:Get("ItemRemoved") :: Net.ClientListenerEvent
-
-local PlayerInventoryProperty = ClientComm:GetProperty("PlayerInventory")
 
 local InventoryController = {
 	Name = "InventoryController",
 	InventoryChanged = Signal.new() :: Signal.Signal<Types.PlayerInventory>,
 	ItemAdded = Signal.new() :: Signal.Signal<Types.Item>,
 	ItemRemoved = Signal.new() :: Signal.Signal<Types.Item>,
+	CurrentInventory = nil :: Types.PlayerInventory?,
 	SortOptions = { "Rarity", "Name", "Type" },
 	Sorters = {
 		Rarity = function(a: Types.Item, b: Types.Item)
@@ -45,25 +38,24 @@ local InventoryController = {
 }
 
 function InventoryController:OnInit()
-	PlayerInventoryProperty:Observe(function(newInventory: Types.PlayerInventory?)
-		if newInventory then
-			InventoryController.InventoryChanged:Fire(newInventory)
-		end
+	BlinkClient.InventorySync.On(function(newInventory: Types.PlayerInventory)
+		InventoryController.CurrentInventory = newInventory
+		InventoryController.InventoryChanged:Fire(newInventory)
 	end)
-	ItemAdded:Connect(function(item: Types.Item)
+	BlinkClient.InventoryItemAdded.On(function(item: Types.Item)
 		InventoryController.ItemAdded:Fire(item)
 	end)
-	ItemRemoved:Connect(function(item: Types.Item)
+	BlinkClient.InventoryItemRemoved.On(function(item: Types.Item)
 		InventoryController.ItemRemoved:Fire(item)
 	end)
 end
 
 function InventoryController:GetReplicatedInventory()
-	return PlayerInventoryProperty:Get()
+	return InventoryController.CurrentInventory
 end
 
 function InventoryController:ObserveInventoryChanged(callback: (Types.PlayerInventory) -> ())
-	local inventory = PlayerInventoryProperty:Get()
+	local inventory = InventoryController.CurrentInventory
 	if inventory then
 		callback(inventory)
 	end

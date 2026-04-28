@@ -1,19 +1,15 @@
 --!strict
 
 local AutomaticScrollingFrame = require("@ui/components/frames/AutomaticScrollingFrame")
+local BlinkClient = require("@client/modules/BlinkClient")
 local CloseButton = require("@ui/components/buttons/CloseButton")
 local CurrentInterfaceContext = require("@ui/contexts/CurrentInterfaceContext")
 local InterfaceController = require("@controllers/InterfaceController")
-local Net = require("@packages/Net")
 local React = require("@packages/React")
-local Remotes = require("@network/Remotes")
 local RoundController = require("@controllers/RoundController")
 local Types = require("@constants/Types")
 local VotingTemplate = require("@ui/components/voting/VotingTemplate")
 local animateCurrentInterface = require("@ui/hooks/animateCurrentInterface")
-
-local VotingNamespace = Remotes.Client:GetNamespace("Voting")
-local ProcessVote = VotingNamespace:Get("ProcessVote") :: Net.ClientSenderEvent
 
 local useState = React.useState
 local useEffect = React.useEffect
@@ -37,10 +33,7 @@ local function Voting(_props: VotingProps)
 			InterfaceController.InterfaceChanged:Fire(nil)
 		end
 
-		-- send the choice to the server
-		ProcessVote:SendToServer(votingField, votingChoice)
-
-		-- for this voting pool field, we need to send the choice selected to the server for tallying. also, pop up the next voting field if it exists.
+		BlinkClient.VoteSubmit.Fire({ field = votingField, choice = votingChoice })
 	end, { currentFieldIndex, votingPool } :: { any })
 
 	useEffect(function()

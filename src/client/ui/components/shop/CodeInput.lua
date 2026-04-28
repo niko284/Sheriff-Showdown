@@ -1,20 +1,17 @@
 --!strict
 
+local BlinkClient = require("@client/modules/BlinkClient")
 local Freeze = require("@packages/Freeze")
 local MappedInterpolation = require("@utilities/MappedInterpolation")
-local Net = require("@packages/Net")
+local Promise = require("@packages/Promise")
 local React = require("@packages/React")
 local ReactSpring = require("@packages/ReactSpring")
-local Remotes = require("@network/Remotes")
 local Types = require("@constants/Types")
 local UIStroke = require("@ui/components/other/UIStroke")
 
 local useRef = React.useRef
 local e = React.createElement
 local useCallback = React.useCallback
-
-local ShopNamespace = Remotes.Client:GetNamespace("Shop")
-local SubmitCode = ShopNamespace:Get("SubmitCode") :: Net.ClientAsyncCaller
 
 local DEFAULT_PROPS = {
 	inputRange = { 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1 },
@@ -103,7 +100,10 @@ local function CodeInput(props: CodeInputProps)
 		local textBox = textBoxRef.current
 		if textBox then
 			local code = textBox.Text
-			SubmitCode:CallServerAsync(code)
+			Promise.new(function(resolve, reject)
+				local ok, result = pcall(BlinkClient.ShopSubmitCode.Invoke, code)
+				if ok then resolve(result) else reject(result) end
+			end)
 				:andThen(function(response: Types.NetworkResponse)
 					if response.Success == false then
 						animateIncorrectCode()

@@ -2,19 +2,16 @@
 
 local HttpService = game:GetService("HttpService")
 
+local BlinkClient = require("@client/modules/BlinkClient")
 local InterfaceController = require("@controllers/InterfaceController")
-local Net = require("@packages/Net")
 local NotificationController = require("@controllers/NotificationController")
 local NotificationElement = require("@ui/components/notification/NotificationElement")
 local PlayerSelectionList = require("@ui/components/frames/SelectionList/PlayerSelectionList")
+local Promise = require("@packages/Promise")
 local React = require("@packages/React")
-local Remotes = require("@network/Remotes")
 local ResourceContext = require("@ui/contexts/ResourceContext")
 local Types = require("@constants/Types")
 local animateCurrentInterface = require("@ui/hooks/animateCurrentInterface")
-
-local TradingNamespace = Remotes.Client:GetNamespace("Trading")
-local SendTradeToPlayer = TradingNamespace:Get("SendTradeToPlayer") :: Net.ClientAsyncCaller
 
 local e = React.createElement
 local useCallback = React.useCallback
@@ -46,7 +43,14 @@ local function TradingPlayerList(_props: TradingPlayerListProps)
 			return
 		end
 
-		SendTradeToPlayer:CallServerAsync(player)
+		Promise.new(function(resolve, reject)
+			local ok, result = pcall(BlinkClient.TradingSendTradeToPlayer.Invoke, player)
+			if ok then
+				resolve(result)
+			else
+				reject(result)
+			end
+		end)
 			:andThen(function(response: Types.NetworkResponse)
 				--print(response)
 				if response.Success == true then

@@ -5,6 +5,7 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
 local AutomaticScrollingFrame = require("@ui/components/frames/AutomaticScrollingFrame")
+local BlinkClient = require("@client/modules/BlinkClient")
 local Button = require("@ui/components/buttons/Button")
 local InterfaceController = require("@controllers/InterfaceController")
 local InventoryContext = require("@ui/contexts/InventoryContext")
@@ -12,26 +13,13 @@ local InventoryController = require("@controllers/InventoryController")
 local InventoryUtils = require("@utilities/InventoryUtils")
 local ItemTypes = require("@constants/ItemTypes")
 local ItemUtils = require("@utilities/ItemUtils")
-local Net = require("@packages/Net")
+local Promise = require("@packages/Promise")
 local Rarities = require("@constants/Rarities")
 local React = require("@packages/React")
-local Remotes = require("@network/Remotes")
 local ShopController = require("@controllers/ShopController")
 local TradeContext = require("@ui/contexts/TradeContext")
 local Types = require("@constants/Types")
-local UUIDSerde = require("@network/serde/UUIDSerde")
-
-local InventoryNamespace = Remotes.Client:GetNamespace("Inventory")
-local TradingNamespace = Remotes.Client:GetNamespace("Trading")
-
-local LockItem = InventoryNamespace:Get("LockItem") :: Net.ClientAsyncCaller
-local UnlockItem = InventoryNamespace:Get("UnlockItem") :: Net.ClientAsyncCaller
-local EquipItem = InventoryNamespace:Get("EquipItem") :: Net.ClientAsyncCaller
-local UnequipItem = InventoryNamespace:Get("UnequipItem") :: Net.ClientAsyncCaller
-local ToggleItemFavorite = InventoryNamespace:Get("ToggleItemFavorite") :: Net.ClientAsyncCaller
-local OpenCrate = InventoryNamespace:Get("OpenCrate") :: Net.ClientAsyncCaller
-local AddItemToTrade = TradingNamespace:Get("AddItemToTrade") :: Net.ClientAsyncCaller
-local RemoveItemFromTrade = TradingNamespace:Get("RemoveItemFromTrade") :: Net.ClientAsyncCaller
+local UUIDSerde = require("@utilities/UUIDSerde")
 
 local e = React.createElement
 local useCallback = React.useCallback
@@ -85,7 +73,14 @@ local function ItemDisplay(props: ItemDisplayProps)
 
 		-- rollback if the server fails to complete this request
 		local serializedUUID = UUIDSerde.Serialize(props.itemUUID)
-		EquipItem:CallServerAsync(serializedUUID)
+		Promise.new(function(resolve, reject)
+			local ok, result = pcall(BlinkClient.InventoryEquipItem.Invoke, serializedUUID)
+			if ok then
+				resolve(result)
+			else
+				reject(result)
+			end
+		end)
 			:andThen(function(response: Types.NetworkResponse)
 				if response.Success == false then
 					InventoryController.InventoryChanged:Fire(oldInventory)
@@ -105,7 +100,14 @@ local function ItemDisplay(props: ItemDisplayProps)
 
 		-- rollback if the server fails to complete this request
 		local serializedUUID = UUIDSerde.Serialize(props.itemUUID)
-		UnequipItem:CallServerAsync(serializedUUID)
+		Promise.new(function(resolve, reject)
+			local ok, result = pcall(BlinkClient.InventoryUnequipItem.Invoke, serializedUUID)
+			if ok then
+				resolve(result)
+			else
+				reject(result)
+			end
+		end)
 			:andThen(function(response: Types.NetworkResponse)
 				if response.Success == false then
 					InventoryController.InventoryChanged:Fire(oldInventory)
@@ -125,7 +127,14 @@ local function ItemDisplay(props: ItemDisplayProps)
 
 		-- rollback if the server fails to complete this request
 		local serializedUUID = UUIDSerde.Serialize(props.itemUUID)
-		LockItem:CallServerAsync(serializedUUID)
+		Promise.new(function(resolve, reject)
+			local ok, result = pcall(BlinkClient.InventoryLockItem.Invoke, serializedUUID)
+			if ok then
+				resolve(result)
+			else
+				reject(result)
+			end
+		end)
 			:andThen(function(response: Types.NetworkResponse)
 				if response.Success == false then
 					InventoryController.InventoryChanged:Fire(oldInventory)
@@ -145,7 +154,14 @@ local function ItemDisplay(props: ItemDisplayProps)
 
 		-- rollback if the server fails to complete this request
 		local serializedUUID = UUIDSerde.Serialize(props.itemUUID)
-		UnlockItem:CallServerAsync(serializedUUID)
+		Promise.new(function(resolve, reject)
+			local ok, result = pcall(BlinkClient.InventoryUnlockItem.Invoke, serializedUUID)
+			if ok then
+				resolve(result)
+			else
+				reject(result)
+			end
+		end)
 			:andThen(function(response: Types.NetworkResponse)
 				if response.Success == false then
 					InventoryController.InventoryChanged:Fire(oldInventory)
@@ -165,7 +181,14 @@ local function ItemDisplay(props: ItemDisplayProps)
 
 		-- rollback if the server fails to complete this request
 		local serializedUUID = UUIDSerde.Serialize(props.itemUUID)
-		ToggleItemFavorite:CallServerAsync(serializedUUID, favorite)
+		Promise.new(function(resolve, reject)
+			local ok, result = pcall(BlinkClient.InventoryToggleFavorite.Invoke, serializedUUID, favorite)
+			if ok then
+				resolve(result)
+			else
+				reject(result)
+			end
+		end)
 			:andThen(function(response: Types.NetworkResponse)
 				if response.Success == false then
 					InventoryController.InventoryChanged:Fire(oldInventory)
@@ -189,7 +212,14 @@ local function ItemDisplay(props: ItemDisplayProps)
 		InventoryController.InventoryChanged:Fire(newInventory)
 		InterfaceController.InterfaceChanged:Fire(nil)
 
-		OpenCrate:CallServerAsync(serializedUUID)
+		Promise.new(function(resolve, reject)
+			local ok, result = pcall(BlinkClient.InventoryOpenCrate.Invoke, serializedUUID)
+			if ok then
+				resolve(result)
+			else
+				reject(result)
+			end
+		end)
 			:andThen(function(response: Types.NetworkResponse)
 				if response.Success == false then
 					warn(response.Message)
@@ -213,7 +243,14 @@ local function ItemDisplay(props: ItemDisplayProps)
 
 		InterfaceController.InterfaceChanged:Fire("ActiveTrade")
 
-		AddItemToTrade:CallServerAsync(serializedTradeUUID, serializedItemUUID)
+		Promise.new(function(resolve, reject)
+			local ok, result = pcall(BlinkClient.TradingAddItem.Invoke, { tradeUuid = serializedTradeUUID, itemUuid = serializedItemUUID })
+			if ok then
+				resolve(result)
+			else
+				reject(result)
+			end
+		end)
 			:andThen(function(response: Types.NetworkResponse)
 				if response.Success == false then
 					warn(response.Message)
@@ -233,7 +270,14 @@ local function ItemDisplay(props: ItemDisplayProps)
 
 		InterfaceController.InterfaceChanged:Fire("ActiveTrade")
 
-		RemoveItemFromTrade:CallServerAsync(serializedTradeUUID, serializedItemUUID)
+		Promise.new(function(resolve, reject)
+			local ok, result = pcall(BlinkClient.TradingRemoveItem.Invoke, { tradeUuid = serializedTradeUUID, itemUuid = serializedItemUUID })
+			if ok then
+				resolve(result)
+			else
+				reject(result)
+			end
+		end)
 			:andThen(function(response: Types.NetworkResponse)
 				if response.Success == false then
 					warn(response.Message)

@@ -2,17 +2,16 @@
 
 local Players = game:GetService("Players")
 
+local BlinkServer = require("@server/modules/BlinkServer")
 local Freeze = require("@packages/Freeze")
 local PlayerDataService = require("@services/PlayerDataService")
 local ProfileSchema = require("@services/PlayerDataService/Schema")
-local ServerComm = require("@server/ServerComm")
 local Signal = require("@packages/Signal")
 
 -- // Service Variables \\
 
 local StatisticsService = {
 	Name = "StatisticsService",
-	PlayerStatistics = ServerComm:CreateProperty("PlayerStatistics", {}),
 	JoinTimestamps = {} :: { [number]: number },
 	StatisticSignals = {} :: { [string]: Signal.Signal<...any> },
 }
@@ -37,7 +36,7 @@ function StatisticsService:OnInit()
 			StatisticsService.StatisticSignals[StatisticName]:Fire(Player, Statistics[StatisticName])
 		end
 
-		StatisticsService.PlayerStatistics:SetFor(Player, Statistics) -- Set the statistics for the player on initial join
+		BlinkServer.StatisticsSync.Fire(Player, Statistics) -- Set the statistics for the player on initial join
 	end)
 end
 
@@ -110,7 +109,7 @@ function StatisticsService:SetStatistic(
 
 	StatisticsService.StatisticSignals[StatisticName]:Fire(Player, StatisticValue, oldValue)
 	if shouldSendNetworkEvent ~= false then -- sometimes we don't want to send a network event to reduce bandwidth.
-		StatisticsService.PlayerStatistics:SetFor(Player, { -- send partial state to reduce network traffic
+		BlinkServer.StatisticsSync.Fire(Player, { -- send partial state to reduce network traffic
 			[StatisticName] = StatisticValue,
 		})
 	end
@@ -133,7 +132,7 @@ function StatisticsService:IncrementStatistic(
 
 	StatisticsService.StatisticSignals[StatisticName]:Fire(Player, newValue, oldValue)
 	if shouldSendNetworkEvent ~= false then -- sometimes we don't want to send a network event to reduce bandwidth.
-		StatisticsService.PlayerStatistics:SetFor(Player, { -- send partial state to reduce network traffic
+		BlinkServer.StatisticsSync.Fire(Player, { -- send partial state to reduce network traffic
 			[StatisticName] = newValue,
 		})
 	end

@@ -1,17 +1,12 @@
 --!strict
 
+local BlinkClient = require("@client/modules/BlinkClient")
 local InterfaceController = require("@controllers/InterfaceController")
-local Net = require("@packages/Net")
 local PlayerSelectionList = require("@ui/components/frames/SelectionList/PlayerSelectionList")
+local Promise = require("@packages/Promise")
 local React = require("@packages/React")
-local Remotes = require("@network/Remotes")
 local ShopContext = require("@ui/contexts/ShopContext")
 local animateCurrentInterface = require("@ui/hooks/animateCurrentInterface")
-
-local ShopNamespace = Remotes.Client:GetNamespace("Shop")
-
-local SetGiftPlayer = ShopNamespace:Get("SetGiftPlayer") :: Net.ClientSenderEvent
-local GetGiftedGamepasses = ShopNamespace:Get("GetGiftedGamepasses") :: Net.ClientAsyncCaller
 
 local e = React.createElement
 local useContext = React.useContext
@@ -26,7 +21,10 @@ local function GiftingSelectionList(_props: GiftingSelectionListProps)
 	local shopState = useContext(ShopContext)
 
 	local giftPlayer = useCallback(function(_rbx: TextButton, player: Player)
-		GetGiftedGamepasses:CallServerAsync(player)
+		Promise.new(function(resolve, reject)
+			local ok, result = pcall(BlinkClient.ShopGetGiftedGamepasses.Invoke, player)
+			if ok then resolve(result) else reject(result) end
+		end)
 			:andThen(function(giftedGamepasses: { number })
 				local newShopState = table.clone(shopState)
 				newShopState.giftRecipient = player
@@ -34,7 +32,7 @@ local function GiftingSelectionList(_props: GiftingSelectionListProps)
 				InterfaceController.UpdateShopState:Fire(newShopState)
 				InterfaceController.InterfaceChanged:Fire("Shop")
 
-				SetGiftPlayer:SendToServer(player)
+				BlinkClient.ShopSetGiftPlayer.Fire(player)
 			end)
 			:catch(function(err)
 				warn(tostring(err))

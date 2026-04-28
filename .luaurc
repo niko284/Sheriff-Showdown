@@ -1,11 +1,11 @@
 {
     "aliases": {
         "src": "src",
-        "packages": "Packages",
+        "packages": "roblox_packages",
         "client": "src/client",
         "server": "src/server",
         "shared": "src/shared",
-        "ServerPackages": "ServerPackages",
+        "ServerPackages": "roblox_packages",
         "ecs": "src/shared/ecs",
         "services": "src/server/services",
         "constants": "src/shared/constants",

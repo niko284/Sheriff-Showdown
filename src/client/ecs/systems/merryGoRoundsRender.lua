@@ -1,21 +1,24 @@
-local Matter = require("@packages/Matter")
+--!strict
+
+local jecs = require("@packages/jecs")
 
 local Components = require("@ecs/components")
 
-local useDeltaTime = Matter.useDeltaTime
+type State = {
+	scheduler: any,
+}
 
-local function merryGoRoundsRender(world: Matter.World)
-	local deltaTime = useDeltaTime()
+local function merryGoRoundsRender(world: jecs.World, state: State)
+	local deltaTime = state.scheduler:getDeltaTime()
 
-	-- update the rotation of the merryGoRound as the server replicates over the new physics state
 	for eid, merryGoRound, transform, renderable in
 		world:query(Components.MerryGoRound, Components.Transform, Components.Renderable)
 	do
-		local targetAngularVelocity = merryGoRound.targetAngularVelocity
 		local currentAngularVelocity = merryGoRound.currentAngularVelocity
 		local angularAcceleration = merryGoRound.angularAcceleration
+		local targetAngularVelocity = merryGoRound.targetAngularVelocity
 
-		local rotator = renderable.instance:FindFirstChild("rotator") :: BasePart
+		local rotator = renderable.instance:FindFirstChild("rotator") :: BasePart?
 
 		local angularVelocity =
 			math.clamp(currentAngularVelocity + angularAcceleration * deltaTime, 0, targetAngularVelocity)
@@ -24,11 +27,7 @@ local function merryGoRoundsRender(world: Matter.World)
 
 		local newCFrame = transform.cframe * CFrame.Angles(0, angularDisplacement, 0)
 
-		transform = transform:patch({
-			cframe = newCFrame,
-			doNotReconcile = false,
-		})
-		world:insert(eid, transform)
+		world:set(eid, Components.Transform, { cframe = newCFrame, doNotReconcile = false })
 
 		if rotator then
 			rotator.AssemblyAngularVelocity = Vector3.new(0, angularVelocity, 0)

@@ -1,43 +1,17 @@
 --!strict
 
+local jecs = require("@packages/jecs")
+
 local Components = require("@ecs/components")
-local Matter = require("@packages/Matter")
 
-local function merryGoRoundsSpin(world: Matter.World)
-	local deltaTime = Matter.useDeltaTime()
+type State = {
+	scheduler: any,
+}
 
-	--[[if useThrottle(1) then
-		for _eid, renderable: Components.Renderable, _target: Components.Target in
-			world:query(Components.Renderable, Components.Target):without(Components.Killed)
-		do
-			local character = renderable.instance :: PVInstance
-			local rightFoot = character:FindFirstChild("RightFoot") :: BasePart
+local function merryGoRoundsSpin(world: jecs.World, state: State)
+	local deltaTime = state.scheduler:getDeltaTime()
 
-			local rayParams = RaycastParams.new()
-			rayParams.FilterDescendantsInstances = { renderable.instance }
-			rayParams.FilterType = Enum.RaycastFilterType.Exclude
-			local rayDown = workspace:Raycast(rightFoot.Position, Vector3.new(0, -10, 0), rayParams)
-
-			if rayDown then
-				local merryGoRoundModel = rayDown.Instance:FindFirstAncestor("MerryGoRound")
-				local merryGoRoundId = merryGoRoundModel and merryGoRoundModel:GetAttribute(MERRY_GO_ROUND_ATTRIBUTE)
-				if merryGoRoundModel and merryGoRoundId then
-					local merryGoRound = world:get(merryGoRoundId, Components.MerryGoRound)
-					if merryGoRound then
-						if merryGoRound.hardStopIn == nil then -- we don't want to override the hard stop
-							print(`new target angular velocity: ${merryGoRound.currentAngularVelocity + 0.5}`)
-							merryGoRound = merryGoRound:patch({
-								targetAngularVelocity = merryGoRound.currentAngularVelocity + 0.5,
-							})
-							world:insert(merryGoRoundId, merryGoRound)
-						end
-					end
-				end
-			end
-		end
-	end--]]
-
-	for eid, merryGoRound, transform in world:query(Components.MerryGoRound, Components.Transform) do
+	for eid, merryGoRound, transform in world:query(Components.MerryGoRound, Components.Transform):iter() do
 		local targetAngularVelocity = merryGoRound.targetAngularVelocity
 		local currentAngularVelocity = merryGoRound.currentAngularVelocity
 		local angularAcceleration = merryGoRound.angularAcceleration
@@ -49,41 +23,43 @@ local function merryGoRoundsSpin(world: Matter.World)
 
 		local newCFrame = transform.cframe * CFrame.Angles(0, angularDisplacement, 0)
 
+		local newMerry: Components.MerryGoRound = {
+			targetAngularVelocity = merryGoRound.targetAngularVelocity,
+			currentAngularVelocity = merryGoRound.currentAngularVelocity,
+			angularAcceleration = merryGoRound.angularAcceleration,
+			maxAngularVelocity = merryGoRound.maxAngularVelocity,
+			hardStopIn = merryGoRound.hardStopIn,
+		}
+		local merryChanged = false
+
 		if angularVelocity >= merryGoRound.maxAngularVelocity and merryGoRound.hardStopIn == nil then
-			merryGoRound = merryGoRound:patch({
-				hardStopIn = os.time() + 3, -- hard stop in 3 seconds
-			})
-			world:insert(eid, merryGoRound)
+			newMerry.hardStopIn = os.time() + 3
+			merryChanged = true
 		end
 
 		if merryGoRound.hardStopIn and os.time() >= merryGoRound.hardStopIn then
-			merryGoRound = merryGoRound:patch({
-				targetAngularVelocity = 0,
-				angularAcceleration = -0.25,
-			})
-			world:insert(eid, merryGoRound)
+			newMerry.targetAngularVelocity = 0
+			newMerry.angularAcceleration = -0.25
+			merryChanged = true
 		end
 
 		if merryGoRound.hardStopIn and angularVelocity == 0 then
-			merryGoRound = merryGoRound:patch({
-				hardStopIn = Matter.None,
-				angularAcceleration = 0.1,
-			})
-			world:insert(eid, merryGoRound)
+			newMerry.hardStopIn = nil
+			newMerry.angularAcceleration = 0.1
+			merryChanged = true
 		end
 
 		if angularVelocity ~= merryGoRound.currentAngularVelocity then
-			merryGoRound = merryGoRound:patch({
-				currentAngularVelocity = angularVelocity,
-			})
-			world:insert(eid, merryGoRound)
+			newMerry.currentAngularVelocity = angularVelocity
+			merryChanged = true
 		end
 
-		world:insert(eid, transform:patch({ cframe = newCFrame, doNotReconcile = true })) -- doNotReconcile is important here, server shouldn't reconcile this
+		if merryChanged then
+			world:set(eid, Components.MerryGoRound, newMerry)
+		end
+
+		world:set(eid, Components.Transform, { cframe = newCFrame, doNotReconcile = true })
 	end
 end
 
-return {
-	system = merryGoRoundsSpin,
-	event = "stepped",
-}
+return merryGoRoundsSpin

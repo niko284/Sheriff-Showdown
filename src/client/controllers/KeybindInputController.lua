@@ -7,7 +7,7 @@ local RunService = game:GetService("RunService")
 local Components = require("@ecs/components")
 local Input = require("@packages/Input")
 local Janitor = require("@packages/Janitor")
-local Matter = require("@packages/Matter")
+local jecs = require("@packages/jecs")
 local TopbarPlus = require("@packages/TopbarPlus")
 
 local LocalPlayer = Players.LocalPlayer
@@ -23,7 +23,7 @@ local KeybindInputController = {
 	Name = "KeybindInputController",
 	CameraJanitor = Janitor.new(),
 	TopbarJanitor = Janitor.new(),
-	World = nil :: Matter.World?,
+	World = nil :: jecs.World?,
 	ShiftLockUI = nil :: ScreenGui?,
 	MobileShiftLockEnabled = false,
 }

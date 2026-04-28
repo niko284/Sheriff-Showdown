@@ -1,21 +1,14 @@
 --!strict
 
-local Net = require("@packages/Net")
+local BlinkServer = require("@server/modules/BlinkServer")
 local PlayerDataService = require("@services/PlayerDataService")
-local Remotes = require("@network/Remotes")
 local ResourceService = require("@services/ResourceService")
 local Rewards = require("@constants/Rewards")
-local ServerComm = require("@server/ServerComm")
 local Signal = require("@packages/Signal")
 local Types = require("@constants/Types")
 
-local RewardsNamespace = Remotes.Server:GetNamespace("Rewards")
-
-local ClaimDailyReward = RewardsNamespace:Get("ClaimDailyReward") :: Net.ServerAsyncCallback
-
 local RewardService = {
 	Name = "RewardService",
-	PlayerRewards = ServerComm:CreateProperty("PlayerRewards", nil),
 	DailyRewards = {} :: { [number]: { Types.DailyReward } },
 	RewardClaimed = Signal.new() :: Signal.Signal<Player, Types.DailyReward>,
 }
@@ -37,7 +30,7 @@ function RewardService:OnInit()
 		if playerResources.RewardSeed == -1 then
 			ResourceService:SetResource(Player, "RewardSeed", os.time())
 		end
-		RewardService.PlayerRewards:SetFor(Player, {
+		BlinkServer.RewardsSync.Fire(Player, {
 			daily = {
 				RewardDay = playerResources.RewardDay,
 				LastRewardClaim = playerResources.LastRewardClaim,
@@ -46,7 +39,7 @@ function RewardService:OnInit()
 		})
 	end)
 
-	ClaimDailyReward:SetCallback(function(Player: Player)
+	BlinkServer.RewardsClaimDailyReward.On(function(Player: Player)
 		local response = self:ClaimDailyReward(Player)
 		return response
 	end)

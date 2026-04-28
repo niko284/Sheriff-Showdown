@@ -3,14 +3,12 @@
 local UserInputService = game:GetService("UserInputService")
 
 local AutomaticScrollingFrame = require("@ui/components/frames/AutomaticScrollingFrame")
-local ClientComm = require("@client/ClientComm")
+local BlinkClient = require("@client/modules/BlinkClient")
 local CurrentInterfaceContext = require("@ui/contexts/CurrentInterfaceContext")
 local PlayerlistTemplate = require("@ui/components/playerlist/PlayerlistTemplate")
 local React = require("@packages/React")
 local ReactSpring = require("@packages/ReactSpring")
 local Types = require("@constants/Types")
-
-local PlayerlistProperty = ClientComm:GetProperty("ReplicatedPlayerList")
 
 local e = React.createElement
 local useEffect = React.useEffect
@@ -33,7 +31,7 @@ local function Playerlist(_props: PlayerlistProps)
 	local playerTemplates = {}
 
 	useEffect(function()
-		local connection = PlayerlistProperty:Observe(function(newPlayerListData)
+		local disconnect = BlinkClient.PlayerlistSync.On(function(newPlayerListData)
 			setPlayerListData(newPlayerListData)
 		end)
 
@@ -50,7 +48,7 @@ local function Playerlist(_props: PlayerlistProps)
 		end)
 
 		return function()
-			connection:Disconnect()
+			disconnect()
 			toggleInput:Disconnect()
 		end
 	end, {})

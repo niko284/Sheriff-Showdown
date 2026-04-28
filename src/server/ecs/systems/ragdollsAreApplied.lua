@@ -1,33 +1,18 @@
+--!strict
+
+local jecs = require("@packages/jecs")
+
 local Components = require("@ecs/components")
-local Matter = require("@packages/Matter")
-local MatterTypes = require("@ecs/MatterTypes")
 local RagdollService = require("@services/RagdollService")
 
-type RagdolledRecord = MatterTypes.WorldChangeRecord<Components.Ragdolled>
-
-local function ragdollsAreApplied(world: Matter.World)
-	-- ragdolls are applied to entities with a Renderable and Ragdolled component
-	for _eid, renderable: Components.Renderable<Model>, _ragdolled: Components.Ragdolled in
-		world:query(Components.Renderable, Components.Ragdolled)
-	do
+local function ragdollsAreApplied(world: jecs.World)
+	for _eid, renderable, _ragdolled in world:query(Components.Renderable, Components.Ragdolled) do
 		local humanoid = renderable.instance:FindFirstChildOfClass("Humanoid")
-		if humanoid and RagdollService:IsRagdolled(renderable.instance :: any) == false then
+		if humanoid and not RagdollService:IsRagdolled(renderable.instance :: any) then
 			RagdollService:Ragdoll(renderable.instance :: any)
 		end
 	end
-
-	-- ragdolls are removed from entities without a Ragdolled component
-	for eid, ragdolledRecord: RagdolledRecord in world:queryChanged(Components.Ragdolled) do
-		if ragdolledRecord.new == nil and world:contains(eid) then -- the ragdolled component was removed from an entity
-			local renderable = world:get(eid, Components.Renderable)
-			if renderable then
-				local humanoid = renderable.instance:FindFirstChildOfClass("Humanoid")
-				if humanoid then
-					RagdollService:Unragdoll(renderable.instance :: any)
-				end
-			end
-		end
-	end
+	-- Unragdoll on Ragdolled removal is handled by the OnRemove observer in server/ecs/observers.lua.
 end
 
 return ragdollsAreApplied

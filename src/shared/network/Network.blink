@@ -1,0 +1,541 @@
+option Casing = Pascal
+option ServerOutput = "../../server/modules/BlinkServer.luau"
+option ClientOutput = "../../client/modules/BlinkClient.luau"
+option TypesOutput = "./BlinkTypes.luau"
+option ManualReplication = false
+option WriteValidations = false
+
+-- Component serdes scope.
+-- Each `export struct` here exposes Write/Read at runtime as
+-- BlinkModule.components.<Name>.{Write, Read}, suitable for replecs.serdes.
+-- Add a struct with the same name as a jecs component to opt in to
+-- bandwidth-optimized serialization; components without an entry fall back
+-- to replecs's default serdes.
+scope components {
+	export struct Transform {
+		cframe: CFrame,
+		doNotReconcile: boolean?,
+	}
+
+	export struct Velocity {
+		velocity: vector,
+	}
+
+	export struct Health {
+		health: u16,
+		maxHealth: u16,
+		regenRate: f32,
+		causedBy: f64?,
+	}
+
+	export struct Team {
+		name: string(0..32),
+	}
+
+	export struct MerryGoRound {
+		targetAngularVelocity: f32,
+		currentAngularVelocity: f32,
+		angularAcceleration: f32,
+		maxAngularVelocity: f32,
+	}
+
+	export struct Cooldown {
+		expiry: f64,
+	}
+
+	export struct Lifetime {
+		expiry: f64,
+	}
+
+	export struct WalkSpeed {
+		speed: f32,
+		modifier: f32,
+	}
+
+	export struct Item {
+		Id: u32,
+	}
+
+	export struct Identifier {
+		uuid: string(0..64),
+	}
+
+	export struct VoxelGrid {
+		data: buffer,
+		sizeX: u16,
+		sizeY: u16,
+		sizeZ: u16,
+		cellSize: f32,
+	}
+
+	export struct Killed {
+		killerEntityId: f64,
+		markedKill: boolean?,
+		expiry: f64?,
+		processRemoval: boolean?,
+	}
+
+	export struct Knocked {
+		direction: vector,
+		strength: f32,
+		applied: boolean,
+		expiry: f64?,
+	}
+
+	export struct Gun {
+		LocalCooldownMillis: f32?,
+		ReloadTimeMillis: f32?,
+		Damage: f32?,
+		BulletLifeTime: f32?,
+		MaxCapacity: u16?,
+		ReloadTime: f32?,
+		CurrentCapacity: u16?,
+		BulletSpeed: f32?,
+		BulletSoundId: u32?,
+		KnockStrength: f32?,
+		Disabled: boolean?,
+		Reloading: boolean?,
+		VoxelDestructionRadius: f32?,
+		VoxelExplosionForce: f32?,
+		VoxelDebrisLifetime: f32?,
+	}
+
+	export struct Target {
+		CanTarget: boolean,
+	}
+}
+
+-- Replecs replication transport.
+-- These replace the manually created RemoteEvents in start.lua.
+-- Variants are omitted because all components carry blink serdes.
+
+struct ReplecsPackage {
+	Changes: unknown,
+	Variants: unknown,
+}
+
+event ReplecsUpdate {
+	From: Server,
+	Type: Reliable,
+	Call: ManySync,
+	Data: ReplecsPackage,
+}
+
+event ReplecsUnreliableUpdate {
+	From: Server,
+	Type: Unreliable,
+	Call: ManySync,
+	Data: ReplecsPackage,
+}
+
+-- Client fires once on join to request the full world snapshot.
+event ReplecsHandshakeRequest {
+	From: Client,
+	Type: Reliable,
+	Call: ManySync,
+	Data: u8,
+}
+
+-- Server fires back the full world snapshot.
+event ReplecsHandshakeResponse {
+	From: Server,
+	Type: Reliable,
+	Call: SingleSync,
+	Data: ReplecsPackage,
+}
+
+-- Typed action payload used by all client→server game actions.
+-- Optional fields cover all current action types; unused fields are omitted.
+export struct ActionPayload {
+	actionId: string(0..64),
+	action: string(0..32),
+	velocity: vector?,
+	origin: CFrame?,
+	fromGun: f64?,
+	timestamp: f64?,
+	targetEntityId: f64?,
+	merryGoRoundId: f64?,
+	hitPosition: vector?,
+}
+
+event ProcessAction {
+	From: Client,
+	Type: Reliable,
+	Call: ManySync,
+	Data: ActionPayload,
+}
+
+-- ============================================================
+-- Generic response returned by server functions.
+-- ============================================================
+
+struct NetworkResponse {
+	Success: boolean,
+	Message: string(0..256)?,
+	Response: unknown?,
+}
+
+-- ============================================================
+-- Player data sync events (replace ServerComm properties).
+-- Server fires these on DocumentLoaded and whenever the value changes.
+-- ============================================================
+
+-- Typed resources struct — fields match Types.PlayerResources exactly.
+struct PlayerResources {
+	Coins: f64,
+	Gems: f64,
+	Level: f64,
+	Experience: f64,
+}
+
+event ResourcesSync {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: PlayerResources,
+}
+
+-- Complex/polymorphic data is sent as unknown (Roblox native serialization).
+event SettingsSync {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: unknown,
+}
+
+event StatisticsSync {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: unknown,
+}
+
+event PlayerlistSync {
+	From: Server,
+	Type: Reliable,
+	Call: ManyAsync,
+	Data: unknown,
+}
+
+event InventorySync {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: unknown,
+}
+
+event RewardsSync {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: unknown,
+}
+
+event TradingActiveTradeSync {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: unknown,
+}
+
+event VotingSync {
+	From: Server,
+	Type: Reliable,
+	Call: ManyAsync,
+	Data: unknown,
+}
+
+event RoundStatusSync {
+	From: Server,
+	Type: Reliable,
+	Call: ManyAsync,
+	Data: string(0..128),
+}
+
+-- ============================================================
+-- Inventory events and functions
+-- ============================================================
+
+event InventoryItemAdded {
+	From: Server,
+	Type: Reliable,
+	Call: ManyAsync,
+	Data: unknown,
+}
+
+event InventoryItemRemoved {
+	From: Server,
+	Type: Reliable,
+	Call: ManyAsync,
+	Data: unknown,
+}
+
+function InventoryEquipItem {
+	Yield: Coroutine,
+	Data: string(0..64),
+	Return: NetworkResponse,
+}
+
+function InventoryUnequipItem {
+	Yield: Coroutine,
+	Data: string(0..64),
+	Return: NetworkResponse,
+}
+
+function InventoryLockItem {
+	Yield: Coroutine,
+	Data: string(0..64),
+	Return: NetworkResponse,
+}
+
+function InventoryUnlockItem {
+	Yield: Coroutine,
+	Data: string(0..64),
+	Return: NetworkResponse,
+}
+
+function InventoryToggleFavorite {
+	Yield: Coroutine,
+	Data: (string(0..64), boolean),
+	Return: NetworkResponse,
+}
+
+function InventoryOpenCrate {
+	Yield: Coroutine,
+	Data: string(0..64),
+	Return: NetworkResponse,
+}
+
+-- ============================================================
+-- Rewards
+-- ============================================================
+
+function RewardsClaimDailyReward {
+	Yield: Coroutine,
+	Return: NetworkResponse,
+}
+
+-- ============================================================
+-- Achievements
+-- ============================================================
+
+event AchievementsChanged {
+	From: Server,
+	Type: Reliable,
+	Call: ManyAsync,
+	Data: unknown,
+}
+
+function AchievementsClaimAchievement {
+	Yield: Coroutine,
+	Data: string(0..64),
+	Return: NetworkResponse,
+}
+
+function AchievementsGetAchievements {
+	Yield: Coroutine,
+	Return: unknown,
+}
+
+-- ============================================================
+-- Round
+-- ============================================================
+
+event RoundStartMatch {
+	From: Server,
+	Type: Reliable,
+	Call: ManyAsync,
+	Data: unknown,
+}
+
+event RoundEndMatch {
+	From: Server,
+	Type: Reliable,
+	Call: ManyAsync,
+	Data: unknown,
+}
+
+event RoundApplyTeamIndicator {
+	From: Server,
+	Type: Reliable,
+	Call: SingleAsync,
+	Data: unknown,
+}
+
+event RoundSendDistraction {
+	From: Server,
+	Type: Reliable,
+	Call: ManyAsync,
+	Data: unknown,
+}
+
+struct VotePayload {
+	field: string(0..64),
+	choice: string(0..64),
+}
+
+event VoteSubmit {
+	From: Client,
+	Type: Reliable,
+	Call: ManyAsync,
+	Data: VotePayload,
+}
+
+-- ============================================================
+-- Notifications
+-- ============================================================
+
+event NotificationAdd {
+	From: Server,
+	Type: Reliable,
+	Call: ManyAsync,
+	Data: unknown,
+}
+
+event NotificationRemove {
+	From: Server,
+	Type: Reliable,
+	Call: ManyAsync,
+	Data: string(0..64),
+}
+
+-- ============================================================
+-- Shop
+-- ============================================================
+
+event ShopSetGiftPlayer {
+	From: Client,
+	Type: Reliable,
+	Call: ManyAsync,
+	Data: Instance(Player)?,
+}
+
+struct PurchaseCratePayload {
+	crateType: string(0..32),
+	quantity: u16,
+}
+
+function ShopSubmitCode {
+	Yield: Coroutine,
+	Data: string(0..64),
+	Return: NetworkResponse,
+}
+
+function ShopPurchaseCrate {
+	Yield: Coroutine,
+	Data: PurchaseCratePayload,
+	Return: NetworkResponse,
+}
+
+function ShopGetGiftedGamepasses {
+	Yield: Coroutine,
+	Data: Instance(Player),
+	Return: unknown,
+}
+
+-- ============================================================
+-- Settings
+-- ============================================================
+
+function SettingsChangeSetting {
+	Yield: Coroutine,
+	Data: (string(0..64), unknown),
+	Return: NetworkResponse,
+}
+
+-- ============================================================
+-- Trading
+-- ============================================================
+
+event TradingTradeReceived {
+	From: Server,
+	Type: Reliable,
+	Call: ManyAsync,
+	Data: unknown,
+}
+
+event TradingTradeCompleted {
+	From: Server,
+	Type: Reliable,
+	Call: ManyAsync,
+	Data: unknown,
+}
+
+event TradingTradeProcessed {
+	From: Server,
+	Type: Reliable,
+	Call: ManyAsync,
+	Data: unknown,
+}
+
+struct TradeItemPayload {
+	tradeUuid: string(0..64),
+	itemUuid: string(0..64),
+}
+
+function TradingSendTradeToPlayer {
+	Yield: Coroutine,
+	Data: Instance(Player),
+	Return: NetworkResponse,
+}
+
+function TradingAcceptTradeRequest {
+	Yield: Coroutine,
+	Data: string(0..64),
+	Return: NetworkResponse,
+}
+
+function TradingDeclineTradeRequest {
+	Yield: Coroutine,
+	Data: string(0..64),
+	Return: NetworkResponse,
+}
+
+function TradingAddItem {
+	Yield: Coroutine,
+	Data: TradeItemPayload,
+	Return: NetworkResponse,
+}
+
+function TradingRemoveItem {
+	Yield: Coroutine,
+	Data: TradeItemPayload,
+	Return: NetworkResponse,
+}
+
+function TradingAcceptTrade {
+	Yield: Coroutine,
+	Data: string(0..64),
+	Return: NetworkResponse,
+}
+
+function TradingDeclineTrade {
+	Yield: Coroutine,
+	Data: string(0..64),
+	Return: NetworkResponse,
+}
+
+function TradingConfirmTrade {
+	Yield: Coroutine,
+	Data: string(0..64),
+	Return: NetworkResponse,
+}
+
+-- ============================================================
+-- Voxel destruction
+-- ============================================================
+
+struct VoxelDeltaPayload {
+	entityId: f64,
+	indices: buffer,
+	hitPosition: vector,
+	explosionForce: f32,
+	debrisLifetime: f32,
+}
+
+event VoxelDestroyCells {
+	From: Server,
+	Type: Reliable,
+	Call: ManyAsync,
+	Data: VoxelDeltaPayload,
+}

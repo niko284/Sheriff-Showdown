@@ -7,6 +7,7 @@ local LocalPlayer = Players.LocalPlayer
 
 local AcceptIndicator = require("@ui/components/trading/AcceptIndicator")
 local AutomaticScrollingFrame = require("@ui/components/frames/AutomaticScrollingFrame")
+local BlinkClient = require("@client/modules/BlinkClient")
 local Button = require("@ui/components/buttons/Button")
 local ConfirmationPrompt = require("@ui/components/other/ConfirmationPrompt")
 local CurrentInterfaceContext = require("@ui/contexts/CurrentInterfaceContext")
@@ -14,25 +15,18 @@ local InterfaceController = require("@controllers/InterfaceController")
 local InventoryContext = require("@ui/contexts/InventoryContext")
 local InventoryController = require("@controllers/InventoryController")
 local InventoryUtils = require("@utilities/InventoryUtils")
-local Net = require("@packages/Net")
 local PlayerIcon = require("@ui/components/other/PlayerIcon")
+local Promise = require("@packages/Promise")
 local RadialLoading = require("@ui/components/other/RadialLoading")
 local React = require("@packages/React")
-local Remotes = require("@network/Remotes")
 local TradeContext = require("@ui/contexts/TradeContext")
 local TradeItemTemplate = require("@ui/components/trading/TradeItemTemplate")
 local TradingController = require("@controllers/TradingController")
 local Types = require("@constants/Types")
 local UIStroke = require("@ui/components/other/UIStroke")
-local UUIDSerde = require("@network/serde/UUIDSerde")
+local UUIDSerde = require("@utilities/UUIDSerde")
 local animateCurrentInterface = require("@ui/hooks/animateCurrentInterface")
 local createNextOrder = require("@ui/hooks/createNextOrder")
-
-local TradingNamespace = Remotes.Client:GetNamespace("Trading")
-local AcceptTrade = TradingNamespace:Get("AcceptTrade") :: Net.ClientAsyncCaller
-local DeclineTrade = TradingNamespace:Get("DeclineTrade") :: Net.ClientAsyncCaller
-local ConfirmTrade = TradingNamespace:Get("ConfirmTrade") :: Net.ClientAsyncCaller
-local TradeProcessed = TradingNamespace:Get("TradeProcessed") :: Net.ClientListenerEvent
 
 local e = React.createElement
 local useContext = React.useContext
@@ -76,7 +70,14 @@ local function Trading(_props: TradingProps)
 
 		TradingController.TradeStateChanged:Fire(newTradeState)
 
-		ConfirmTrade:CallServerAsync(serializedTradeUUID)
+		Promise.new(function(resolve, reject)
+			local ok, result = pcall(BlinkClient.TradingConfirmTrade.Invoke, serializedTradeUUID)
+			if ok then
+				resolve(result)
+			else
+				reject(result)
+			end
+		end)
 			:andThen(function(response: Types.NetworkResponse)
 				if response.Success == false then
 					TradingController.TradeStateChanged:Fire(tradeState) -- rollback
@@ -95,7 +96,14 @@ local function Trading(_props: TradingProps)
 
 		local serializedTradeUUID = UUIDSerde.Serialize(tradeState.currentTrade.UUID)
 
-		AcceptTrade:CallServerAsync(serializedTradeUUID)
+		Promise.new(function(resolve, reject)
+			local ok, result = pcall(BlinkClient.TradingAcceptTrade.Invoke, serializedTradeUUID)
+			if ok then
+				resolve(result)
+			else
+				reject(result)
+			end
+		end)
 			:andThen(function(response: Types.NetworkResponse)
 				if response.Success == false then
 					warn(response.Message)
@@ -112,10 +120,14 @@ local function Trading(_props: TradingProps)
 
 		local serializedTradeUUID = UUIDSerde.Serialize(tradeState.currentTrade.UUID)
 
-		DeclineTrade:CallServerAsync(serializedTradeUUID)
-			:andThen(function(response: Types.NetworkResponse)
-				--print(response)
-			end)
+		Promise.new(function(resolve, reject)
+			local ok, result = pcall(BlinkClient.TradingDeclineTrade.Invoke, serializedTradeUUID)
+			if ok then
+				resolve(result)
+			else
+				reject(result)
+			end
+		end)
 			:catch(function(err)
 				warn(tostring(err))
 			end)
@@ -221,7 +233,7 @@ local function Trading(_props: TradingProps)
 			end
 		end
 
-		local tradeProcessedConnection = TradeProcessed:Connect(function(_tradeUUID: string)
+		local tradeProcessedConnection = BlinkClient.TradingTradeProcessed.On(function(_tradeUUID: string)
 			local newTradeState = table.clone(tradeState)
 			newTradeState.showTradeSideButton = false
 			TradingController.TradeStateChanged:Fire(newTradeState)
@@ -255,7 +267,7 @@ local function Trading(_props: TradingProps)
 			if cooldownConnection then
 				cooldownConnection:Disconnect()
 			end
-			tradeProcessedConnection:Disconnect()
+			tradeProcessedConnection()
 		end
 	end, { tradeState, currentInterface, inventory } :: { any })
 

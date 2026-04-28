@@ -1,19 +1,16 @@
 --!strict
 
+local jecs = require("@packages/jecs")
+
 local Actions = require("@ecs/actions")
+local BlinkServer = require("@server/modules/BlinkServer")
 local Components = require("@ecs/components")
 local Distractions = require("@constants/Distractions")
 local Generic = require("../Generic")
-local Matter = require("@packages/Matter")
-local Net = require("@packages/Net")
 local Promise = require("@packages/Promise")
-local Remotes = require("@network/Remotes")
 local RoundService = require("@services/RoundService")
 local Sift = require("@packages/Sift")
 local Types = require("@constants/Types")
-
-local RoundNamespace = Remotes.Server:GetNamespace("Round")
-local SendDistraction = RoundNamespace:Get("SendDistraction") :: Net.ServerSenderEvent
 
 local DISTRACTION_KEYS = Sift.Dictionary.keys(Distractions)
 local DISTRACTION_STOP_FLAG = "ImmediateStop"
@@ -25,40 +22,29 @@ local DISALLOWED_ACTIONS_DURING_DISTRACTION = {
 local DistractionExtension = {
 	Data = RoundService:GetRoundModeData("Distraction"),
 	ExtraMatchProperties = {
-		-- we can add extra properties here for newly created rounds if we need to.
 		DistractionsFinished = false,
 	},
 } :: Types.RoundModeExtension & {
 	GetDistractions: () -> { Types.Distraction },
 }
 
-function DistractionExtension.StartMatch(Match: Types.Match, RoundInstance: Types.Round, World: Matter.World)
+function DistractionExtension.StartMatch(Match: Types.Match, RoundInstance: Types.Round, World: jecs.World)
 	Generic.StartMatch(Match, RoundInstance, World)
 
 	local matchDistractions = DistractionExtension.GetDistractions()
-
 	local distractionsActive = true
-
-	-- loop through the distractions and send them to the clients to display every 2 seconds.
 	local playersInMatch = RoundService:GetAllPlayersInMatch(Match)
 
-	-- we need a stable reference to the function so we can remove it from the middleware table after the distractions end.
 	local distractionMiddleware = function(_world, player: Player, _actionPayload: any)
 		if distractionsActive and table.find(playersInMatch, player) then
 			local playerEntityId = RoundService:GetEntityIdFromPlayer(player)
-			local playerKilled = World:get(playerEntityId, Components.Killed)
-
-			if playerKilled == nil then
-				World:insert(
-					playerEntityId,
-					Components.Killed({
-						killerEntityId = playerEntityId,
-						expiry = os.time() + 6, -- 6 seconds duration
-						processRemoval = false,
-					})
-				)
+			if not World:get(playerEntityId, Components.Killed) then
+				World:set(playerEntityId, Components.Killed, {
+					killerEntityId = playerEntityId,
+					expiry = os.time() + 6,
+					processRemoval = false,
+				})
 			end
-
 			return false
 		end
 		return true
@@ -70,26 +56,23 @@ function DistractionExtension.StartMatch(Match: Types.Match, RoundInstance: Type
 		table.insert(actionMiddlewares, distractionMiddleware)
 	end
 
-	-- if our match finishes early, we want to stop the distractions from being sent to the clients.
 	Promise.any({
 		Generic.MatchFinishedPromise(Match):andThen(function()
-			-- notify the client to stop the distractions if the match finishes early.
-			SendDistraction:SendToPlayers(playersInMatch, DISTRACTION_STOP_FLAG)
+			BlinkServer.RoundSendDistraction.FireList(playersInMatch, DISTRACTION_STOP_FLAG)
 			distractionsActive = false
 			return DISTRACTION_STOP_FLAG
 		end),
 		Promise.new(function(resolve, _reject, onCancel)
 			local distractionsSent = 0
 			local distractionsToSend = #matchDistractions
-			local distractions = matchDistractions
 
 			onCancel(function()
-				distractionsSent = distractionsToSend -- stop the loop
+				distractionsSent = distractionsToSend
 			end)
 
 			while distractionsSent < distractionsToSend do
-				local distraction = distractions[distractionsSent + 1]
-				SendDistraction:SendToPlayers(playersInMatch, distraction)
+				local distraction = matchDistractions[distractionsSent + 1]
+				BlinkServer.RoundSendDistraction.FireList(playersInMatch, distraction)
 				distractionsSent += 1
 				if distractionsSent < distractionsToSend then
 					task.wait(3)
@@ -102,7 +85,7 @@ function DistractionExtension.StartMatch(Match: Types.Match, RoundInstance: Type
 		distractionsActive = false
 		task.spawn(function()
 			task.wait(1)
-			SendDistraction:SendToPlayers(playersInMatch, nil) -- clear the draw distraction after 1 second.
+			BlinkServer.RoundSendDistraction.FireList(playersInMatch, nil)
 		end)
 
 		for _, action in DISALLOWED_ACTIONS_DURING_DISTRACTION do
@@ -114,16 +97,13 @@ function DistractionExtension.StartMatch(Match: Types.Match, RoundInstance: Type
 			end
 		end
 
-		-- if the match finishes early, there's nothing left to do.
 		if result == DISTRACTION_STOP_FLAG then
 			return
 		end
-		-- since the draw distraction is the last one, we can now disable the distraction flag.
 	end)
 end
 
 function DistractionExtension.GetDistractions(): { Types.Distraction }
-	-- put a random amount of distractions in a list
 	local distractions: { Types.Distraction } = {}
 	local distractionsBeforeDraw = math.random(0, 6)
 
@@ -135,7 +115,6 @@ function DistractionExtension.GetDistractions(): { Types.Distraction }
 		table.insert(distractions, distractionName)
 	end
 
-	-- put the draw in the list last
 	table.insert(distractions, "Draw")
 
 	return distractions

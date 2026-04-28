@@ -1,26 +1,24 @@
 --!strict
 
-local MatterTypes = require("@ecs/MatterTypes")
+local jecs = require("@packages/jecs")
+
 local Types = require("@constants/Types")
 local WorldUtils = require("@ecs/Util")
 
 local Middlewares: { [string]: (any) -> Types.MiddlewareFn<any> } = {}
 
-function Middlewares.DoesNotHaveComponents(components: { MatterTypes.Component<any> })
-	return function(world, player, _actionPayload)
+function Middlewares.DoesNotHaveComponents(components: { jecs.Entity })
+	return function(world: jecs.World, player: Player, _actionPayload)
 		local entityId = WorldUtils.GetTargetEntityIdFromPlayer(world, player)
-
-		local hasComponent = false
-		for _, component in components do
-			if world:get(entityId, component) then
-				hasComponent = true
-				break
-			end
+		if entityId == nil then
+			return false
 		end
 
-		if hasComponent then
-			print(`Player ${player.Name} has a component that they should not have.`)
-			return false
+		for _, component in components do
+			if world:has(entityId, component) then
+				print(`Player ${player.Name} has a component that they should not have.`)
+				return false
+			end
 		end
 
 		return true

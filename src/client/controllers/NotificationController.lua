@@ -1,15 +1,10 @@
 --!strict
 
-local Net = require("@packages/Net")
+local BlinkClient = require("@client/modules/BlinkClient")
 local NotificationSerde = require("@network/serde/NotificationSerde")
-local Remotes = require("@network/Remotes")
 local Signal = require("@packages/Signal")
 local Types = require("@constants/Types")
-local UUIDSerde = require("@network/serde/UUIDSerde")
-
-local NotificationRemotes = Remotes.Client:GetNamespace("Notifications")
-local AddNotification = NotificationRemotes:Get("AddNotification") :: Net.ClientListenerEvent
-local RemoveNotification = NotificationRemotes:Get("RemoveNotification") :: Net.ClientListenerEvent
+local UUIDSerde = require("@utilities/UUIDSerde")
 
 -- // Controller Variables \\
 
@@ -22,10 +17,10 @@ local NotificationController = {
 -- // Functions \\
 
 function NotificationController:OnInit()
-	AddNotification:Connect(function(Notification: string)
+	BlinkClient.NotificationAdd.On(function(Notification: string)
 		self:AddNotification(NotificationSerde.Deserialize(Notification))
 	end)
-	RemoveNotification:Connect(function(UUID: string)
+	BlinkClient.NotificationRemove.On(function(UUID: string)
 		self:RemoveNotification(UUIDSerde.Deserialize(UUID))
 	end)
 end

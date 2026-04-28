@@ -10,8 +10,8 @@
             "current": {
                 "name": "path",
                 "sources": {
-                    "@packages": "Packages/",
-                    "@ServerPackages": "ServerPackages/",
+                    "@packages": "roblox_packages/",
+                    "@ServerPackages": "roblox_packages/",
                     "@client": "src/client/",
                     "@controllers": "src/client/controllers/",
                     "@components": "src/client/ui/components/",

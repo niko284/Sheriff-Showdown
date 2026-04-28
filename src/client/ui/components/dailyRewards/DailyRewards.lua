@@ -1,24 +1,20 @@
 --!strict
 
+local BlinkClient = require("@client/modules/BlinkClient")
 local CloseButton = require("@ui/components/buttons/CloseButton")
 local Currency = require("@constants/Currencies")
 local DailyRewardTemplate = require("@ui/components/dailyRewards/DailyRewardTemplate")
 local DaySevenTemplate = require("@ui/components/dailyRewards/DaySevenTemplate")
 local InterfaceController = require("@controllers/InterfaceController")
 local ItemUtils = require("@utilities/ItemUtils")
-local Net = require("@packages/Net")
+local Promise = require("@packages/Promise")
 local React = require("@packages/React")
-local Remotes = require("@network/Remotes")
 local Rewards = require("@constants/Rewards")
 local RewardsContext = require("@ui/contexts/RewardsContext")
 local StringUtils = require("@utilities/StringUtils")
 local Types = require("@constants/Types")
 local animateCurrentInterface = require("@ui/hooks/animateCurrentInterface")
 local useCountdown = require("@ui/hooks/useCountdown")
-
-local RewardsNamespace = Remotes.Client:GetNamespace("Rewards")
-
-local ClaimDailyReward = RewardsNamespace:Get("ClaimDailyReward") :: Net.ClientAsyncCaller
 
 local useContext = React.useContext
 local useEffect = React.useEffect
@@ -74,7 +70,14 @@ local function DailyRewards(_props: DailyRewardProps)
 
 		rewardsCont.set(newRewards)
 
-		ClaimDailyReward:CallServerAsync()
+		Promise.new(function(resolve, reject)
+			local ok, result = pcall(BlinkClient.RewardsClaimDailyReward.Invoke)
+			if ok then
+				resolve(result)
+			else
+				reject(result)
+			end
+		end)
 			:andThen(function(response: Types.NetworkResponse)
 				if response.Success == false then
 					rewardsCont.set(oldRewards)

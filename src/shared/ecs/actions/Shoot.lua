@@ -2,7 +2,6 @@
 
 local AudioUtils = require("@utilities/AudioUtils")
 local Components = require("@ecs/components")
-local MatterTypes = require("@ecs/MatterTypes")
 local Middlewares = require("@ecs/Middlewares")
 local Types = require("@constants/Types")
 local t = require("@packages/t")
@@ -12,9 +11,8 @@ local RELOAD_SOUND_ID = 139717586861911
 type ShootPayload = {
 	velocity: Vector3,
 	origin: CFrame,
-	fromGun: number, -- server entity id of the gun that supposedly shot this bullet
-	timestamp: number, -- time the action was sent by the client
-	spawnedBullet: number, -- server entity id of the bullet that was spawned
+	fromGun: number,
+	timestamp: number,
 } & Types.GenericPayload
 
 return {
@@ -41,15 +39,13 @@ return {
 			return false
 		end
 
-		local gunComponent =
-			world:get(actionPayload.fromGun, Components.Gun) :: MatterTypes.ComponentInstance<Components.Gun>
+		local gunComponent = world:get(actionPayload.fromGun, Components.Gun) :: Components.Gun
 
 		if gunComponent.Disabled == true then
 			warn("Gun is disabled")
 			return false
 		end
 
-		-- Verify that the origin is close to the player's right hand
 		local character = player.Character :: Model
 		local characterRootPart = character:FindFirstChild("HumanoidRootPart") :: BasePart
 		local rightHand = character:FindFirstChild("RightHand") :: Part
@@ -60,68 +56,78 @@ return {
 
 		local origin = actionPayload.origin.Position
 		local diff = (origin - rightHand.Position).Magnitude
-		if diff > 15 then -- we can adjust this value if we want to be more lenient to high latency players
+		if diff > 15 then
 			warn("Origin is too far from the right hand: " .. diff)
 			return false
 		end
 
 		local newCapacity = gunComponent.CurrentCapacity - 1
-
 		local timeNow = DateTime.now()
 		local cooldownMillis = newCapacity == 0 and gunComponent.ReloadTimeMillis or gunComponent.LocalCooldownMillis
 
 		local reloading = cooldownMillis == gunComponent.ReloadTimeMillis
 		local wasReloading = gunComponent.Reloading
 
-		world:insert(
-			actionPayload.fromGun,
-			Components.Cooldown({ expiry = timeNow.UnixTimestampMillis + cooldownMillis })
-		)
+		world:set(actionPayload.fromGun, Components.Cooldown, { expiry = timeNow.UnixTimestampMillis + cooldownMillis })
 
-		gunComponent = gunComponent:patch({
+		local newGun: Components.Gun = {
+			LocalCooldownMillis = gunComponent.LocalCooldownMillis,
+			ReloadTimeMillis = gunComponent.ReloadTimeMillis,
+			Damage = gunComponent.Damage,
+			CriticalDamage = gunComponent.CriticalDamage,
+			BulletLifeTime = gunComponent.BulletLifeTime,
+			MaxCapacity = gunComponent.MaxCapacity,
+			ReloadTime = gunComponent.ReloadTime,
 			CurrentCapacity = newCapacity == 0 and gunComponent.MaxCapacity or newCapacity,
-			Reloading = reloading,
-		})
+			BulletSpeed = gunComponent.BulletSpeed,
+			BulletSoundId = gunComponent.BulletSoundId,
+			KnockStrength = gunComponent.KnockStrength,
+			Disabled = gunComponent.Disabled,
+			Reloading = reloading or nil,
+		}
 
 		if reloading and not wasReloading then
 			AudioUtils.PlaySoundOnInstance(RELOAD_SOUND_ID, characterRootPart)
 		end
 
-		world:insert(actionPayload.fromGun, gunComponent)
+		world:set(actionPayload.fromGun, Components.Gun, newGun)
 
-		-- we're not actually spawning a bullet here, we're just making the server also aware of the bullet that was shot.
-		-- the actual bullet is spawned on the client side.
-
-		local latency = workspace:GetServerTimeNow() - actionPayload.timestamp -- the time it took for the server to receive the action from the client
+		local latency = workspace:GetServerTimeNow() - actionPayload.timestamp
 		local interpolationTime = (player:GetNetworkPing() / 2) + 0.048
 
-		-- Validate the latency and avoid players with very slow connections
-		if (latency < 0) or (latency > 0.8) then -- 800ms is the maximum latency we allow
-			warn(`Invalid latency: ${latency}`)
+		if (latency < 0) or (latency > 0.8) then
+			warn(`Invalid latency: {latency}`)
 			return false
 		end
 		local timeLaunched = workspace:GetServerTimeNow() - latency - interpolationTime
 		local timeToJump = timeLaunched - actionPayload.timestamp
 
-		-- Calculate the new starting position of the bullet
 		local bulletStart = actionPayload.origin.Position + actionPayload.velocity * timeToJump
 		local adjustedBulletCFrame = CFrame.new(bulletStart, actionPayload.origin.LookVector)
 
-		actionPayload.spawnedBullet = world:spawn(
-			Components.Bullet({
-				gunId = actionPayload.fromGun,
-				origin = actionPayload.origin,
-			}),
-			Components.Velocity({ velocity = actionPayload.velocity }),
-			Components.Lifetime({ expiry = (DateTime.now().UnixTimestampMillis / 1000) + gunComponent.BulletLifeTime }),
-			Components.Owner({ OwnedBy = player }),
-			Components.Identifier({ uuid = actionPayload.actionId }),
-			Components.Transform({ cframe = adjustedBulletCFrame })
-		)
+		local bulletId = world:entity()
+		world:set(bulletId, Components.Projectile, { gunId = actionPayload.fromGun, origin = actionPayload.origin })
+		world:set(bulletId, Components.Velocity, { velocity = actionPayload.velocity })
+		world:set(bulletId, Components.Lifetime, {
+			expiry = (DateTime.now().UnixTimestampMillis / 1000) + gunComponent.BulletLifeTime,
+		})
+		world:set(bulletId, Components.Owner, { OwnedBy = player })
+		world:set(bulletId, Components.Identifier, { uuid = actionPayload.actionId })
+		world:set(bulletId, Components.Transform, { cframe = adjustedBulletCFrame })
+
+		if gunComponent.VoxelDestructionRadius and gunComponent.VoxelDestructionRadius > 0 then
+			world:set(bulletId, Components.DestructionRadius, {
+				radius = gunComponent.VoxelDestructionRadius,
+				shape = "Sphere",
+				falloff = "Linear",
+				explosionForce = gunComponent.VoxelExplosionForce or 60,
+				debrisLifetime = gunComponent.VoxelDebrisLifetime or 3,
+			})
+		end
 
 		return true
 	end,
-	validatePayload = t.strictInterface({ -- generic action payload combined with specific action payload
+	validatePayload = t.strictInterface({
 		action = t.literal("Shoot"),
 		actionId = t.string,
 		velocity = t.Vector3,

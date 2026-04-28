@@ -1,3 +1,5 @@
+--!strict
+
 local CollectionService = game:GetService("CollectionService")
 local GuiService = game:GetService("GuiService")
 local HttpService = game:GetService("HttpService")
@@ -5,21 +7,15 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
+local jecs = require("@packages/jecs")
+
+local BlinkClient = require("@client/modules/BlinkClient")
 local Components = require("@ecs/components")
 local Input = require("@packages/Input")
 local KeybindInputController = require("@controllers/KeybindInputController")
-local Matter = require("@packages/Matter")
-local MatterReplication = require("@packages/MatterReplication")
-local MatterTypes = require("@ecs/MatterTypes")
-local Remotes = require("@network/Remotes")
-local Types = require("@constants/Types")
 local UUIDSerde = require("@utilities/UUIDSerde")
-local useAnimation = require("@ecs/hooks/useAnimation")
 
 local PreferredInput = Input.PreferredInput
-
-local CombatNamespace = Remotes.Client:GetNamespace("Combat")
-local ProcessAction = CombatNamespace:Get("ProcessAction")
 
 local Assets = ReplicatedStorage:FindFirstChild("assets") :: Folder
 local Animations = Assets:FindFirstChild("animations") :: Folder
@@ -27,124 +23,139 @@ local Animations = Assets:FindFirstChild("animations") :: Folder
 local SHOOT_ANIMATION = Animations:FindFirstChild("gunshoot") :: Animation
 local DOUBLE_TAP_THRESHOLD_S = 0.4
 
-local useEvent = Matter.useEvent
+-- Per-animator shoot track cache.
+local shootTracks: { [Animator]: AnimationTrack } = {}
 
-local function gunsCanShoot(world: Matter.World, state)
-	local actions = state.actions
+type State = {
+	actions: any,
+	inputState: any,
+	inputMap: any,
+	replecsClient: any,
+	lastTapped: number?,
+	lastTapPosition: Vector2?,
+	releaseTouch: (() -> ())?,
+}
 
-	local isShooting = actions:pressed("shoot")
+-- Connect touch signals once.
+local touchConnected = false
 
-	for eid, gun: MatterTypes.ComponentInstance<Components.Gun>, owner: Components.Owner, serverEntity in
-		world:query(Components.Gun, Components.Owner, MatterReplication.ServerEntity):without(Components.Cooldown)
-	do
-		if isShooting then
-			if owner.OwnedBy == Players.LocalPlayer and gun.Disabled ~= true then
-				local mouseLocation = UserInputService:GetMouseLocation() - GuiService:GetGuiInset()
+local function gunsCanShoot(world: jecs.World, state: State)
+	local replecsClient = state.replecsClient
 
-				if PreferredInput.Current == "Touch" and KeybindInputController:IsMobileShiftLockEnabled() == true then
-					mouseLocation = Vector2.new(0.5, 0.5)
-				elseif PreferredInput.Current == "Touch" then
-					mouseLocation = state.lastTapPosition or mouseLocation
-				end
-
-				local viewportPointRay = workspace.CurrentCamera:ScreenPointToRay(mouseLocation.X, mouseLocation.Y)
-
-				local character = (owner.OwnedBy :: any).Character :: Types.Character
-				local bulletFilter = { character, unpack(CollectionService:GetTagged("Barrier")) }
-
-				local animator = character.Humanoid:FindFirstChildOfClass("Animator")
-
-				useAnimation(animator, SHOOT_ANIMATION, false)
-
-				local raycastParams = RaycastParams.new()
-				raycastParams.FilterDescendantsInstances = bulletFilter
-				raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-				local hitPart =
-					workspace:Raycast(viewportPointRay.Origin, viewportPointRay.Direction * 1000, raycastParams)
-
-				if hitPart then
-					local origin = character:WaitForChild("RightHand").Position
-					local dirFromRightHand = (hitPart.Position - character:WaitForChild("RightHand").Position).Unit
-
-					-- make origin cframe at origin position facing the direction of the velocity
-					local velocity = dirFromRightHand * gun.BulletSpeed
-					local bulletCFrame = CFrame.lookAt(origin, origin + dirFromRightHand)
-
-					local newCapacity = gun.CurrentCapacity - 1
-
-					local timeNow = DateTime.now()
-					local cooldownMillis = newCapacity == 0 and gun.ReloadTimeMillis or gun.LocalCooldownMillis
-
-					world:insert(
-						eid,
-						Components.Cooldown({
-							expiry = timeNow.UnixTimestampMillis + cooldownMillis,
-						})
-					)
-
-					gun = gun:patch({
-						CurrentCapacity = newCapacity == 0 and gun.MaxCapacity or newCapacity,
-						Reloading = cooldownMillis == gun.ReloadTimeMillis,
-					})
-					world:insert(eid, gun)
-
-					local actionUUID = HttpService:GenerateGUID(false)
-					world:spawn(
-						Components.Bullet({
-							gunId = serverEntity.id,
-							filter = bulletFilter,
-							origin = bulletCFrame,
-						}),
-						Components.Transform({
-							cframe = bulletCFrame,
-						}),
-						Components.Velocity({
-							velocity = velocity,
-						}),
-						Components.Lifetime({
-							expiry = (DateTime.now().UnixTimestampMillis / 1000) + gun.BulletLifeTime,
-						}),
-						Components.Owner({
-							OwnedBy = owner.OwnedBy,
-						}),
-						Components.Identifier({
-							uuid = actionUUID,
-						})
-					)
-
-					ProcessAction:SendToServer({
-						action = "Shoot",
-						actionId = UUIDSerde.Serialize(actionUUID),
-						velocity = velocity,
-						origin = bulletCFrame,
-						fromGun = serverEntity.id,
-						timestamp = workspace:GetServerTimeNow(),
-					})
-				end
+	if not touchConnected then
+		touchConnected = true
+		UserInputService.TouchStarted:Connect(function(inputObject: InputObject, gameProcessed: boolean)
+			if gameProcessed then
+				return
 			end
-		end
+			local nowSec = DateTime.now().UnixTimestampMillis / 1000
+			local wasDoubleTapped = state.lastTapped and (nowSec - state.lastTapped <= DOUBLE_TAP_THRESHOLD_S)
+			state.lastTapped = nowSec
+			if wasDoubleTapped then
+				state.lastTapPosition = Vector2.new(inputObject.Position.X, inputObject.Position.Y)
+				state.releaseTouch = state.actions:hold("shoot")
+			end
+		end)
+		UserInputService.TouchEnded:Connect(function()
+			if state.releaseTouch then
+				state.releaseTouch()
+				state.releaseTouch = nil
+			end
+		end)
 	end
 
-	-- detect gun shooting for mobile
+	local isShooting = state.actions:pressed("shoot")
+	if not isShooting then
+		return
+	end
 
-	for _, inputObject: InputObject, gameProcessed in useEvent(UserInputService, "TouchStarted") do
-		if gameProcessed then
+	for eid, gun, owner in world:query(Components.Gun, Components.Owner):without(Components.Cooldown) do
+		if owner.OwnedBy ~= Players.LocalPlayer or gun.Disabled == true then
 			continue
 		end
-		local nowMillis = DateTime.now().UnixTimestampMillis
-		local wasDoubleTapped = state.lastTapped and (nowMillis / 1000 - state.lastTapped <= DOUBLE_TAP_THRESHOLD_S)
-		state.lastTapped = nowMillis / 1000
-		if wasDoubleTapped then
-			state.lastTapPosition = Vector2.new(inputObject.Position.X, inputObject.Position.Y)
-			state.releaseTouch = state.actions:hold("shoot")
-		end
-	end
 
-	for _ in useEvent(UserInputService, "TouchEnded") do
-		if state.releaseTouch then
-			state.releaseTouch()
-			state.releaseTouch = nil
+		local serverGunId = replecsClient and replecsClient:get_server_entity(eid)
+		if not serverGunId then
+			continue
 		end
+
+		local mouseLocation = UserInputService:GetMouseLocation() - GuiService:GetGuiInset()
+		if PreferredInput.Current == "Touch" and KeybindInputController:IsMobileShiftLockEnabled() then
+			mouseLocation = Vector2.new(0.5, 0.5)
+		elseif PreferredInput.Current == "Touch" then
+			mouseLocation = state.lastTapPosition or mouseLocation
+		end
+
+		local viewportPointRay = workspace.CurrentCamera:ScreenPointToRay(mouseLocation.X, mouseLocation.Y)
+
+		local character = (owner.OwnedBy :: any).Character :: Model
+		local bulletFilter = { character, table.unpack(CollectionService:GetTagged("Barrier")) }
+
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		local animator = humanoid and humanoid:FindFirstChildOfClass("Animator") :: Animator?
+		if animator then
+			local shootTrack = shootTracks[animator]
+			if not shootTrack then
+				shootTrack = animator:LoadAnimation(SHOOT_ANIMATION)
+				shootTracks[animator] = shootTrack
+			end
+			if not shootTrack.IsPlaying then
+				shootTrack:Play()
+			end
+		end
+
+		local raycastParams = RaycastParams.new()
+		raycastParams.FilterDescendantsInstances = bulletFilter
+		raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+		local hit = workspace:Raycast(viewportPointRay.Origin, viewportPointRay.Direction * 1000, raycastParams)
+
+		if not hit then
+			continue
+		end
+
+		local rightHand = character:WaitForChild("RightHand") :: BasePart
+		local dirFromRightHand = (hit.Position - rightHand.Position).Unit
+		local velocity = dirFromRightHand * gun.BulletSpeed
+		local bulletCFrame = CFrame.lookAt(rightHand.Position, rightHand.Position + dirFromRightHand)
+
+		local newCapacity = gun.CurrentCapacity - 1
+		local timeNow = DateTime.now()
+		local cooldownMillis = newCapacity == 0 and gun.ReloadTimeMillis or gun.LocalCooldownMillis
+
+		world:set(eid, Components.Cooldown, { expiry = timeNow.UnixTimestampMillis + cooldownMillis })
+		world:set(eid, Components.Gun, {
+			LocalCooldownMillis = gun.LocalCooldownMillis,
+			ReloadTimeMillis = gun.ReloadTimeMillis,
+			Damage = gun.Damage,
+			CriticalDamage = gun.CriticalDamage,
+			BulletLifeTime = gun.BulletLifeTime,
+			MaxCapacity = gun.MaxCapacity,
+			ReloadTime = gun.ReloadTime,
+			CurrentCapacity = newCapacity == 0 and gun.MaxCapacity or newCapacity,
+			BulletSpeed = gun.BulletSpeed,
+			BulletSoundId = gun.BulletSoundId,
+			KnockStrength = gun.KnockStrength,
+			Disabled = gun.Disabled,
+			Reloading = cooldownMillis == gun.ReloadTimeMillis or nil,
+		})
+
+		local actionUUID = HttpService:GenerateGUID(false)
+		local bulletId = world:entity()
+		world:set(bulletId, Components.Projectile, { gunId = serverGunId, filter = bulletFilter, origin = bulletCFrame })
+		world:set(bulletId, Components.Transform, { cframe = bulletCFrame })
+		world:set(bulletId, Components.Velocity, { velocity = velocity })
+		world:set(bulletId, Components.Lifetime, { expiry = (DateTime.now().UnixTimestampMillis / 1000) + gun.BulletLifeTime })
+		world:set(bulletId, Components.Owner, { OwnedBy = owner.OwnedBy })
+		world:set(bulletId, Components.Identifier, { uuid = actionUUID })
+
+		BlinkClient.ProcessAction.Fire({
+			action = "Shoot",
+			actionId = UUIDSerde.Serialize(actionUUID),
+			velocity = velocity,
+			origin = bulletCFrame,
+			fromGun = serverGunId,
+			timestamp = workspace:GetServerTimeNow(),
+		})
 	end
 end
 

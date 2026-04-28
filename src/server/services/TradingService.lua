@@ -4,16 +4,14 @@ local DataStoreService = game:GetService("DataStoreService")
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 
+local BlinkServer = require("@server/modules/BlinkServer")
 local InventoryService = require("@services/InventoryService")
 local ItemTypes = require("@constants/ItemTypes")
 local ItemUtils = require("@utilities/ItemUtils")
-local Net = require("@packages/Net")
 local PlayerDataService = require("@services/PlayerDataService")
 local PlayerUtils = require("@utilities/PlayerUtils")
 local Promise = require("@packages/Promise")
-local Remotes = require("@network/Remotes")
 local ResourceService = require("@services/ResourceService")
-local ServerComm = require("@server/ServerComm")
 local SettingsService = require("@services/SettingsService")
 local Sift = require("@packages/Sift")
 local StatisticsService = require("@services/StatisticsService")
@@ -22,17 +20,6 @@ local Types = require("@constants/Types")
 local UUIDSerde = require("@network/serde/UUIDSerde")
 
 local TradeData = DataStoreService:GetDataStore("AnimeDungeonsTradeDataOfficial1")
-local TradingRemotes = Remotes.Server:GetNamespace("Trading")
-local TradeReceived = TradingRemotes:Get("TradeReceived") :: Net.ServerSenderEvent
-local SendTradeToPlayer = TradingRemotes:Get("SendTradeToPlayer") :: Net.ServerAsyncCallback
-local AcceptTradeRequest = TradingRemotes:Get("AcceptTradeRequest") :: Net.ServerAsyncCallback
-local DeclineTradeRequest = TradingRemotes:Get("DeclineTradeRequest") :: Net.ServerAsyncCallback
-local AddItemToTrade = TradingRemotes:Get("AddItemToTrade") :: Net.ServerAsyncCallback
-local RemoveItemFromTrade = TradingRemotes:Get("RemoveItemFromTrade") :: Net.ServerAsyncCallback
-local AcceptTrade = TradingRemotes:Get("AcceptTrade") :: Net.ServerAsyncCallback
-local DeclineTrade = TradingRemotes:Get("DeclineTrade") :: Net.ServerAsyncCallback
-local ConfirmTrade = TradingRemotes:Get("ConfirmTrade") :: Net.ServerAsyncCallback
-local TradeProcessed = TradingRemotes:Get("TradeProcessed") :: Net.ServerSenderEvent
 
 local MAX_PENDING_TRADES = 50
 local LOCK_RETRY_ATTEMPTS = 5
@@ -40,33 +27,32 @@ local TRADING_LEVEL_REQUIREMENT = 15
 
 local TradingService = {
 	Name = "TradingService",
-	ActiveTrade = ServerComm:CreateProperty("ActiveTrade", nil) :: Types.ServerRemoteProperty,
 	Trades = {} :: { [string]: Types.Trade },
 }
 
 function TradingService:OnInit()
-	SendTradeToPlayer:SetCallback(function(Player: Player, Receiver: Player)
+	BlinkServer.TradingSendTradeToPlayer.On(function(Player: Player, Receiver: Player)
 		return self:SendTradeToPlayerRequest(Player, Receiver)
 	end)
-	AcceptTradeRequest:SetCallback(function(Player: Player, TradeUUID: string)
+	BlinkServer.TradingAcceptTradeRequest.On(function(Player: Player, TradeUUID: string)
 		return self:AcceptTradeClientRequest(Player, TradeUUID)
 	end)
-	DeclineTradeRequest:SetCallback(function(Player: Player, TradeUUID: string)
+	BlinkServer.TradingDeclineTradeRequest.On(function(Player: Player, TradeUUID: string)
 		return self:DeclineTradeClientRequest(Player, TradeUUID)
 	end)
-	AddItemToTrade:SetCallback(function(Player: Player, TradeUUID: string, ItemUUID: string)
-		return self:AddItemToTradeRequest(Player, TradeUUID, ItemUUID)
+	BlinkServer.TradingAddItem.On(function(Player: Player, args: { tradeUuid: string, itemUuid: string })
+		return self:AddItemToTradeRequest(Player, args.tradeUuid, args.itemUuid)
 	end)
-	RemoveItemFromTrade:SetCallback(function(Player: Player, TradeUUID: string, ItemUUID: string)
-		return self:RemoveItemFromTradeRequest(Player, TradeUUID, ItemUUID)
+	BlinkServer.TradingRemoveItem.On(function(Player: Player, args: { tradeUuid: string, itemUuid: string })
+		return self:RemoveItemFromTradeRequest(Player, args.tradeUuid, args.itemUuid)
 	end)
-	AcceptTrade:SetCallback(function(Player: Player, TradeUUID: string)
+	BlinkServer.TradingAcceptTrade.On(function(Player: Player, TradeUUID: string)
 		return self:AcceptTrade(TradeUUID, Player)
 	end)
-	DeclineTrade:SetCallback(function(Player: Player, TradeUUID: string)
+	BlinkServer.TradingDeclineTrade.On(function(Player: Player, TradeUUID: string)
 		return self:DeclineTrade(TradeUUID, Player)
 	end)
-	ConfirmTrade:SetCallback(function(Player: Player, TradeUUID: string)
+	BlinkServer.TradingConfirmTrade.On(function(Player: Player, TradeUUID: string)
 		return self:ConfirmTrade(TradeUUID, Player)
 	end)
 end
@@ -109,8 +95,8 @@ function TradingService:OnPlayerRemoving(Player: Player)
 	local playerTrade: Types.Trade = self:GetActiveTrade(Player)
 	if playerTrade and playerTrade.Status == "Started" then -- Active trade
 		self.Trades[playerTrade.UUID] = nil -- Clean trade.
-		local otherPlayer = playerTrade.Sender == Player and playerTrade.Receiver or playerTrade.Sender;
-		(self.ActiveTrade :: Types.ServerRemoteProperty):SetFor(otherPlayer, nil) -- Clear the other player's trade
+		local otherPlayer = playerTrade.Sender == Player and playerTrade.Receiver or playerTrade.Sender
+		BlinkServer.TradingActiveTradeSync.Fire(otherPlayer, nil) -- Clear the other player's trade
 	end
 	-- Get any pending trades the player has
 	local pendingTrades = self:GetPendingTradesForPlayer(Player) -- Receiver == Player
@@ -142,7 +128,7 @@ function TradingService:CreateTrade(Sender: Player, Receiver: Player)
 	}
 	-- We add the trade to the trades table with a unique identifier as its key.
 	self.Trades[TradeUUID] = Trade
-	TradeReceived:SendToPlayer(Receiver, TradeSerde.Serialize(Trade))
+	BlinkServer.TradingTradeReceived.Fire(Receiver, TradeSerde.Serialize(Trade))
 end
 
 function TradingService:GetTrade(TradeUUID: string): Types.Trade
@@ -266,8 +252,8 @@ function TradingService:AddItemToTrade(ItemUUID: string, TradeUUID: string, Play
 	-- If none of these checks have returned false, it's safe to say that we can add this item to the trade.
 	table.insert(PlayerOffer, item)
 	local otherPlayer = Trade.Sender == Player and Trade.Receiver or Trade.Sender
-	self.ActiveTrade:SetFor(otherPlayer, TradeSerde.Serialize(Trade))
-	self.ActiveTrade:SetFor(Player, TradeSerde.Serialize(Trade)) -- note: can remove this and use client side state to update the UI.
+	BlinkServer.TradingActiveTradeSync.Fire(otherPlayer, TradeSerde.Serialize(Trade))
+	BlinkServer.TradingActiveTradeSync.Fire(Player, TradeSerde.Serialize(Trade)) -- note: can remove this and use client side state to update the UI.
 	return {
 		Success = true,
 		Message = "Item added to trade.",
@@ -317,7 +303,8 @@ function TradingService:RemoveItemFromTrade(ItemUUID: string, TradeUUID: string,
 			end
 			table.remove(PlayerOffer, Index)
 			--local otherPlayer = Trade.Sender == Player and Trade.Receiver or Trade.Sender
-			self.ActiveTrade:SetForList({ Trade.Sender, Trade.Receiver }, TradeSerde.Serialize(Trade)) -- @note: can also use client-side state for the person removing the item.
+			BlinkServer.TradingActiveTradeSync.Fire(Trade.Sender, TradeSerde.Serialize(Trade)) -- @note: can also use client-side state for the person removing the item.
+			BlinkServer.TradingActiveTradeSync.Fire(Trade.Receiver, TradeSerde.Serialize(Trade))
 			return {
 				Success = true,
 				Message = "Item removed from trade.",
@@ -360,7 +347,8 @@ function TradingService:AcceptTradeRequest(TradeUUID: string, Player: Player): T
 		}
 	end
 	Trade.Status = "Started"
-	self.ActiveTrade:SetForList({ Trade.Sender, Trade.Receiver }, TradeSerde.Serialize(Trade))
+	BlinkServer.TradingActiveTradeSync.Fire(Trade.Sender, TradeSerde.Serialize(Trade))
+	BlinkServer.TradingActiveTradeSync.Fire(Trade.Receiver, TradeSerde.Serialize(Trade))
 	return {
 		Success = true,
 		Message = "Trade started!",
@@ -445,7 +433,8 @@ function TradingService:AcceptTrade(TradeUUID: string, Player: Player): Types.Ne
 	if #Trade.Accepted == 2 then -- If both players accepted the trade, it's time to confirm.
 		Trade.Status = "Confirming"
 	end
-	self.ActiveTrade:SetForList({ Trade.Sender, Trade.Receiver }, TradeSerde.Serialize(Trade))
+	BlinkServer.TradingActiveTradeSync.Fire(Trade.Sender, TradeSerde.Serialize(Trade))
+	BlinkServer.TradingActiveTradeSync.Fire(Trade.Receiver, TradeSerde.Serialize(Trade))
 	return {
 		Success = true,
 		Message = "Trade accepted",
@@ -484,7 +473,7 @@ function TradingService:ConfirmTrade(TradeUUID: string, Player: Player): Types.N
 	if #Trade.Confirmed == 2 then
 		-- Both players confirmed the trade, it is complete.
 		Trade.Status = "Completed"
-		self.ActiveTrade:SetFor(otherPlayer, TradeSerde.Serialize(Trade))
+		BlinkServer.TradingActiveTradeSync.Fire(otherPlayer, TradeSerde.Serialize(Trade))
 		print("COMPLETING TRADES")
 		self:CompleteTrade(TradeUUID)
 			:finally(function()
@@ -498,12 +487,12 @@ function TradingService:ConfirmTrade(TradeUUID: string, Player: Player): Types.N
 				if tradeSenderProfile and Trade.Sender:IsDescendantOf(Players) == false then
 					PlayerDataService:CloseDocument(Trade.Sender)
 				else
-					TradeProcessed:SendToPlayer(Trade.Sender, UUIDSerde.Serialize(TradeUUID))
+					BlinkServer.TradingTradeProcessed.Fire(Trade.Sender, UUIDSerde.Serialize(TradeUUID))
 				end
 				if tradeReceiverProfile and Trade.Receiver:IsDescendantOf(Players) == false then
 					PlayerDataService:CloseDocument(Trade.Receiver)
 				else
-					TradeProcessed:SendToPlayer(Trade.Receiver, UUIDSerde.Serialize(TradeUUID))
+					BlinkServer.TradingTradeProcessed.Fire(Trade.Receiver, UUIDSerde.Serialize(TradeUUID))
 				end
 				self.Trades[TradeUUID] = nil -- Clean up the trade.
 			end)
@@ -515,7 +504,7 @@ function TradingService:ConfirmTrade(TradeUUID: string, Player: Player): Types.N
 			Message = "Trade confirmed!",
 		}
 	end
-	self.ActiveTrade:SetFor(otherPlayer, TradeSerde.Serialize(Trade))
+	BlinkServer.TradingActiveTradeSync.Fire(otherPlayer, TradeSerde.Serialize(Trade))
 	return {
 		Success = true,
 		Message = "Trade confirmed!",
@@ -712,7 +701,8 @@ function TradingService:DeclineTrade(TradeUUID: string, Player: Player): Types.N
 		}
 	end
 	self.Trades[TradeUUID] = nil
-	self.ActiveTrade:SetForList({ Trade.Sender, Trade.Receiver }, nil)
+	BlinkServer.TradingActiveTradeSync.Fire(Trade.Sender, nil)
+	BlinkServer.TradingActiveTradeSync.Fire(Trade.Receiver, nil)
 	return {
 		Success = true,
 		Message = "Trade declined",

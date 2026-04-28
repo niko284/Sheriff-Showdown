@@ -1,5 +1,6 @@
 --!strict
 
+local BlinkServer = require("@server/modules/BlinkServer")
 local CrateUtils = require("@utilities/CrateUtils")
 local Crates = require("@constants/Crates")
 local Freeze = require("@packages/Freeze")
@@ -9,25 +10,10 @@ local ItemTypes = require("@constants/ItemTypes")
 local ItemUtils = require("@utilities/ItemUtils")
 local Items = require("@constants/Items")
 local Lapis = require("@ServerPackages/Lapis")
-local Net = require("@packages/Net")
 local PlayerDataService = require("@services/PlayerDataService")
 local Promise = require("@packages/Promise")
 local RarityUtils = require("@utilities/RarityUtils")
-local Remotes = require("@network/Remotes")
-local ServerComm = require("@server/ServerComm")
 local Types = require("@constants/Types")
-
-local InventoryNamespace = Remotes.Server:GetNamespace("Inventory")
-local ItemAdded = InventoryNamespace:Get("ItemAdded") :: Net.ServerSenderEvent
-local ItemRemoved = InventoryNamespace:Get("ItemRemoved") :: Net.ServerSenderEvent
-local EquipItem = InventoryNamespace:Get("EquipItem") :: Net.ServerAsyncCallback
-local UnequipItem = InventoryNamespace:Get("UnequipItem") :: Net.ServerAsyncCallback
-local LockItem = InventoryNamespace:Get("LockItem") :: Net.ServerAsyncCallback
-local UnlockItem = InventoryNamespace:Get("UnlockItem") :: Net.ServerAsyncCallback
-local ToggleItemFavorite = InventoryNamespace:Get("ToggleItemFavorite") :: Net.ServerAsyncCallback
-local OpenCrate = InventoryNamespace:Get("OpenCrate") :: Net.ServerAsyncCallback
-
-local PlayerInventoryProperty = ServerComm:CreateProperty("PlayerInventory", nil)
 
 local InventoryService = {}
 
@@ -38,31 +24,31 @@ function InventoryService:OnInit()
 		local data = Document:read()
 
 		if data.Inventory then
-			PlayerInventoryProperty:SetFor(Player, data.Inventory)
+			BlinkServer.InventorySync.Fire(Player, data.Inventory)
 		end
 	end)
 
-	EquipItem:SetCallback(function(Player: Player, ItemUUID: string)
+	BlinkServer.InventoryEquipItem.On(function(Player: Player, ItemUUID: string)
 		return InventoryService:EquipItemNetworkRequest(Player, ItemUUID)
 	end)
 
-	UnequipItem:SetCallback(function(Player: Player, ItemUUID: string)
+	BlinkServer.InventoryUnequipItem.On(function(Player: Player, ItemUUID: string)
 		return InventoryService:UnequipItemNetworkRequest(Player, ItemUUID)
 	end)
 
-	LockItem:SetCallback(function(Player: Player, ItemUUID: string)
+	BlinkServer.InventoryLockItem.On(function(Player: Player, ItemUUID: string)
 		return InventoryService:LockItemNetworkRequest(Player, ItemUUID)
 	end)
 
-	UnlockItem:SetCallback(function(Player: Player, ItemUUID: string)
+	BlinkServer.InventoryUnlockItem.On(function(Player: Player, ItemUUID: string)
 		return InventoryService:UnlockItemNetworkRequest(Player, ItemUUID)
 	end)
 
-	ToggleItemFavorite:SetCallback(function(Player: Player, ItemUUID: string, Favorite: boolean)
+	BlinkServer.InventoryToggleFavorite.On(function(Player: Player, ItemUUID: string, Favorite: boolean)
 		return InventoryService:ToggleItemFavoriteNetworkRequest(Player, ItemUUID, Favorite)
 	end)
 
-	OpenCrate:SetCallback(function(Player: Player, CrateUUID: string)
+	BlinkServer.InventoryOpenCrate.On(function(Player: Player, CrateUUID: string)
 		return InventoryService:OpenCrateNetworkRequest(Player, CrateUUID)
 	end)
 end
@@ -111,7 +97,7 @@ function InventoryService:AddItem(Player: Player, Item: Types.Item, sendNetworkE
 	Document:write(Freeze.Dictionary.setIn(newData, { "Inventory", "Storage" }, newStorage))
 
 	if sendNetworkEvent ~= false then
-		ItemAdded:SendToPlayer(Player, Item)
+		BlinkServer.InventoryItemAdded.Fire(Player, Item)
 	end
 end
 
@@ -126,7 +112,7 @@ function InventoryService:RemoveItem(Player: Player, Item: Types.Item, sendNetwo
 	Document:write(newData)
 
 	if sendNetworkEvent ~= false then
-		ItemRemoved:SendToPlayer(Player, Item)
+		BlinkServer.InventoryItemRemoved.Fire(Player, Item)
 	end
 end
 

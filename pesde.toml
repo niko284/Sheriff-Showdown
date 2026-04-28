@@ -1,0 +1,51 @@
+name = "nbala/sheriff_showdown"
+version = "0.1.0"
+description = "Voxel destruction game"
+license = "MIT"
+private = true
+authors = ["Nick"]
+
+[target]
+environment = "roblox"
+
+[scripts]
+roblox_sync_config_generator = ".pesde/scripts/roblox_sync_config_generator.luau"
+sourcemap_generator = ".pesde/scripts/sourcemap_generator.luau"
+
+[indices]
+default = "https://github.com/pesde-pkg/index"
+
+[wally_indices]
+default = "https://github.com/UpliftGames/wally-index"
+
+[dev_dependencies]
+scripts = { name = "pesde/scripts_rojo", version = "^0.2.0", target = "lune" }
+rojo = { name = "pesde/rojo", version = "^7.5.1", target = "lune" }
+
+[dependencies]
+# ECS stack
+jecs = { wally = "ukendio/jecs", version = "0.10.4" }
+planck = { wally = "yetanotherclown/planck", version = "^0.2.0" }
+replecs = { wally = "pepeeltoro41/replecs", version = "^0.3.1" }
+jabby = { wally = "alicesaidhi/jabby", version = "^0.5.1" }
+
+# Existing libs
+Signal = { wally = "sleitnick/signal", version = "^2.0.3" }
+Promise = { wally = "evaera/promise", version = "^4.0.0" }
+React = { wally = "jsdotlua/react", version = "^17.2.1" }
+ReactRoblox = { wally = "jsdotlua/react-roblox", version = "^17.2.1" }
+ReactSpring = { wally = "chriscerie/react-spring", version = "^2.0.0" }
+Janitor = { wally = "howmanysmall/janitor", version = "^1.18.3" }
+Input = { wally = "sleitnick/input", version = "^2.3.0" }
+Sift = { wally = "csqrl/sift", version = "^0.0.11" }
+Freeze = { wally = "duckarmor/freeze", version = "^0.1.4" }
+Timer = { wally = "sleitnick/timer", version = "^1.1.2" }
+Symbol = { wally = "core-packages/symbol", version = "^1.1.0" }
+t = { wally = "osyrisrblx/t", version = "^3.1.1" }
+Net = { wally = "vorlias/net", version = "^3.0.7" }
+Comm = { wally = "sleitnick/comm", version = "^1.0.1" }
+Spark = { wally = "nezuo/spark", version = "^0.2.1" }
+TopbarPlus = { wally = "neura-studios/topbarplus", version = "^3.0.2" }
+
+Cmdr = { wally = "evaera/cmdr", version = "^1.12.0" }
+Lapis = { wally = "nezuo/lapis", version = "^0.3.3" }

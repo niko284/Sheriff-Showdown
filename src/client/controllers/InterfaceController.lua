@@ -5,7 +5,7 @@ local StarterGui = game:GetService("StarterGui")
 
 local LocalPlayer = Players.LocalPlayer
 
-local Matter = require("@packages/Matter")
+local jecs = require("@packages/jecs")
 local React = require("@packages/React")
 local ReactRoblox = require("@packages/ReactRoblox")
 local Signal = require("@packages/Signal")
@@ -19,9 +19,9 @@ local InterfaceController = {
 	InterfaceChanged = Signal.new() :: Signal.Signal<Types.Interface?>,
 	UpdateShopState = Signal.new(),
 	ViewCrateContents = Signal.new() :: Signal.Signal<Types.Crate>,
-	WorldCreated = Signal.new() :: Signal.Signal<Matter.World>,
+	WorldCreated = Signal.new() :: Signal.Signal<jecs.World>,
 	HideHUD = Signal.new() :: Signal.Signal<boolean>,
-	World = nil :: Matter.World?,
+	World = nil :: jecs.World?,
 }
 
 -- // Functions \\

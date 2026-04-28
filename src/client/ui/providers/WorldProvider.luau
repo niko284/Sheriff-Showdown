@@ -1,7 +1,7 @@
 --!strict
 
 local InterfaceController = require("@controllers/InterfaceController")
-local Matter = require("@packages/Matter")
+local jecs = require("@packages/jecs")
 local React = require("@packages/React")
 local WorldContext = require("@ui/contexts/WorldContext")
 
@@ -19,7 +19,7 @@ local function WorldProvider(props)
 				world = InterfaceController.World,
 			})
 		else
-			worldChangedSignal = InterfaceController.WorldCreated:Connect(function(world: Matter.World)
+			worldChangedSignal = InterfaceController.WorldCreated:Connect(function(world: jecs.World)
 				setWorldState({
 					world = world,
 				})

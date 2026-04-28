@@ -1,56 +1,16 @@
 --!strict
 
+local jecs = require("@packages/jecs")
+
 local Components = require("@ecs/components")
-local Matter = require("@packages/Matter")
-local MatterTypes = require("@ecs/MatterTypes")
 
-local Transform = Components.Transform
-local Renderable = Components.Renderable
-
-type TransformRecord = MatterTypes.WorldChangeRecord<Components.Transform>
-type RenderableRecord = MatterTypes.WorldChangeRecord<Components.Renderable<any>>
-
-local function updateTransforms(world: Matter.World)
-	-- Handle Transform added/changed to existing entity with Model
-	for id, transformRecord: TransformRecord in world:queryChanged(Transform) do
-		if transformRecord.new then
-			local renderable = world:get(id, Renderable) :: Components.Renderable<Instance>?
-
-			-- Take care to ignore the changed event if it was us that triggered it
-			if renderable and not transformRecord.new.doNotReconcile then
-				local instance = renderable.instance :: PVInstance
-				instance:PivotTo(transformRecord.new.cframe)
-			end
-		end
-	end
-
-	-- Handle Renderable added/changed on existing entity with Transform
-	for id, renderableRecord: RenderableRecord in world:queryChanged(Renderable) do
-		if renderableRecord.new then
-			local transform = world:get(id, Transform) :: Components.Transform?
-
-			if transform and not transform.doNotReconcile then
-				local instance = renderableRecord.new.instance :: PVInstance
-				instance:PivotTo(transform.cframe)
-			else
-				local cf = renderableRecord.new.instance:IsA("Model") and renderableRecord.new.instance:GetPivot() or (renderableRecord.new.instance:IsA("BasePart") and renderableRecord.new.instance.CFrame)
-				if cf then
-					world:insert(
-						id,
-						Transform({
-							cframe = cf,
-						})
-					)
-				end
-			end
-		end
-	end
-
-	-- Update Transform on unanchored Models
-	for id, renderable: Components.Renderable<Instance>, transform: Components.Transform in
-		world:query(Renderable, Transform)
-	do
-		local instance = renderable.instance :: PVInstance
+-- Per-frame Transform reconciliation for unanchored Models/BaseParts.
+-- The Renderable<->Transform observer (in observers/init.lua) handles the
+-- ECS->Roblox direction. This system handles the Roblox->ECS direction
+-- for objects whose pivot the engine moves (physics, animations).
+local function updateTransforms(world: jecs.World)
+	for id, renderable, transform in world:query(Components.Renderable, Components.Transform) do
+		local instance = renderable.instance
 
 		if instance:IsA("BasePart") then
 			if instance.Anchored then
@@ -62,20 +22,20 @@ local function updateTransforms(world: Matter.World)
 			end
 		end
 
-		local existingCFrame = transform.cframe
-		local currentCFrame = instance:IsA("Model") and instance:GetPivot()
-			or (instance:IsA("BasePart") and instance.CFrame)
-			or error("Unsupported instance type")
+		local currentCFrame: CFrame
+		if instance:IsA("Model") then
+			currentCFrame = instance:GetPivot()
+		elseif instance:IsA("BasePart") then
+			currentCFrame = instance.CFrame
+		else
+			continue
+		end
 
-		-- Only insert if actual position is different from the Transform component
-		if currentCFrame ~= existingCFrame then
-			world:insert(
-				id,
-				Transform({
-					cframe = currentCFrame,
-					doNotReconcile = true,
-				})
-			)
+		if currentCFrame ~= transform.cframe then
+			world:set(id, Components.Transform, {
+				cframe = currentCFrame,
+				doNotReconcile = true,
+			})
 		end
 	end
 end
