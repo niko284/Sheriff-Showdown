@@ -20,10 +20,22 @@ local Items: { Types.ItemInfo } = {
 		Rarity = "Basic",
 		Image = 16381222990,
 		GunStatisticalData = {
+			LocalCooldownMillis = 150,
+			ReloadTimeMillis = 2000,
+			Damage = 25,
+			BulletLifeTime = 3,
+			MaxCapacity = 8,
+			ReloadTime = 2,
+			CurrentCapacity = 8,
+			BulletSpeed = 200,
 			BulletSoundId = 1905367471,
+			KnockStrength = 30,
+			VoxelDestructionRadius = 1.5,
+			VoxelExplosionForce = 80,
+			VoxelDebrisLifetime = 2,
 		},
 		Default = true,
-		CanTrade = false, -- some guns can't be traded even if they're of an item type that can be traded (like your default gun)
+		CanTrade = false,
 	},
 	{
 		Id = 3,

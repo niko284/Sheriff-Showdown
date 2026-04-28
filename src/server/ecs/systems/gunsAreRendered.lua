@@ -17,13 +17,16 @@ type State = {
 local function gunsAreRendered(world: jecs.World, state: State)
 	-- Ensure active guns have a hand renderable; clean up when disabled.
 	for eid, gun, gunItem in world:query(Components.Gun, Components.Item) do
-		local children = world:get(eid, Components.Children) or {}
-		local handRenderableId: number? = children.handRenderableId
+		-- Find the hand renderable child of this gun entity (if any).
+		local handRenderableId: number? = nil
+		for childId in world:query(Components.Renderable):with(jecs.pair(jecs.ChildOf, eid)) do
+			handRenderableId = childId
+			break
+		end
 
 		if gun.Disabled == true then
 			if handRenderableId and world:contains(handRenderableId) then
 				world:delete(handRenderableId)
-				world:set(eid, Components.Children, { handRenderableId = nil, waistRenderableGunId = children.waistRenderableGunId })
 			end
 			continue
 		end
@@ -69,17 +72,23 @@ local function gunsAreRendered(world: jecs.World, state: State)
 		local handId = world:entity()
 		world:set(handId, Components.Renderable, { instance = access })
 		world:add(handId, jecs.pair(jecs.ChildOf, eid))
-
-		world:set(eid, Components.Children, {
-			handRenderableId = handId,
-			waistRenderableGunId = children.waistRenderableGunId,
-		})
 	end
 
 	-- Waist gun: show when player has no active gun in hand or has a disabled gun.
-	for eid, _player, renderable, children in world:query(Components.Player, Components.Renderable, Components.Children) do
-		local gunEntityId: number? = children.gunEntityId
-		local waistRenderableGunId: number? = children.waistRenderableGunId
+	for eid, _player, renderable in world:query(Components.Player, Components.Renderable) do
+		-- Find the gun child of this player entity.
+		local gunEntityId: number? = nil
+		for childId in world:query(Components.Gun):with(jecs.pair(jecs.ChildOf, eid)) do
+			gunEntityId = childId
+			break
+		end
+
+		-- Find the waist gun renderable child (tagged WaistGun).
+		local waistRenderableGunId: number? = nil
+		for childId in world:query(Components.Renderable, Components.WaistGun):with(jecs.pair(jecs.ChildOf, eid)) do
+			waistRenderableGunId = childId
+			break
+		end
 
 		local gun = (gunEntityId and world:contains(gunEntityId)) and world:get(gunEntityId, Components.Gun) or nil
 		local playerComp = world:get(eid, Components.Player)
@@ -97,10 +106,6 @@ local function gunsAreRendered(world: jecs.World, state: State)
 			if item == nil or (waistRenderable and waistRenderable.instance:GetAttribute("ItemId") ~= item.Id) then
 				if hasWaistGun then
 					world:delete(waistRenderableGunId)
-					world:set(eid, Components.Children, {
-						gunEntityId = children.gunEntityId,
-						waistRenderableGunId = nil,
-					})
 				end
 				continue
 			end
@@ -136,19 +141,11 @@ local function gunsAreRendered(world: jecs.World, state: State)
 
 			local waistId = world:entity()
 			world:set(waistId, Components.Renderable, { instance = access })
+			world:add(waistId, Components.WaistGun)
 			world:add(waistId, jecs.pair(jecs.ChildOf, eid))
-
-			world:set(eid, Components.Children, {
-				gunEntityId = children.gunEntityId,
-				waistRenderableGunId = waistId,
-			})
 		else
 			if waistRenderableGunId and world:contains(waistRenderableGunId) then
 				world:delete(waistRenderableGunId)
-				world:set(eid, Components.Children, {
-					gunEntityId = children.gunEntityId,
-					waistRenderableGunId = nil,
-				})
 			end
 		end
 	end

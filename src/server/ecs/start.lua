@@ -207,13 +207,21 @@ local function start(_systemsContainers: { Instance }, services: { [string]: any
 
 	local VoxelSampler = require("@utilities/VoxelSampler")
 
-	local function bootstrapVoxelizable(instance: Instance)
+	local function voxelizePart(part: BasePart)
 		task.spawn(function()
-			if not instance:IsA("BasePart") then
-				return
+			-- Inherit cell size from the part attribute, then walk ancestors, then default.
+			local cellSize: number = (part:GetAttribute("VoxelCellSize") :: number?) or 2
+			if not part:GetAttribute("VoxelCellSize") then
+				local ancestor = part.Parent
+				while ancestor do
+					local inherited = ancestor:GetAttribute("VoxelCellSize") :: number?
+					if inherited then
+						cellSize = inherited
+						break
+					end
+					ancestor = ancestor.Parent
+				end
 			end
-			local part = instance :: BasePart
-			local cellSize = (instance:GetAttribute("VoxelCellSize") :: number?) or 2
 
 			local data, sX, sY, sZ
 			if part:IsA("MeshPart") then
@@ -242,10 +250,44 @@ local function start(_systemsContainers: { Instance }, services: { [string]: any
 		end)
 	end
 
-	for _, instance in CollectionService:GetTagged("Voxelizable") do
-		bootstrapVoxelizable(instance)
+	local function bootstrapVoxelizable(instance: Instance)
+		if instance:IsA("BasePart") then
+			voxelizePart(instance)
+		else
+			-- Model/Folder/etc.: voxelize all descendant BaseParts.
+			for _, descendant in instance:GetDescendants() do
+				if descendant:IsA("BasePart") then
+					voxelizePart(descendant :: BasePart)
+				end
+			end
+			-- Handle parts streamed or added to the container after bootstrap.
+			instance.DescendantAdded:Connect(function(descendant)
+				if descendant:IsA("BasePart") then
+					voxelizePart(descendant :: BasePart)
+				end
+			end)
+		end
 	end
-	CollectionService:GetInstanceAddedSignal("Voxelizable"):Connect(bootstrapVoxelizable)
+
+	local function onVoxelizableTagged(instance: Instance)
+		if instance:IsDescendantOf(workspace) then
+			bootstrapVoxelizable(instance)
+		else
+			-- Pre-tagged in ServerStorage (or similar): bootstrap once moved into workspace.
+			local conn
+			conn = instance.AncestryChanged:Connect(function()
+				if instance:IsDescendantOf(workspace) then
+					conn:Disconnect()
+					bootstrapVoxelizable(instance)
+				end
+			end)
+		end
+	end
+
+	for _, instance in CollectionService:GetTagged("Voxelizable") do
+		onVoxelizableTagged(instance)
+	end
+	CollectionService:GetInstanceAddedSignal("Voxelizable"):Connect(onVoxelizableTagged)
 
 	return world
 end

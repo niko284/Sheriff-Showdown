@@ -101,10 +101,6 @@ export type Lifetime = {
 	expiry: number,
 }
 
-export type Children = {
-	[string]: number,
-}
-
 export type StatModifier = {
 	Category: "Flat" | "PercentSum" | "Mult",
 	Stat: string,
@@ -162,7 +158,7 @@ return {
 	VoxelConfig = jecs.component() :: jecs.Id<VoxelConfig>,
 	VoxelGrid = jecs.component() :: jecs.Id<VoxelGrid>,
 	Voxelized = jecs.tag(),
-	Children = jecs.component() :: jecs.Id<Children>,
+	WaistGun = jecs.tag(),
 	Collided = jecs.component() :: jecs.Id<Collided>,
 	Cooldown = jecs.component() :: jecs.Id<Cooldown>,
 	ExtendedHitbox = jecs.component() :: jecs.Id<ExtendedHitbox>,

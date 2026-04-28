@@ -7,6 +7,7 @@ local Components = require("@ecs/components")
 local Generic = require("../Generic")
 local InventoryService = require("@services/InventoryService")
 local InventoryUtils = require("@utilities/InventoryUtils")
+local ItemUtils = require("@utilities/ItemUtils")
 local Items = require("@constants/Items")
 local Janitor = require("@packages/Janitor")
 local RoundService = require("@services/RoundService")
@@ -35,39 +36,42 @@ function HotPotatoExtension.StartMatch(Match: Types.Match, RoundInstance: Types.
 		end
 		local entityId = RoundService:GetEntityIdFromPlayer(player)
 		local plrComponent: Components.PlayerComponent? = World:get(entityId, Components.Player)
-		local childComp: Components.Children? = World:get(entityId, Components.Children)
-		local gunId = nil
 
-		if not childComp or not childComp.gunEntityId then
-			local newChildren: Components.Children = childComp and table.clone(childComp) or {}
+		-- Find existing gun child of this entity.
+		local existingGunId: number? = nil
+		for childId in World:query(Components.Gun):with(jecs.pair(jecs.ChildOf, entityId)) do
+			existingGunId = childId
+			break
+		end
 
-			local gunToUse = Items[2]
+		local gunId: number
+
+		if not existingGunId then
+			local gunToUse: Types.ItemInfo = Items[2]
 
 			if plrComponent then
 				local inventory = InventoryService:GetInventory(plrComponent.player)
 				local equippedGuns = InventoryUtils.GetItemsOfType(inventory, "Gun", true)
 				if #equippedGuns > 0 then
-					gunToUse = equippedGuns[1] :: any
+					local itemInfo = ItemUtils.GetItemInfoFromId(equippedGuns[1].Id)
+					if itemInfo then
+						gunToUse = itemInfo
+					end
 				end
 			end
 
 			gunId = World:entity()
 			World:set(gunId, Components.Gun, Sift.Dictionary.merge(gunToUse.GunStatisticalData or {}, {
 				Damage = 0,
-				CriticalDamage = {},
 			}))
 			World:set(gunId, Components.Owner, { OwnedBy = plrComponent and plrComponent.player })
 			World:set(gunId, Components.Item, { Id = gunToUse.Id })
 			World:add(gunId, jecs.pair(jecs.ChildOf, entityId))
-			World:set(gunId, Components.Children, {})
 
 			lastGunId = relayPlayerGunId
 			relayPlayerGunId = gunId
-
-			newChildren.gunEntityId = gunId
-			World:set(entityId, Components.Children, newChildren)
 		else
-			gunId = childComp.gunEntityId
+			gunId = existingGunId
 
 			lastGunId = relayPlayerGunId
 			relayPlayerGunId = gunId
@@ -78,7 +82,6 @@ function HotPotatoExtension.StartMatch(Match: Types.Match, RoundInstance: Types.
 					LocalCooldownMillis = gun.LocalCooldownMillis,
 					ReloadTimeMillis = gun.ReloadTimeMillis,
 					Damage = gun.Damage,
-					CriticalDamage = gun.CriticalDamage,
 					BulletLifeTime = gun.BulletLifeTime,
 					MaxCapacity = gun.MaxCapacity,
 					ReloadTime = gun.ReloadTime,
@@ -99,7 +102,6 @@ function HotPotatoExtension.StartMatch(Match: Types.Match, RoundInstance: Types.
 					LocalCooldownMillis = gun.LocalCooldownMillis,
 					ReloadTimeMillis = gun.ReloadTimeMillis,
 					Damage = gun.Damage,
-					CriticalDamage = gun.CriticalDamage,
 					BulletLifeTime = gun.BulletLifeTime,
 					MaxCapacity = gun.MaxCapacity,
 					ReloadTime = gun.ReloadTime,

@@ -7,6 +7,7 @@ local BlinkServer = require("@server/modules/BlinkServer")
 local Components = require("@ecs/components")
 local InventoryService = require("@services/InventoryService")
 local InventoryUtils = require("@utilities/InventoryUtils")
+local ItemUtils = require("@utilities/ItemUtils")
 local Items = require("@constants/Items")
 local Promise = require("@packages/Promise")
 local RoundService = require("@services/RoundService")
@@ -24,17 +25,17 @@ function Generic.StartMatch(Match: Types.Match, RoundInstance: Types.Round, Worl
 			local target = World:get(entityId, Components.Target)
 			if equipGuns ~= false then
 				local plrComponent: Components.PlayerComponent? = World:get(entityId, Components.Player)
-				local childrenComp: Components.Children? = World:get(entityId, Components.Children)
 
-				local newChildren: Components.Children = childrenComp and table.clone(childrenComp) or {}
-
-				local gunToUse = Items[2]
+				local gunToUse: Types.ItemInfo = Items[2]
 
 				if plrComponent then
 					local inventory = InventoryService:GetInventory(plrComponent.player)
 					local equippedGuns = InventoryUtils.GetItemsOfType(inventory, "Gun", true)
 					if #equippedGuns > 0 then
-						gunToUse = equippedGuns[1] :: any
+						local itemInfo = ItemUtils.GetItemInfoFromId(equippedGuns[1].Id)
+						if itemInfo then
+							gunToUse = itemInfo
+						end
 					end
 				end
 
@@ -47,10 +48,6 @@ function Generic.StartMatch(Match: Types.Match, RoundInstance: Types.Round, Worl
 				World:set(gunId, Components.Owner, { OwnedBy = plrComponent and plrComponent.player })
 				World:add(gunId, jecs.pair(jecs.ChildOf, entityId :: any))
 				World:add(gunId, jecs.pair(replecs.relation, jecs.ChildOf))
-				World:set(gunId, Components.Children, {})
-
-				newChildren.gunEntityId = gunId
-				World:set(entityId, Components.Children, newChildren)
 			end
 
 			if target then
@@ -75,7 +72,6 @@ function Generic.StartMatch(Match: Types.Match, RoundInstance: Types.Round, Worl
 					local playerComponent: Components.PlayerComponent? = World:get(EntityId, Components.Player)
 
 					World:set(EntityId, Components.Target, { CanTarget = false })
-					World:set(EntityId, Components.Children, {})
 
 					if playerComponent then
 						BlinkServer.RoundEndMatch.Fire(playerComponent.player, nil)
