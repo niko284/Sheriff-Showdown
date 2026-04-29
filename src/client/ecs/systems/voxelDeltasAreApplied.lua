@@ -1,12 +1,40 @@
 --!strict
 
+local TweenService = game:GetService("TweenService")
+
 local jecs = require("@packages/jecs")
 
 local BlinkClient = require("@client/modules/BlinkClient")
 local Components = require("@ecs/components")
-local VoxelBuffer = require("@utilities/VoxelBuffer")
 
 local MAX_DEBRIS = 64
+local DEBRIS_COLLISION_GROUP = "VoxelDebris"
+local DEBRIS_SPAWN_OFFSET = 0.3
+local FADE_TIME = 0.22
+local MIN_FADE_SIZE = Vector3.one * 0.05
+
+local function fadeAndDestroy(part: BasePart, debrisLifetime: number)
+	task.delay(math.max(0, debrisLifetime - FADE_TIME), function()
+		if not part.Parent then
+			return
+		end
+
+		part.CanCollide = false
+		part.CanQuery = false
+		part.CanTouch = false
+		part.Anchored = true
+
+		local tween =
+			TweenService:Create(part, TweenInfo.new(FADE_TIME, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+				Size = MIN_FADE_SIZE,
+				Transparency = 1,
+			})
+		tween:Play()
+		tween.Completed:Once(function()
+			part:Destroy()
+		end)
+	end)
+end
 
 type VoxelDelta = {
 	entityId: number,
@@ -60,30 +88,32 @@ local function spawnDebris(
 		local dist = dir.Magnitude
 		dir = dist > 0.01 and dir.Unit or Vector3.new(math.random() - 0.5, 1, math.random() - 0.5).Unit
 
-		-- Linear falloff: cells further from center get slightly less force
 		local falloffScale = 1 - math.clamp(dist / (grid.cellSize * 6), 0, 0.5)
-		local speed = explosionForce * falloffScale
+		local speed = explosionForce * (0.65 + math.random() * 0.35) * falloffScale
 
-		local spread = Vector3.new(
-			(math.random() - 0.5) * 0.25,
-			math.random() * 0.4,
-			(math.random() - 0.5) * 0.25
-		)
-		local velocity = (dir + spread).Unit * speed
+		local spread =
+			Vector3.new((math.random() - 0.5) * 0.45, 0.3 + math.random() * 0.45, (math.random() - 0.5) * 0.45)
+		local velocity = (dir * 0.7 + spread).Unit * speed
 
 		local part = Instance.new("Part")
 		part.Anchored = false
-		part.CanCollide = false
+		part.CanCollide = true
+		part.CanQuery = false
+		part.CanTouch = false
 		part.CastShadow = false
-		part.CollisionGroup = "VoxelMesh"
+		part.CollisionGroup = DEBRIS_COLLISION_GROUP
+		part.CustomPhysicalProperties = PhysicalProperties.new(1.8, 0.9, 0.08)
 		part.Color = color
 		part.Material = material
 		part.Size = debrisSize
-		part.CFrame = CFrame.new(worldPos)
+		local spawnOffset = velocity.Unit * (grid.cellSize * DEBRIS_SPAWN_OFFSET) + Vector3.yAxis * (debrisSize.Y * 0.2)
+		part.CFrame = CFrame.new(worldPos + spawnOffset)
 		part.Parent = workspace
 		part.AssemblyLinearVelocity = velocity
+		part.AssemblyAngularVelocity =
+			Vector3.new((math.random() - 0.5) * 8, (math.random() - 0.5) * 8, (math.random() - 0.5) * 8)
 
-		task.delay(debrisLifetime, part.Destroy, part)
+		fadeAndDestroy(part, debrisLifetime)
 	end
 end
 
@@ -116,8 +146,21 @@ local function voxelDeltasAreApplied(world: jecs.World, state: State)
 
 		local renderable = world:get(clientEid, Components.Renderable)
 		local sourcePart = renderable and renderable.instance :: BasePart?
-		local transform = world:get(clientEid, Components.Transform)
-		local originCFrame = transform and transform.cframe or CFrame.identity
+
+		-- Origin from the source part's live CFrame so debris spawns at the
+		-- entity's CURRENT pose. Falling entities don't have a Transform
+		-- component (their pose is driven by the welded assembly's physics
+		-- replication), and a frozen Transform would drop debris at spawn.
+		local originCFrame: CFrame
+		if sourcePart and sourcePart:IsA("BasePart") then
+			originCFrame = sourcePart.CFrame
+		else
+			local transform = world:get(clientEid, Components.Transform)
+			originCFrame = transform and transform.cframe or CFrame.identity
+		end
+
+		local color = sourcePart and sourcePart.Color or Color3.new(0.6, 0.6, 0.6)
+		local material = sourcePart and sourcePart.Material or Enum.Material.SmoothPlastic
 
 		spawnDebris(
 			grid,
@@ -126,12 +169,12 @@ local function voxelDeltasAreApplied(world: jecs.World, state: State)
 			delta.hitPosition,
 			delta.explosionForce,
 			delta.debrisLifetime,
-			sourcePart and sourcePart.Color or Color3.new(0.6, 0.6, 0.6),
-			sourcePart and sourcePart.Material or Enum.Material.SmoothPlastic
+			color,
+			material
 		)
-
-		VoxelBuffer.clearIndices(grid.data, delta.indices)
-		world:set(clientEid, Components.VoxelGrid, grid)
+		-- The server is authoritative for grid state and replicates the
+		-- updated VoxelGrid component via replecs. We don't double-write
+		-- it here — this system is purely cosmetic explosion debris.
 	end
 end
 

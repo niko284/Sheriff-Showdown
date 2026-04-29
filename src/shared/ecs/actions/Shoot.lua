@@ -1,9 +1,13 @@
 --!strict
 
+local jecs = require("@packages/jecs")
+local replecs = require("@packages/replecs")
+
 local AudioUtils = require("@utilities/AudioUtils")
 local Components = require("@ecs/components")
 local Middlewares = require("@ecs/Middlewares")
 local Types = require("@constants/Types")
+local Util = require("@ecs/Util")
 local t = require("@packages/t")
 
 local RELOAD_SOUND_ID = 139717586861911
@@ -15,6 +19,17 @@ type ShootPayload = {
 	timestamp: number,
 } & Types.GenericPayload
 
+local function hashString(value: string): number
+	local hash = 2166136261
+
+	for i = 1, #value do
+		hash = bit32.bxor(hash, string.byte(value, i))
+		hash = (hash * 16777619) % 4294967296
+	end
+
+	return hash
+end
+
 return {
 	process = function(world, player: Player, actionPayload): boolean
 		if not world:contains(actionPayload.fromGun) then
@@ -22,13 +37,8 @@ return {
 			return false
 		end
 
-		local gunOwner = world:get(actionPayload.fromGun, Components.Owner) :: Components.Owner
-		if not gunOwner then
-			warn("No owner found for given gun entity id")
-			return false
-		end
-
-		if gunOwner.OwnedBy ~= player then
+		local gunOwnerPlayer = Util.GetOwnerPlayer(world, actionPayload.fromGun :: any)
+		if gunOwnerPlayer ~= player then
 			warn("Player does not own the gun")
 			return false
 		end
@@ -70,21 +80,9 @@ return {
 
 		world:set(actionPayload.fromGun, Components.Cooldown, { expiry = timeNow.UnixTimestampMillis + cooldownMillis })
 
-		local newGun: Components.Gun = {
-			LocalCooldownMillis = gunComponent.LocalCooldownMillis,
-			ReloadTimeMillis = gunComponent.ReloadTimeMillis,
-			Damage = gunComponent.Damage,
-			CriticalDamage = gunComponent.CriticalDamage,
-			BulletLifeTime = gunComponent.BulletLifeTime,
-			MaxCapacity = gunComponent.MaxCapacity,
-			ReloadTime = gunComponent.ReloadTime,
-			CurrentCapacity = newCapacity == 0 and gunComponent.MaxCapacity or newCapacity,
-			BulletSpeed = gunComponent.BulletSpeed,
-			BulletSoundId = gunComponent.BulletSoundId,
-			KnockStrength = gunComponent.KnockStrength,
-			Disabled = gunComponent.Disabled,
-			Reloading = reloading or nil,
-		}
+		local newGun: Components.Gun = table.clone(gunComponent)
+		newGun.CurrentCapacity = newCapacity == 0 and gunComponent.MaxCapacity or newCapacity
+		newGun.Reloading = reloading or nil
 
 		if reloading and not wasReloading then
 			AudioUtils.PlaySoundOnInstance(RELOAD_SOUND_ID, characterRootPart)
@@ -99,21 +97,34 @@ return {
 			warn(`Invalid latency: {latency}`)
 			return false
 		end
-		local timeLaunched = workspace:GetServerTimeNow() - latency - interpolationTime
-		local timeToJump = timeLaunched - actionPayload.timestamp
 
+		local timeToJump = math.max(0, latency - interpolationTime)
 		local bulletStart = actionPayload.origin.Position + actionPayload.velocity * timeToJump
-		local adjustedBulletCFrame = CFrame.new(bulletStart, actionPayload.origin.LookVector)
+		local adjustedBulletCFrame = CFrame.new(bulletStart, actionPayload.origin.Position + actionPayload.velocity)
+
+		local ownerEntity = world:target(actionPayload.fromGun :: any, jecs.ChildOf)
 
 		local bulletId = world:entity()
+		world:add(bulletId, replecs.networked)
 		world:set(bulletId, Components.Projectile, { gunId = actionPayload.fromGun, origin = actionPayload.origin })
+		world:add(bulletId, jecs.pair(replecs.reliable, Components.Projectile))
+		world:set(bulletId, Components.ProjectilePrediction, { uuid = actionPayload.actionId })
+		world:add(bulletId, jecs.pair(replecs.reliable, Components.ProjectilePrediction))
+		world:add(bulletId, jecs.pair(replecs.custom, Components.ProjectilePrediction))
 		world:set(bulletId, Components.Velocity, { velocity = actionPayload.velocity })
+		world:add(bulletId, jecs.pair(replecs.reliable, Components.Velocity))
 		world:set(bulletId, Components.Lifetime, {
 			expiry = (DateTime.now().UnixTimestampMillis / 1000) + gunComponent.BulletLifeTime,
 		})
-		world:set(bulletId, Components.Owner, { OwnedBy = player })
+		world:add(bulletId, jecs.pair(replecs.reliable, Components.Lifetime))
+		if ownerEntity then
+			world:add(bulletId, jecs.pair(Components.OwnedBy, ownerEntity))
+			world:add(bulletId, jecs.pair(replecs.relation, Components.OwnedBy))
+		end
 		world:set(bulletId, Components.Identifier, { uuid = actionPayload.actionId })
+		world:add(bulletId, jecs.pair(replecs.reliable, Components.Identifier))
 		world:set(bulletId, Components.Transform, { cframe = adjustedBulletCFrame })
+		world:add(bulletId, jecs.pair(replecs.reliable, Components.Transform))
 
 		if gunComponent.VoxelDestructionRadius and gunComponent.VoxelDestructionRadius > 0 then
 			world:set(bulletId, Components.DestructionRadius, {
@@ -122,6 +133,9 @@ return {
 				falloff = "Linear",
 				explosionForce = gunComponent.VoxelExplosionForce or 60,
 				debrisLifetime = gunComponent.VoxelDebrisLifetime or 3,
+				variance = 0.35,
+				roughness = 0.28,
+				seed = hashString(actionPayload.actionId),
 			})
 		end
 

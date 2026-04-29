@@ -11,9 +11,12 @@ local jecs = require("@packages/jecs")
 
 local BlinkClient = require("@client/modules/BlinkClient")
 local Components = require("@ecs/components")
+local GunPrediction = require("@client/ecs/gunPrediction")
 local Input = require("@packages/Input")
 local KeybindInputController = require("@controllers/KeybindInputController")
+local LocalComponents = require("@ecs/localComponents")
 local UUIDSerde = require("@utilities/UUIDSerde")
+local Util = require("@ecs/Util")
 
 local PreferredInput = Input.PreferredInput
 
@@ -69,8 +72,9 @@ local function gunsCanShoot(world: jecs.World, state: State)
 		return
 	end
 
-	for eid, gun, owner in world:query(Components.Gun, Components.Owner):without(Components.Cooldown) do
-		if owner.OwnedBy ~= Players.LocalPlayer or gun.Disabled == true then
+	for eid, gun in world:query(Components.Gun):without(Components.Cooldown) do
+		local ownerPlayer = Util.GetOwnerPlayer(world, eid)
+		if ownerPlayer ~= Players.LocalPlayer or gun.Disabled == true then
 			continue
 		end
 
@@ -88,7 +92,7 @@ local function gunsCanShoot(world: jecs.World, state: State)
 
 		local viewportPointRay = workspace.CurrentCamera:ScreenPointToRay(mouseLocation.X, mouseLocation.Y)
 
-		local character = (owner.OwnedBy :: any).Character :: Model
+		local character = (ownerPlayer :: Player).Character :: Model
 		local bulletFilter = { character, table.unpack(CollectionService:GetTagged("Barrier")) }
 
 		local humanoid = character:FindFirstChildOfClass("Humanoid")
@@ -123,29 +127,27 @@ local function gunsCanShoot(world: jecs.World, state: State)
 		local cooldownMillis = newCapacity == 0 and gun.ReloadTimeMillis or gun.LocalCooldownMillis
 
 		world:set(eid, Components.Cooldown, { expiry = timeNow.UnixTimestampMillis + cooldownMillis })
-		world:set(eid, Components.Gun, {
-			LocalCooldownMillis = gun.LocalCooldownMillis,
-			ReloadTimeMillis = gun.ReloadTimeMillis,
-			Damage = gun.Damage,
-			CriticalDamage = gun.CriticalDamage,
-			BulletLifeTime = gun.BulletLifeTime,
-			MaxCapacity = gun.MaxCapacity,
-			ReloadTime = gun.ReloadTime,
-			CurrentCapacity = newCapacity == 0 and gun.MaxCapacity or newCapacity,
-			BulletSpeed = gun.BulletSpeed,
-			BulletSoundId = gun.BulletSoundId,
-			KnockStrength = gun.KnockStrength,
-			Disabled = gun.Disabled,
-			Reloading = cooldownMillis == gun.ReloadTimeMillis or nil,
-		})
+		local newGun = table.clone(gun)
+		newGun.CurrentCapacity = newCapacity == 0 and gun.MaxCapacity or newCapacity
+		newGun.Reloading = (cooldownMillis == gun.ReloadTimeMillis) or nil
+		GunPrediction.predict(world, eid :: any, newGun)
 
 		local actionUUID = HttpService:GenerateGUID(false)
 		local bulletId = world:entity()
-		world:set(bulletId, Components.Projectile, { gunId = serverGunId, filter = bulletFilter, origin = bulletCFrame })
+		world:set(bulletId, Components.Projectile, { gunId = serverGunId, origin = bulletCFrame })
+		world:set(bulletId, Components.ProjectilePrediction, { uuid = actionUUID })
+		world:set(bulletId, LocalComponents.ProjectileFilter, { instances = bulletFilter })
 		world:set(bulletId, Components.Transform, { cframe = bulletCFrame })
 		world:set(bulletId, Components.Velocity, { velocity = velocity })
-		world:set(bulletId, Components.Lifetime, { expiry = (DateTime.now().UnixTimestampMillis / 1000) + gun.BulletLifeTime })
-		world:set(bulletId, Components.Owner, { OwnedBy = owner.OwnedBy })
+		world:set(
+			bulletId,
+			Components.Lifetime,
+			{ expiry = (DateTime.now().UnixTimestampMillis / 1000) + gun.BulletLifeTime }
+		)
+		local ownerEntity = world:target(eid, jecs.ChildOf)
+		if ownerEntity then
+			world:add(bulletId, jecs.pair(Components.OwnedBy, ownerEntity))
+		end
 		world:set(bulletId, Components.Identifier, { uuid = actionUUID })
 
 		BlinkClient.ProcessAction.Fire({

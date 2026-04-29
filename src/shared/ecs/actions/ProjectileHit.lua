@@ -7,6 +7,7 @@ local AudioUtils = require("@utilities/AudioUtils")
 local Components = require("@ecs/components")
 local StatusEffect = require("@ecs/StatusEffect")
 local Types = require("@constants/Types")
+local Util = require("@ecs/Util")
 local t = require("@packages/t")
 
 local PROJECTILE_HIT_SOUND_ID = 3581383408
@@ -51,10 +52,10 @@ return {
 			return
 		end
 
-		for eid, projectile: Components.Projectile, identifier: Components.Identifier, owner: Components.Owner in
-			world:query(Components.Projectile, Components.Identifier, Components.Owner)
+		for eid, projectile: Components.Projectile, identifier: Components.Identifier in
+			world:query(Components.Projectile, Components.Identifier)
 		do
-			if identifier.uuid == actionPayload.actionId and owner.OwnedBy == player then
+			if identifier.uuid == actionPayload.actionId and Util.GetOwnerPlayer(world, eid) == player then
 				local transform = world:get(eid, Components.Transform)
 				world:delete(eid)
 
@@ -75,11 +76,15 @@ return {
 				local bulletFilter =
 					{ player.Character :: Instance?, table.unpack(CollectionService:GetTagged("Barrier")) }
 				local dir = targetRootPart.Position - projectile.origin.Position
-				local rayParams = RaycastParams.new()
-				rayParams.FilterDescendantsInstances = bulletFilter :: { Instance }
-				rayParams.FilterType = Enum.RaycastFilterType.Exclude
-				local raycast = workspace:Raycast(projectile.origin.Position, dir, rayParams)
-				if raycast and not raycast.Instance:IsDescendantOf(targetRenderable.instance) then
+				if
+					not Util.IsLineOfSightClear(
+						world,
+						projectile.origin.Position,
+						dir,
+						targetRenderable.instance,
+						bulletFilter :: { Instance }
+					)
+				then
 					continue
 				end
 

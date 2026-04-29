@@ -1,5 +1,8 @@
 local Types = require("@constants/Types")
 
+local DEFAULT_VOXEL_FORCE = 55
+local MEDIUM_VOXEL_FORCE = 70
+
 local Items: { Types.ItemInfo } = {
 	{
 		Id = 1,
@@ -10,6 +13,8 @@ local Items: { Types.ItemInfo } = {
 		GunStatisticalData = {
 			BulletSpeed = 1000,
 			BulletSoundId = 130113322,
+			VoxelDestructionRadius = 5,
+			VoxelExplosionForce = MEDIUM_VOXEL_FORCE,
 		},
 		Default = true,
 	},
@@ -24,14 +29,14 @@ local Items: { Types.ItemInfo } = {
 			ReloadTimeMillis = 2000,
 			Damage = 25,
 			BulletLifeTime = 3,
-			MaxCapacity = 8,
+			MaxCapacity = 100,
 			ReloadTime = 2,
 			CurrentCapacity = 8,
 			BulletSpeed = 200,
 			BulletSoundId = 1905367471,
 			KnockStrength = 30,
-			VoxelDestructionRadius = 1.5,
-			VoxelExplosionForce = 80,
+			VoxelDestructionRadius = 3,
+			VoxelExplosionForce = DEFAULT_VOXEL_FORCE * 3,
 			VoxelDebrisLifetime = 2,
 		},
 		Default = true,
@@ -370,5 +375,16 @@ local Items: { Types.ItemInfo } = {
 		Rarity = "Epic",
 	},
 }
+
+for _, item in Items do
+	if item.Type ~= "Gun" then
+		continue
+	end
+
+	item.GunStatisticalData = item.GunStatisticalData or {}
+	if item.GunStatisticalData.VoxelExplosionForce == nil then
+		item.GunStatisticalData.VoxelExplosionForce = DEFAULT_VOXEL_FORCE
+	end
+end
 
 return Items

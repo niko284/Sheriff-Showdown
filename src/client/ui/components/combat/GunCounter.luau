@@ -6,6 +6,7 @@ local RunService = game:GetService("RunService")
 local Components = require("@ecs/components")
 local React = require("@packages/React")
 local UIStroke = require("@ui/components/other/UIStroke")
+local Util = require("@ecs/Util")
 local WorldContext = require("@ui/contexts/WorldContext")
 
 local LocalPlayer = Players.LocalPlayer
@@ -28,8 +29,8 @@ local function GunCounter(_props)
 
 			loop = RunService.RenderStepped:Connect(function()
 				local gunFound = false
-				for entityId, gun: Components.Gun, owner in world:query(Components.Gun, Components.Owner) do
-					if owner and owner.OwnedBy == LocalPlayer and not gun.Disabled then
+				for entityId, gun: Components.Gun in world:query(Components.Gun) do
+					if Util.GetOwnerPlayer(world, entityId) == LocalPlayer and not gun.Disabled then
 						setGunData(gun) -- will only update when component updates (aka new table address)
 
 						local cd = world:get(entityId, Components.Cooldown) :: Components.Cooldown?

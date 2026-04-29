@@ -12,6 +12,7 @@ local Spark = require("@packages/Spark")
 
 local BlinkClient = require("@client/modules/BlinkClient")
 local Components = require("@ecs/components")
+local GunPrediction = require("@client/ecs/gunPrediction")
 local registerClientObservers = require("@client/ecs/observers")
 local registerObservers = require("@ecs/observers")
 
@@ -32,7 +33,6 @@ local projectilesCollide = require("@client/ecs/systems/projectilesCollide")
 local teamsAreHighlighted = require("@client/ecs/systems/teamsAreHighlighted")
 local updateInputs = require("@client/ecs/systems/updateInputs")
 local voxelDeltasAreApplied = require("@client/ecs/systems/voxelDeltasAreApplied")
-local voxelMeshesAreRendered = require("@client/ecs/systems/voxelMeshesAreRendered")
 
 local InputState = Spark.InputState
 local Actions = Spark.Actions
@@ -74,8 +74,29 @@ local function start(_systemsContainers: { Instance }, controllers: { [string]: 
 		end
 	end
 
+	world:set(
+		Components.ProjectilePrediction,
+		replecs.custom_handler,
+		function(prediction: Components.ProjectilePrediction?)
+			if not prediction then
+				return world:entity()
+			end
+
+			for eid, _projectile, existingPrediction: Components.ProjectilePrediction in
+				world:query(Components.Projectile, Components.ProjectilePrediction)
+			do
+				if existingPrediction.uuid == prediction.uuid and replecsClient:get_server_entity(eid) == nil then
+					return eid
+				end
+			end
+
+			return world:entity()
+		end
+	)
+
 	registerObservers(world, { isClient = true, replecsClient = replecsClient })
 	registerClientObservers(world, replecsClient)
+	GunPrediction.register(world)
 
 	BlinkClient.ReplecsUpdate.On(function(pkg)
 		replecsClient:apply_updates(pkg.Changes :: buffer, pkg.Variants :: { { any } })
@@ -139,7 +160,6 @@ local function start(_systemsContainers: { Instance }, controllers: { [string]: 
 	-- PostUpdate: cleanup
 	scheduler:addSystem(projectilesCollide, PostUpdate)
 	scheduler:addSystem(voxelDeltasAreApplied, PostUpdate)
-	scheduler:addSystem(voxelMeshesAreRendered, PostUpdate)
 	scheduler:addSystem(cooldownsExpire, PostUpdate)
 	scheduler:addSystem(lifetimesDespawn, PostUpdate)
 

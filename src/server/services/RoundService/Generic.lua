@@ -20,6 +20,7 @@ local Generic = {}
 function Generic.StartMatch(Match: Types.Match, RoundInstance: Types.Round, World: jecs.World, equipGuns: boolean?)
 	local roundModeData = RoundService:GetRoundModeData(RoundInstance.RoundMode)
 
+	print("Starting match with mode:", RoundInstance.RoundMode, Match)
 	for _, team in Match.Teams do
 		for _, entityId in team.Entities do
 			local target = World:get(entityId, Components.Target)
@@ -40,12 +41,12 @@ function Generic.StartMatch(Match: Types.Match, RoundInstance: Types.Round, Worl
 				end
 
 				local gunId = World:entity()
+				print("Created gun entity:", gunId)
 				World:add(gunId, replecs.networked)
 				World:set(gunId, Components.Gun, gunToUse.GunStatisticalData)
 				World:add(gunId, jecs.pair(replecs.reliable, Components.Gun))
 				World:set(gunId, Components.Item, { Id = gunToUse.Id })
 				World:add(gunId, jecs.pair(replecs.reliable, Components.Item))
-				World:set(gunId, Components.Owner, { OwnedBy = plrComponent and plrComponent.player })
 				World:add(gunId, jecs.pair(jecs.ChildOf, entityId :: any))
 				World:add(gunId, jecs.pair(replecs.relation, jecs.ChildOf))
 			end

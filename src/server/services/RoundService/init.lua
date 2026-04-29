@@ -23,7 +23,7 @@ local jecs = require("@packages/jecs")
 
 local MAPS_FOLDER = Assets:WaitForChild("maps", 3)
 local ExtensionsFolder = script.ModeExtensions
-local VOTING_DURATION = 25
+local VOTING_DURATION = 4
 local MINIMUM_PLAYERS = 1
 local MAP_VOTING_COUNT = 3
 local ROUND_MODE_VOTING_COUNT = 3
@@ -177,7 +177,7 @@ end
 
 function RoundService:DoIntermission()
 	RoundService:SetStatus("Intermission...")
-	return Promise.delay(10)
+	return Promise.delay(1)
 end
 
 -- resolves if there are not enough players to start a round (used in the intermission and voting phases)
@@ -305,6 +305,8 @@ function RoundService:DoVoting()
 
 			fieldsWithWinningChoices[field] = winningChoice
 		end
+
+		fieldsWithWinningChoices.RoundModes.Name = "Free For All"
 
 		local roundModeData = RoundService:GetRoundModeData(fieldsWithWinningChoices.RoundModes.Name)
 		RoundService:SetStatus(fieldsWithWinningChoices.RoundModes.Name .. ": " .. roundModeData.Description)

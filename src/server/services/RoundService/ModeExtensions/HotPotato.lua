@@ -64,7 +64,6 @@ function HotPotatoExtension.StartMatch(Match: Types.Match, RoundInstance: Types.
 			World:set(gunId, Components.Gun, Sift.Dictionary.merge(gunToUse.GunStatisticalData or {}, {
 				Damage = 0,
 			}))
-			World:set(gunId, Components.Owner, { OwnedBy = plrComponent and plrComponent.player })
 			World:set(gunId, Components.Item, { Id = gunToUse.Id })
 			World:add(gunId, jecs.pair(jecs.ChildOf, entityId))
 

@@ -14,21 +14,15 @@ local IDLE_ANIMATION = Animations:FindFirstChild("gunidle") :: Animation
 local idleTracks: { [Animator]: AnimationTrack } = {}
 
 local function idleAnimationsPlay(world: jecs.World)
-	for eid, renderable, playerComp in world:query(Components.Renderable, Components.Player) do
+	for eid, renderable, _playerComp in world:query(Components.Renderable, Components.Player) do
 		local gun: Components.Gun? = nil
-		local owner: Components.Owner? = nil
 
-		for gunClientId, gunComp in world:query(Components.Gun):with(jecs.pair(jecs.ChildOf, eid)) do
+		for _gunClientId, gunComp in world:query(Components.Gun):with(jecs.pair(jecs.ChildOf, eid)) do
 			gun = gunComp
-			owner = world:get(gunClientId, Components.Owner)
 			break
 		end
 
 		if not gun or gun.Disabled == true then
-			continue
-		end
-
-		if not owner or owner.OwnedBy ~= playerComp.player then
 			continue
 		end
 

@@ -1,6 +1,5 @@
 --!strict
 
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Assets = ReplicatedStorage.assets :: Folder
@@ -11,6 +10,8 @@ local jecs = require("@packages/jecs")
 local AudioUtils = require("@utilities/AudioUtils")
 local Components = require("@ecs/components")
 local ItemUtils = require("@utilities/ItemUtils")
+local LocalComponents = require("@ecs/localComponents")
+local Util = require("@ecs/Util")
 
 type State = {
 	replecsClient: any,
@@ -19,11 +20,12 @@ type State = {
 local function projectilesAreVisualized(world: jecs.World, state: State)
 	local replecsClient = state.replecsClient
 
-	for eid, projectile, owner in world:query(Components.Projectile, Components.Owner):without(Components.Renderable) do
-		local isServerReplicated = replecsClient and replecsClient:get_server_entity(eid) ~= nil
-		if isServerReplicated and owner.OwnedBy == Players.LocalPlayer then
+	for eid, projectile in world:query(Components.Projectile):without(Components.Renderable) do
+		if world:has(eid, LocalComponents.ProjectileHidden) then
 			continue
 		end
+
+		local ownerPlayer = Util.GetOwnerPlayer(world, eid)
 
 		local clientGunId = projectile.gunId and replecsClient and replecsClient:get_client_entity(projectile.gunId)
 			or nil
@@ -56,8 +58,8 @@ local function projectilesAreVisualized(world: jecs.World, state: State)
 
 		bulletInstance.Parent = workspace
 
-		if gun then
-			local ownerChar = owner.OwnedBy.Character :: Model
+		if gun and ownerPlayer then
+			local ownerChar = ownerPlayer.Character :: Model
 			AudioUtils.PlaySoundOnInstance(gun.BulletSoundId, ownerChar.PrimaryPart :: BasePart)
 		end
 

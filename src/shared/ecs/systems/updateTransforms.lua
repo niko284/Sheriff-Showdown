@@ -4,16 +4,19 @@ local jecs = require("@packages/jecs")
 
 local Components = require("@ecs/components")
 
--- Per-frame Transform reconciliation for unanchored Models/BaseParts.
--- The Renderable<->Transform observer (in observers/init.lua) handles the
--- ECS->Roblox direction. This system handles the Roblox->ECS direction
--- for objects whose pivot the engine moves (physics, animations).
 local function updateTransforms(world: jecs.World)
 	for id, renderable, transform in world:query(Components.Renderable, Components.Transform) do
 		local instance = renderable.instance
 
 		if instance:IsA("BasePart") then
 			if instance.Anchored then
+				continue
+			end
+			-- Welded into a falling voxel section: Roblox's built-in physics
+			-- replication handles the whole assembly's pose; replicating via
+			-- our Transform component would PivotTo on the client each tick,
+			-- breaking the welds and snapping the assembly back to spawn.
+			if instance:GetAttribute("voxelSectionMember") then
 				continue
 			end
 		elseif instance:IsA("Model") then

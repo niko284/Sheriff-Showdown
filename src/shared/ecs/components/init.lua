@@ -18,12 +18,18 @@ export type DestructionRadius = {
 	falloff: "None" | "Linear",
 	explosionForce: number,
 	debrisLifetime: number,
+	variance: number?,
+	roughness: number?,
+	seed: number?,
 }
 
 export type Projectile = {
 	gunId: number?,
-	filter: { Instance }?,
 	origin: CFrame?,
+}
+
+export type ProjectilePrediction = {
+	uuid: string,
 }
 
 export type VoxelConfig = {
@@ -115,10 +121,6 @@ export type MerryGoRound = {
 	hardStopIn: number?,
 }
 
-export type Owner = {
-	OwnedBy: Player,
-}
-
 export type PlayerComponent = {
 	player: Player,
 }
@@ -155,6 +157,7 @@ return {
 	AnimationTrack = jecs.component() :: jecs.Id<AnimationTrack>,
 	DestructionRadius = jecs.component() :: jecs.Id<DestructionRadius>,
 	Projectile = jecs.component() :: jecs.Id<Projectile>,
+	ProjectilePrediction = jecs.component() :: jecs.Id<ProjectilePrediction>,
 	VoxelConfig = jecs.component() :: jecs.Id<VoxelConfig>,
 	VoxelGrid = jecs.component() :: jecs.Id<VoxelGrid>,
 	Voxelized = jecs.tag(),
@@ -170,7 +173,7 @@ return {
 	Knocked = jecs.component() :: jecs.Id<Knocked>,
 	Lifetime = jecs.component() :: jecs.Id<Lifetime>,
 	MerryGoRound = jecs.component() :: jecs.Id<MerryGoRound>,
-	Owner = jecs.component() :: jecs.Id<Owner>,
+	OwnedBy = jecs.tag(),
 	Player = jecs.component() :: jecs.Id<PlayerComponent>,
 	Ragdolled = jecs.tag(),
 	Renderable = jecs.component() :: jecs.Id<Renderable>,

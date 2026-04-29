@@ -12,6 +12,9 @@ local replecs = require("@packages/replecs")
 
 local BlinkServer = require("@server/modules/BlinkServer")
 local Components = require("@ecs/components")
+local VoxelBuffer = require("@utilities/VoxelBuffer")
+local VoxelManager = require("@server/ecs/VoxelManager")
+local VoxelOriginalData = require("@ecs/VoxelOriginalData")
 local registerObservers = require("@ecs/observers")
 local registerServerObservers = require("@server/ecs/observers")
 
@@ -42,10 +45,20 @@ local UNRELIABLE_COMPONENTS = {
 	"Velocity",
 }
 
-PhysicsService:RegisterCollisionGroup("VoxelMesh")
-if not pcall(PhysicsService.GetCollisionGroupId, PhysicsService, "VoxelMesh") then
-	PhysicsService:CollisionGroupSetCollidable("VoxelMesh", "VoxelMesh", false)
+local function ensureCollisionGroup(name: string)
+	pcall(function()
+		PhysicsService:RegisterCollisionGroup(name)
+	end)
 end
+
+ensureCollisionGroup("VoxelMesh")
+ensureCollisionGroup("VoxelDebris")
+-- VoxelMesh collides with everything by default, including itself: members
+-- welded into one falling assembly skip internal collision automatically
+-- (Roblox doesn't simulate internal collisions in a welded assembly), and
+-- between assemblies (or between a falling section and static structures)
+-- we WANT collisions so chunks bounce off, stack, and pile up.
+PhysicsService:CollisionGroupSetCollidable("VoxelDebris", "VoxelDebris", false)
 
 local function start(_systemsContainers: { Instance }, services: { [string]: any })
 	local world = jecs.world()
@@ -71,6 +84,15 @@ local function start(_systemsContainers: { Instance }, services: { [string]: any
 			})
 		end
 	end
+
+	world:set(Components.VoxelGrid, jecs.OnAdd, function(entity: jecs.Entity, _id: jecs.Id, value: Components.VoxelGrid)
+		VoxelOriginalData.set(entity :: any, VoxelBuffer.clone(value.data))
+	end)
+
+	world:set(Components.VoxelGrid, jecs.OnRemove, function(entity: jecs.Entity)
+		VoxelOriginalData.remove(entity :: any)
+		VoxelManager.cleanupEntity(entity :: any)
+	end)
 
 	registerObservers(world, { isClient = false })
 	registerServerObservers(world, services)
@@ -236,17 +258,21 @@ local function start(_systemsContainers: { Instance }, services: { [string]: any
 			world:add(eid, jecs.pair(replecs.reliable, Components.Renderable))
 			world:set(eid, Components.Transform, { cframe = part.CFrame })
 			world:add(eid, jecs.pair(replecs.unreliable, Components.Transform))
-			world:set(eid, Components.VoxelGrid, {
+			local gridValue: Components.VoxelGrid = {
 				data = data,
 				sizeX = sX,
 				sizeY = sY,
 				sizeZ = sZ,
 				cellSize = cellSize,
-			})
+			}
+			world:set(eid, Components.VoxelGrid, gridValue)
 			world:add(eid, jecs.pair(replecs.reliable, Components.VoxelGrid))
 			world:add(eid, Components.Voxelized)
 			world:add(eid, jecs.pair(replecs.reliable, Components.Voxelized))
 			part:SetAttribute("voxelEntityId", eid)
+
+			-- Build the visible greedy-meshed members and hide the source.
+			VoxelManager.refreshEntity(eid, gridValue, part)
 		end)
 	end
 

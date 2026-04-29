@@ -54,7 +54,6 @@ function RevolverRelayExtension.StartMatch(Match: Types.Match, RoundInstance: Ty
 
 			gunId = World:entity()
 			World:set(gunId, Components.Gun, gunToUse.GunStatisticalData)
-			World:set(gunId, Components.Owner, { OwnedBy = plrComponent and plrComponent.player })
 			World:set(gunId, Components.Item, { Id = gunToUse.Id })
 			World:add(gunId, jecs.pair(jecs.ChildOf, entityId))
 
