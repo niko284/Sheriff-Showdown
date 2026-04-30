@@ -44,9 +44,12 @@ return {
 		end
 
 		local cooldown = world:get(actionPayload.fromGun, Components.Cooldown) :: Components.Cooldown?
-		if cooldown then
+		if cooldown and workspace:GetServerTimeNow() < cooldown.expiry then
 			warn("Gun is on cooldown")
 			return false
+		end
+		if cooldown then
+			world:remove(actionPayload.fromGun, Components.Cooldown)
 		end
 
 		local gunComponent = world:get(actionPayload.fromGun, Components.Gun) :: Components.Gun
@@ -71,14 +74,19 @@ return {
 			return false
 		end
 
+		local expectedSpeed = gunComponent.BulletSpeed or 0
+		if expectedSpeed > 0 and math.abs(actionPayload.velocity.Magnitude - expectedSpeed) > expectedSpeed * 0.1 then
+			warn("Invalid bullet velocity magnitude: " .. actionPayload.velocity.Magnitude)
+			return false
+		end
+
 		local newCapacity = gunComponent.CurrentCapacity - 1
-		local timeNow = DateTime.now()
 		local cooldownMillis = newCapacity == 0 and gunComponent.ReloadTimeMillis or gunComponent.LocalCooldownMillis
 
 		local reloading = cooldownMillis == gunComponent.ReloadTimeMillis
 		local wasReloading = gunComponent.Reloading
 
-		world:set(actionPayload.fromGun, Components.Cooldown, { expiry = timeNow.UnixTimestampMillis + cooldownMillis })
+		world:set(actionPayload.fromGun, Components.Cooldown, { expiry = workspace:GetServerTimeNow() + cooldownMillis / 1000 })
 
 		local newGun: Components.Gun = table.clone(gunComponent)
 		newGun.CurrentCapacity = newCapacity == 0 and gunComponent.MaxCapacity or newCapacity
@@ -114,7 +122,7 @@ return {
 		world:set(bulletId, Components.Velocity, { velocity = actionPayload.velocity })
 		world:add(bulletId, jecs.pair(replecs.reliable, Components.Velocity))
 		world:set(bulletId, Components.Lifetime, {
-			expiry = (DateTime.now().UnixTimestampMillis / 1000) + gunComponent.BulletLifeTime,
+			expiry = workspace:GetServerTimeNow() + gunComponent.BulletLifeTime,
 		})
 		world:add(bulletId, jecs.pair(replecs.reliable, Components.Lifetime))
 		if ownerEntity then

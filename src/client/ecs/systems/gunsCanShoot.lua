@@ -123,10 +123,9 @@ local function gunsCanShoot(world: jecs.World, state: State)
 		local bulletCFrame = CFrame.lookAt(rightHand.Position, rightHand.Position + dirFromRightHand)
 
 		local newCapacity = gun.CurrentCapacity - 1
-		local timeNow = DateTime.now()
 		local cooldownMillis = newCapacity == 0 and gun.ReloadTimeMillis or gun.LocalCooldownMillis
 
-		world:set(eid, Components.Cooldown, { expiry = timeNow.UnixTimestampMillis + cooldownMillis })
+		world:set(eid, Components.Cooldown, { expiry = workspace:GetServerTimeNow() + cooldownMillis / 1000 })
 		local newGun = table.clone(gun)
 		newGun.CurrentCapacity = newCapacity == 0 and gun.MaxCapacity or newCapacity
 		newGun.Reloading = (cooldownMillis == gun.ReloadTimeMillis) or nil
@@ -142,7 +141,7 @@ local function gunsCanShoot(world: jecs.World, state: State)
 		world:set(
 			bulletId,
 			Components.Lifetime,
-			{ expiry = (DateTime.now().UnixTimestampMillis / 1000) + gun.BulletLifeTime }
+			{ expiry = workspace:GetServerTimeNow() + gun.BulletLifeTime }
 		)
 		local ownerEntity = world:target(eid, jecs.ChildOf)
 		if ownerEntity then
@@ -158,6 +157,7 @@ local function gunsCanShoot(world: jecs.World, state: State)
 			fromGun = serverGunId,
 			timestamp = workspace:GetServerTimeNow(),
 		})
+		break
 	end
 end
 

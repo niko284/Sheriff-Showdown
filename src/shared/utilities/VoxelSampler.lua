@@ -46,6 +46,15 @@ local function triangleOverlapsAABB(v0: Vector3, v1: Vector3, v2: Vector3, cente
 	return true
 end
 
+local FLOOD_NEIGHBORS: { { number } } = {
+	{ 1, 0, 0 },
+	{ -1, 0, 0 },
+	{ 0, 1, 0 },
+	{ 0, -1, 0 },
+	{ 0, 0, 1 },
+	{ 0, 0, -1 },
+}
+
 -- BFS flood fill from all exterior empty boundary cells.
 -- Empty cells not reachable from boundary are interior → marked solid in the returned buffer.
 local function floodFillInterior(data: buffer, sizeX: number, sizeY: number, sizeZ: number): buffer
@@ -68,21 +77,21 @@ local function floodFillInterior(data: buffer, sizeX: number, sizeY: number, siz
 		end
 	end
 
-	local offsets = { 1, -1, sizeX, -sizeX, sizeX * sizeY, -(sizeX * sizeY) }
+	local sliceSize = sizeX * sizeY
 	local head = 1
 	while head <= #queue do
 		local idx = queue[head]
 		head += 1
 
-		local iz = math.floor(idx / (sizeX * sizeY))
-		local rem = idx % (sizeX * sizeY)
+		local iz = math.floor(idx / sliceSize)
+		local rem = idx % sliceSize
 		local iy = math.floor(rem / sizeX)
 		local ix = rem % sizeX
 
-		for _, off in offsets do
-			local nx = ix + (off == 1 and 1 or off == -1 and -1 or 0)
-			local ny = iy + (off == sizeX and 1 or off == -sizeX and -1 or 0)
-			local nz = iz + (off == sizeX * sizeY and 1 or off == -(sizeX * sizeY) and -1 or 0)
+		for _, off in FLOOD_NEIGHBORS do
+			local nx = ix + off[1]
+			local ny = iy + off[2]
+			local nz = iz + off[3]
 			if nx < 0 or nx >= sizeX or ny < 0 or ny >= sizeY or nz < 0 or nz >= sizeZ then
 				continue
 			end

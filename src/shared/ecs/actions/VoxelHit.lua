@@ -286,6 +286,7 @@ local function spawnLooseEntity(
 	part.Parent = workspace
 
 	local eid = world:entity()
+	VoxelManager.trackLooseSource(eid, part)
 	world:add(eid, replecs.networked)
 	world:set(eid, Components.Renderable, { instance = part })
 	world:add(eid, jecs.pair(replecs.reliable, Components.Renderable))
@@ -546,7 +547,14 @@ local function collectDestroyedIndices(
 end
 
 local function isBufferEmpty(buf: buffer): boolean
-	for i = 0, buffer.len(buf) - 1 do
+	local len = buffer.len(buf)
+	local fullU32Count = math.floor(len / 4)
+	for i = 0, fullU32Count - 1 do
+		if buffer.readu32(buf, i * 4) ~= 0 then
+			return false
+		end
+	end
+	for i = fullU32Count * 4, len - 1 do
 		if buffer.readu8(buf, i) ~= 0 then
 			return false
 		end
@@ -609,11 +617,15 @@ return {
 		end
 
 		local destructionRadius: Components.DestructionRadius? = nil
+		local bulletTransform: Components.Transform? = nil
+		local bulletVelocity: Components.Velocity? = nil
 		for eid, _proj, identifier: Components.Identifier in
 			world:query(Components.Projectile, Components.Identifier)
 		do
 			if identifier.uuid == actionPayload.actionId and Util.GetOwnerPlayer(world, eid) == player then
 				destructionRadius = world:get(eid, Components.DestructionRadius)
+				bulletTransform = world:get(eid, Components.Transform)
+				bulletVelocity = world:get(eid, Components.Velocity)
 				world:delete(eid)
 				break
 			end
@@ -626,6 +638,15 @@ return {
 		local hitWorld = actionPayload.hitPosition
 		if not hitWorld then
 			return
+		end
+
+		if bulletTransform and bulletVelocity then
+			local speed = bulletVelocity.velocity.Magnitude
+			local maxDist = math.max(speed * 0.4, grid.cellSize * 4)
+			if (hitWorld - bulletTransform.cframe.Position).Magnitude > maxDist then
+				warn("VoxelHit position too far from last known bullet position")
+				return
+			end
 		end
 
 		local indicesBuf = collectDestroyedIndices(grid, gridOrigin, hitWorld, destructionRadius)
@@ -672,11 +693,13 @@ return {
 
 		local processed: { [number]: boolean } = {}
 		local queue: { number } = { actionPayload.targetEntityId }
+		local queueHead = 1
 		local processedCount = 0
 		local newEntities: { [number]: true } = {}
 
-		while #queue > 0 and processedCount < MAX_CASCADED_ENTITIES do
-			local current = table.remove(queue, 1) :: number
+		while queueHead <= #queue and processedCount < MAX_CASCADED_ENTITIES do
+			local current = queue[queueHead] :: number
+			queueHead += 1
 			if processed[current] then
 				continue
 			end

@@ -122,7 +122,7 @@ return {
 				world:set(
 					highlightId,
 					Components.Lifetime,
-					{ expiry = (DateTime.now().UnixTimestampMillis / 1000) + 0.3 }
+					{ expiry = workspace:GetServerTimeNow() + 0.3 }
 				)
 
 				local initTween = TweenService:Create(highlight, TweenInfo.new(0.1), { FillTransparency = 0.5 })

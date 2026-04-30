@@ -43,6 +43,11 @@ local entityLastData: { [number]: buffer } = {}
 local entitySourceHidden: { [number]: true } = {}
 local entitySectionAnchor: { [number]: BasePart } = {}
 local sectionData: { [BasePart]: SectionState } = {}
+-- Source parts created dynamically by spawnLooseEntity. These are invisible
+-- anchor Parts that must be destroyed when the entity is cleaned up. Original
+-- CollectionService-tagged source parts are NOT in this table; they belong to
+-- the map and their lifetime is managed externally.
+local looseEntitySources: { [number]: BasePart } = {}
 
 local function hideSource(sourcePart: BasePart)
 	sourcePart.Transparency = 1
@@ -524,8 +529,20 @@ function VoxelManager.cleanupEntity(eid: number)
 		entitySectionAnchor[eid] = nil
 	end
 
+	local looseSource = looseEntitySources[eid]
+	if looseSource then
+		looseSource:Destroy()
+		looseEntitySources[eid] = nil
+	end
+
 	entityLastData[eid] = nil
 	entitySourceHidden[eid] = nil
+end
+
+-- Called from VoxelHit.spawnLooseEntity so cleanupEntity can destroy the
+-- dynamically-created source Part when the entity is later deleted.
+function VoxelManager.trackLooseSource(eid: number, part: BasePart)
+	looseEntitySources[eid] = part
 end
 
 function VoxelManager.getLastData(eid: number): buffer?

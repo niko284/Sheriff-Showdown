@@ -60,6 +60,10 @@ scope components {
 		uuid: string(0..64),
 	}
 
+	export struct ProjectilePrediction {
+		uuid: string(0..64),
+	}
+
 	export struct VoxelGrid {
 		data: buffer,
 		sizeX: u16,
